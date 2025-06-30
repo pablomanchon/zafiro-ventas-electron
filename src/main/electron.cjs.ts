@@ -1,29 +1,35 @@
+import 'reflect-metadata';          // Necesario para NestJS
 import { app, BrowserWindow, Menu } from 'electron';
-import "./server"
-import * as path from 'path';
+import path from 'path';
+import { bootstrap } from './bootstrap';
 
 let mainWindow: BrowserWindow | null;
 
-function createWindow() {
+async function createWindow() {
+  // Arranca NestJS antes de crear la ventana
+  await bootstrap();
+
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      // Si usas preload:
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
-  // Cargar la aplicación de React en Electron
-  mainWindow.loadURL('http://localhost:5173'); // Puerto de desarrollo de Vite
+  // Carga tu aplicación React (Vite)
+  mainWindow.loadURL('http://localhost:5173');
 
-  // Quitar el menú predeterminado
-  Menu.setApplicationMenu(null);  // Desactiva el menú
+  // Oculta el menú
+  Menu.setApplicationMenu(null);
 
-  // Manejar el evento de cierre de la ventana
+  // Maneja el cierre
   mainWindow.on('closed', () => {
     mainWindow = null;
-    app.quit(); // Esto termina el proceso de Electron
+    app.quit();
   });
 }
 
