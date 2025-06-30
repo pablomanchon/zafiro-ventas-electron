@@ -1,0 +1,48 @@
+//{
+//  "compilerOptions": {
+//    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+//    "target": "ES2022",
+//    "lib": ["ES2023"],
+//    "module": "ESNext",
+//    "skipLibCheck": true,
+//
+//    "moduleResolution": "node",  // Cambiar de "bundler" a "node"
+//    "allowImportingTsExtensions": true,
+//    "verbatimModuleSyntax": true,
+//    "moduleDetection": "force",
+//    "noEmit": true,  // No es necesario emitir archivos, solo para ts-node
+//
+//    /* Linting */
+//    "strict": true,
+//    "noUnusedLocals": true,
+//    "noUnusedParameters": true,
+//    "erasableSyntaxOnly": true,
+//    "noFallthroughCasesInSwitch": true,
+//    "noUncheckedSideEffectImports": true
+//  },
+//  "include": [
+//    "vite.config.ts",  // Mantener el archivo de configuración de Vite
+//    "main/**/*.ts"     // Asegurarse de que incluya la carpeta main/
+//  ]
+//}
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
+    "target": "ES2022",
+    "lib": [
+      "ES2023"
+    ],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "outDir": "./dist",
+    "rootDir": "./src/main",
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/main/**/*.ts"
+  ]
+}
