@@ -6,8 +6,9 @@
   "main": "dist/electron.cjs.js",
   "scripts": {
     "dev": "vite",
-    "nest:dev": "npx nest start --watch",
-    "dev:all": "concurrently \"npm run nest:dev\" \"npm run dev\" \"npm run electron\"",
+    "build:nest": "nest build",
+    "start:dev": "nest start --watch",
+    "dev:all": "concurrently \"npm run start:nest:watch\" \"npm run dev\" \"npm run electron\"",
     "electron": "npm run electron:build && electron ./dist/electron.cjs.js",
     "electron:build": "tsc -b",
     "build": "vite build",
