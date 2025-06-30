@@ -1,11 +1,21 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app/app.controller';
 import { AppService } from './app/app.service';
-// Importa aquí tus controladores y servicios reales:
+import { PruebaModule } from './prueba/prueba.module';
 
 @Module({
-  imports: [],
-  controllers: [AppController /*, ...tus otros controladores*/],
-  providers: [AppService /*, ...tus otros servicios*/],
+  imports: [
+    TypeOrmModule.forRoot({
+      type: 'sqlite',
+      database: 'db.sqlite',
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
+      synchronize: true,      // en dev sincroniza esquema
+      autoLoadEntities: true, // carga entities de cada módulo
+    }),
+    PruebaModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
