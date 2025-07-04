@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app/app.controller';
 import { AppService } from './app/app.service';
 import { PruebaModule } from './prueba/prueba.module';
+import { CelularModule } from './celular/celular.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PruebaModule } from './prueba/prueba.module';
       autoLoadEntities: true, // carga entities de cada módulo
     }),
     PruebaModule,
+    CelularModule,
   ],
   controllers: [AppController],
   providers: [AppService],
