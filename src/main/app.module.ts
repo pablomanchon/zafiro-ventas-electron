@@ -8,6 +8,8 @@ import { VentasModule } from './ventas/ventas.module';
 import { VentaDetalleModule } from './venta-detalle/venta-detalle.module';
 import { MetodosPagoModule } from './metodos-pago/metodos-pago.module';
 import { ItemVentaModule } from './item-venta/item-venta.module';
+import { MetodoPagoModule } from './metodo-pago/metodo-pago.module';
+import { VentaPagosModule } from './venta-pagos/venta-pagos.module';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { ItemVentaModule } from './item-venta/item-venta.module';
     VentaDetalleModule,
     MetodosPagoModule,
     ItemVentaModule,
+    MetodoPagoModule,
+    VentaPagosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

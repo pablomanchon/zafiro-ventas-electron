@@ -1,8 +1,8 @@
-// src/item-venta/entities/item-venta.entity.ts
+// src/metodos-pago/entities/metodo-pago.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity()
-export class ItemVenta {
+export class MetodoPago {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -11,7 +11,4 @@ export class ItemVenta {
 
   @Column({ nullable: true })
   descripcion?: string;
-
-  @Column('decimal', { precision: 10, scale: 2 })
-  precio: number;
 }
