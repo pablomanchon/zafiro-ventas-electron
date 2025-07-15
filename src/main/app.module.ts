@@ -6,7 +6,6 @@ import { ProductosModule } from './productos/productos.module';
 import { ClientesModule } from './clientes/clientes.module';
 import { VentasModule } from './ventas/ventas.module';
 import { VentaDetalleModule } from './venta-detalle/venta-detalle.module';
-import { MetodosPagoModule } from './metodos-pago/metodos-pago.module';
 import { ItemVentaModule } from './item-venta/item-venta.module';
 import { MetodoPagoModule } from './metodo-pago/metodo-pago.module';
 import { VentaPagosModule } from './venta-pagos/venta-pagos.module';
@@ -24,7 +23,6 @@ import { VentaPagosModule } from './venta-pagos/venta-pagos.module';
     ClientesModule,
     VentasModule,
     VentaDetalleModule,
-    MetodosPagoModule,
     ItemVentaModule,
     MetodoPagoModule,
     VentaPagosModule,
