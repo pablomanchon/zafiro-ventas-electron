@@ -1,7 +1,8 @@
-import Title from '../layout/Title'
 
 export default function PageHome() {
   return (
-    <div className='w-full'><Title>Page Home</Title></div>
+    <div className='w-full grid grid-cols-3 gap-2'>
+  
+    </div>
   )
 }
