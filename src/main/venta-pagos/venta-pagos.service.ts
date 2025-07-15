@@ -1,26 +1,48 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateVentaPagoDto } from './dto/create-venta-pago.dto';
 import { UpdateVentaPagoDto } from './dto/update-venta-pago.dto';
+import { VentaPago } from './entities/venta-pago.entity';
+import { MetodoPago } from '../metodo-pago/entities/metodo-pago.entity';
 
 @Injectable()
 export class VentaPagosService {
-  create(createVentaPagoDto: CreateVentaPagoDto) {
-    return 'This action adds a new ventaPago';
+  constructor(
+    @InjectRepository(VentaPago)
+    private readonly repo: Repository<VentaPago>,
+    @InjectRepository(MetodoPago)
+    private readonly metodoRepo: Repository<MetodoPago>,
+  ) {}
+
+  async create(createVentaPagoDto: CreateVentaPagoDto) {
+    const metodo = await this.metodoRepo.findOne({
+      where: { id: createVentaPagoDto.metodoId },
+    });
+    if (!metodo) throw new Error('Método de pago no encontrado');
+    const pago = this.repo.create({
+      metodo,
+      monto: createVentaPagoDto.monto,
+      cuotas: createVentaPagoDto.cuotas,
+    });
+    return this.repo.save(pago);
   }
 
   findAll() {
-    return `This action returns all ventaPagos`;
+    return this.repo.find();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} ventaPago`;
+    return this.repo.findOne({ where: { id } });
   }
 
-  update(id: number, updateVentaPagoDto: UpdateVentaPagoDto) {
-    return `This action updates a #${id} ventaPago`;
+  async update(id: number, updateVentaPagoDto: UpdateVentaPagoDto) {
+    await this.repo.update(id, updateVentaPagoDto);
+    return this.findOne(id);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} ventaPago`;
+  async remove(id: number) {
+    await this.repo.delete(id);
+    return { deleted: true };
   }
 }
