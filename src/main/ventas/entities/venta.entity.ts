@@ -15,7 +15,7 @@ export class Venta {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   fecha: Date;
 
   @ManyToOne(() => Cliente, cliente => cliente.ventas, { eager: true })
