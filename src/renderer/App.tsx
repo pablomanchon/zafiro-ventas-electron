@@ -2,10 +2,10 @@ import Panel from "./components/Panel";
 import Navbar from "./layout/Navbar";
 import { Routes, Route } from "react-router-dom";
 import PageHome from "./pages/PageHome";
-import PageClientes from "./pages/PageClientes";
-import PageProductos from "./pages/PageProductos";
-import PageMetodoPago from "./pages/PageMetodoPago";
-import PageItemVenta from "./pages/PageItemVenta";
+import PageClientes from "./entities/clientes/Page";
+import PageProductos from "./entities/productos/Page";
+import PageMetodoPago from "./entities/metodo-pago/Page";
+import PageItemVenta from "./entities/item-venta/Page";
 
 export default function App() {
   
