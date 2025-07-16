@@ -5,14 +5,7 @@ import PrimaryButton from '../components/PrimaryButton';
 import SecondaryButton from '../components/SecondaryButton';
 import DangerButton from '../components/DangerButton';
 import { getAll, create, update, remove } from '../api/crud';
-
-interface CrudConfig {
-  entity: string;
-  title: string;
-  columns: (string | { titulo: string; clave: string })[];
-  searchFields: string[];
-  formInputs: any[]; // Input definitions for DynamicForm
-}
+import type { CrudConfig } from '../entities/CrudConfig';
 
 export default function CrudPage({ config }: { config: CrudConfig }) {
   const { entity, title, columns, searchFields, formInputs } = config;
