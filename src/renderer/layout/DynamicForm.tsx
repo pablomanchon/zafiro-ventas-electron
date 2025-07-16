@@ -22,6 +22,8 @@ type InputDef =
         }>
     })
 
+export type FormInput = InputDef
+
 interface DynamicFormProps {
     inputs: InputDef[]
     onSubmit: (formValues: Record<string, any>) => void

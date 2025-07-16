@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type SetStateAction } from 'react';
 import Table from '../layout/Table';
 import DynamicForm from '../layout/DynamicForm';
-import PrimaryButton from '../components/PrimaryButton';
 import SecondaryButton from '../components/SecondaryButton';
 import DangerButton from '../components/DangerButton';
 import { getAll, create, update, remove } from '../api/crud';
 import type { CrudConfig } from '../entities/CrudConfig';
+import Title from '../layout/Title';
 
 export default function CrudPage({ config }: { config: CrudConfig }) {
   const { entity, title, columns, searchFields, formInputs } = config;
@@ -70,11 +70,11 @@ export default function CrudPage({ config }: { config: CrudConfig }) {
 
   return (
     <div className="flex flex-col gap-4 p-2 w-full overflow-auto">
-      <h2 className="text-2xl font-bold">{title}</h2>
+      <Title>{title}</Title>
 
       <div className="flex gap-2 items-center">
         <input
-          className="border rounded px-2 py-1 text-black"
+          className="border rounded px-2 py-1 text-black w-full outline-none"
           placeholder="Buscar..."
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -90,12 +90,12 @@ export default function CrudPage({ config }: { config: CrudConfig }) {
       <Table
         datos={filtered}
         encabezados={columns}
-        onDobleClickFila={id => {
+        onDobleClickFila={(id: SetStateAction<number | null>) => {
           const item = items.find(it => it.id === id);
           setEditing(item ?? null);
           setSelected(id);
         }}
-        onFilaSeleccionada={id => setSelected(id)}
+        onFilaSeleccionada={(id: SetStateAction<number | null>) => setSelected(id)}
       />
 
       <DynamicForm

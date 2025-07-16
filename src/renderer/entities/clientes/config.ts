@@ -1,4 +1,4 @@
-import { CrudConfig } from '../CrudConfig';
+import type { CrudConfig } from '../CrudConfig';
 
 const clientesConfig: CrudConfig = {
   entity: 'clientes',
