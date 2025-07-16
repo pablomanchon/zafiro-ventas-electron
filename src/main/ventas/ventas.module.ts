@@ -1,26 +1,30 @@
+// src/ventas/ventas.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { VentasService } from './ventas.service';
 import { VentasController } from './ventas.controller';
 import { Venta } from './entities/venta.entity';
-import { Cliente } from '../clientes/entities/cliente.entity';
-import { Producto } from '../productos/entities/producto.entity';
-import { ItemVenta } from '../item-venta/entities/item-venta.entity';
-import { VentaDetalle } from '../venta-detalle/entities/venta-detalle.entity';
-import { MetodoPago } from '../metodo-pago/entities/metodo-pago.entity';
-import { VentaPago } from '../venta-pagos/entities/venta-pago.entity';
+
+import { ClientesModule } from '../clientes/clientes.module';
+import { ProductosModule } from '../productos/productos.module';
+import { ItemVentaModule } from '../item-venta/item-venta.module';
+import { VentaDetalleModule } from '../venta-detalle/venta-detalle.module';
+import { VentaPagosModule } from '../venta-pagos/venta-pagos.module';
+import { MetodoPagoModule } from '../metodo-pago/metodo-pago.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Venta,
-      Cliente,
-      Producto,
-      ItemVenta,
-      VentaDetalle,
-      MetodoPago,
-      VentaPago,
-    ]),
+    // Sólo la entidad principal
+    TypeOrmModule.forFeature([Venta]),
+
+    // Importa todos los módulos cuyos servicios inyectas en VentasService
+    ClientesModule,
+    ProductosModule,
+    ItemVentaModule,
+    VentaDetalleModule,
+    VentaPagosModule,
+    MetodoPagoModule,
   ],
   controllers: [VentasController],
   providers: [VentasService],

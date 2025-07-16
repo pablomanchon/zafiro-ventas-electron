@@ -1,103 +1,141 @@
+// src/ventas/ventas.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { UpdateVentaDto } from './dto/update-venta.dto';
 import { Venta } from './entities/venta.entity';
-import { Cliente } from '../clientes/entities/cliente.entity';
-import { Producto } from '../productos/entities/producto.entity';
-import { ItemVenta } from '../item-venta/entities/item-venta.entity';
-import { VentaDetalle } from '../venta-detalle/entities/venta-detalle.entity';
-import { MetodoPago } from '../metodo-pago/entities/metodo-pago.entity';
-import { VentaPago } from '../venta-pagos/entities/venta-pago.entity';
+import { ItemVentaService } from '../item-venta/item-venta.service';
+import { VentaDetalleService } from '../venta-detalle/venta-detalle.service';
+import { VentaPagosService } from '../venta-pagos/venta-pagos.service';
+import { ProductosService } from '../productos/productos.service';
+import { ClientesService } from '../clientes/clientes.service';
+import { CreateVentaDetalleDto } from '../venta-detalle/dto/create-venta-detalle.dto';
 
 @Injectable()
 export class VentasService {
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(Venta)
-    private readonly repo: Repository<Venta>,
-    @InjectRepository(Cliente)
-    private readonly clienteRepo: Repository<Cliente>,
-    @InjectRepository(Producto)
-    private readonly productoRepo: Repository<Producto>,
-    @InjectRepository(ItemVenta)
-    private readonly itemRepo: Repository<ItemVenta>,
-    @InjectRepository(VentaDetalle)
-    private readonly detalleRepo: Repository<VentaDetalle>,
-    @InjectRepository(MetodoPago)
-    private readonly metodoRepo: Repository<MetodoPago>,
-    @InjectRepository(VentaPago)
-    private readonly pagoRepo: Repository<VentaPago>,
+    private readonly ventaRepo: Repository<Venta>,
+    private readonly clienteSvc: ClientesService,
+    private readonly productoSvc: ProductosService,
+    private readonly itemVentaSvc: ItemVentaService,
+    private readonly ventaDetalleSvc: VentaDetalleService,
+    private readonly ventaPagoSvc: VentaPagosService,
   ) {}
 
-  async create(createVentaDto: CreateVentaDto) {
-    const cliente = await this.clienteRepo.findOne({
-      where: { id: createVentaDto.clienteId },
-    });
-    if (!cliente) throw new Error('Cliente no encontrado');
+// src/ventas/ventas.service.ts
+async create(dto: CreateVentaDto, manager?: EntityManager): Promise<Venta> {
+  if (!manager) {
+    return this.dataSource.transaction(txn => this.create(dto, txn));
+  }
 
-    const venta = this.repo.create({ cliente });
+  // 1) Cliente
+  const cliente = await this.clienteSvc.findOne(dto.clienteId, manager);
+  if (!cliente) throw new Error('Cliente no encontrado');
 
-    venta.detalles = [];
-    for (const detDto of createVentaDto.detalles) {
-      const producto = await this.productoRepo.findOne({
-        where: { id: detDto.productoId },
-      });
-      if (!producto) throw new Error('Producto no encontrado');
-      const item = this.itemRepo.create({
-        nombre: producto.nombre,
+  // 2) Cabecera
+  const venta = manager.create(Venta, { cliente, fecha: new Date() });
+
+  // 3) Detalles + snapshot
+  venta.detalles = [];
+  let totalEstimado = 0;
+  for (const det of dto.detalles) {
+    // — a) Descontar stock usando productId
+    const producto = await this.productoSvc.decrementStock(
+      det.productoId,
+      det.item.cantidad,
+      manager,
+    );
+
+    // — b) Prepara el DTO para VentaDetalleService (solo necesita el snapshot)
+    const detalleDto: CreateVentaDetalleDto = {
+      productoId: det.productoId,   // quedará en el DTO pero no se usa en la creación de VentaDetalle
+      item: {
+        nombre:      producto.nombre,
         descripcion: producto.descripcion,
-        precio: producto.precio,
-      });
-      await this.itemRepo.save(item);
-      const detalle = this.detalleRepo.create({
-        item,
-        cantidad: detDto.cantidad,
-      });
-      venta.detalles.push(detalle);
+        precio:      producto.precio,
+        cantidad:    det.item.cantidad,
+      },
+    };
+
+    // — c) Crear el detalle (con su ItemVenta dentro)
+    const ventaDet = await this.ventaDetalleSvc.create(detalleDto, manager);
+
+    totalEstimado += Number(producto.precio) * det.item.cantidad;
+    venta.detalles.push(ventaDet);
+  }
+
+  // 4) Pagos y verificación idéntica
+  venta.pagos = [];
+  let totalPagado = 0;
+  for (const p of dto.pagos) {
+    const pago = await this.ventaPagoSvc.create(
+      { metodoId: p.metodoId, monto: p.monto, cuotas: p.cuotas },
+      manager,
+    );
+    totalPagado += Number(pago.monto);
+    venta.pagos.push(pago);
+  }
+
+  if (totalPagado !== totalEstimado) {
+    throw new Error(
+      `Total pagado (${totalPagado.toFixed(2)}) no coincide con total de venta (${totalEstimado.toFixed(2)})`,
+    );
+  }
+
+  // 5) Guardar todo
+  return manager.save(venta);
+}
+
+
+  async findAll(manager?: EntityManager): Promise<Venta[]> {
+    const repo = manager
+      ? manager.getRepository(Venta)
+      : this.ventaRepo;
+
+    return repo.find({
+      relations: ['detalles', 'detalles.item', 'pagos'],
+    });
+  }
+
+  async findOne(
+    id: number,
+    manager?: EntityManager,
+  ): Promise<Venta | null> {
+    const repo = manager
+      ? manager.getRepository(Venta)
+      : this.ventaRepo;
+
+    return repo.findOne({
+      where: { id },
+      relations: ['detalles', 'detalles.item', 'pagos'],
+    });
+  }
+
+  async update(
+    id: number,
+    dto: UpdateVentaDto,
+    manager?: EntityManager,
+  ): Promise<Venta | null> {
+    const repo = manager
+      ? manager.getRepository(Venta)
+      : this.ventaRepo;
+
+    await repo.update(id, { cliente: { id: dto.clienteId } } as any);
+    return this.findOne(id, manager);
+  }
+
+  async remove(
+    id: number,
+    manager?: EntityManager,
+  ): Promise<{ deleted: boolean }> {
+    if (manager) {
+      await manager.getRepository(Venta).delete(id);
+    } else {
+      await this.ventaRepo.delete(id);
     }
-
-    venta.pagos = [];
-    for (const pagoDto of createVentaDto.pagos) {
-      const metodo = await this.metodoRepo.findOne({
-        where: { id: pagoDto.metodoId },
-      });
-      if (!metodo) throw new Error('Método de pago no encontrado');
-      const pago = this.pagoRepo.create({
-        metodo,
-        monto: pagoDto.monto,
-        cuotas: pagoDto.cuotas,
-      });
-      venta.pagos.push(pago);
-    }
-
-    return this.repo.save(venta);
-  }
-
-  findAll() {
-    return this.repo.find();
-  }
-
-  findOne(id: number) {
-    return this.repo.findOne({ where: { id } });
-  }
-
-  async update(id: number, updateVentaDto: UpdateVentaDto) {
-    const venta = await this.repo.findOne({ where: { id } });
-    if (!venta) throw new Error('Venta no encontrada');
-
-    if (updateVentaDto.clienteId) {
-      const cliente = await this.clienteRepo.findOne({
-        where: { id: updateVentaDto.clienteId },
-      });
-      if (cliente) venta.cliente = cliente;
-    }
-
-    return this.repo.save(venta);
-  }
-
-  async remove(id: number) {
-    await this.repo.delete(id);
     return { deleted: true };
   }
 }
