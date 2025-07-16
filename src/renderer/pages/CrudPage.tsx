@@ -1,12 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Table from '../layout/Table';
 import DynamicForm from '../layout/DynamicForm';
-import PrimaryButton from '../components/PrimaryButton';
 import SecondaryButton from '../components/SecondaryButton';
 import DangerButton from '../components/DangerButton';
-import { getAll, create, update, remove } from '../api/crud';
+import useCrud from '../hooks/useCrud';
 
-interface CrudConfig {
+interface CrudConfig<T extends { id: number }> {
   entity: string;
   title: string;
   columns: (string | { titulo: string; clave: string })[];
@@ -14,51 +13,28 @@ interface CrudConfig {
   formInputs: any[]; // Input definitions for DynamicForm
 }
 
-export default function CrudPage({ config }: { config: CrudConfig }) {
+export default function CrudPage<T extends { id: number }>({ config }: { config: CrudConfig<T> }) {
   const { entity, title, columns, searchFields, formInputs } = config;
-  const [items, setItems] = useState<any[]>([]);
+  const { items, addItem, updateItem, deleteItem } = useCrud<T>(entity);
   const [selected, setSelected] = useState<number | null>(null);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<Partial<T> | null>(null);
   const [search, setSearch] = useState('');
 
-  const fetchItems = async () => {
-    try {
-      const data = await getAll(entity);
-      setItems(data);
-    } catch (err) {
-      console.error(err);
+  const handleSubmit = async (values: Record<string, any>) => {
+    if (editing && selected != null) {
+      await updateItem(selected, values);
+    } else {
+      await addItem(values as T);
     }
-  };
-
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
-  const handleSubmit = async (values: any) => {
-    try {
-      if (editing) {
-        await update(entity, editing.id, values);
-      } else {
-        await create(entity, values);
-      }
-      setEditing(null);
-      setSelected(null);
-      fetchItems();
-    } catch (err) {
-      console.error(err);
-    }
+    setEditing(null);
+    setSelected(null);
   };
 
   const handleDelete = async () => {
     if (selected == null) return;
     if (!confirm('¿Eliminar registro?')) return;
-    try {
-      await remove(entity, selected);
-      setSelected(null);
-      fetchItems();
-    } catch (err) {
-      console.error(err);
-    }
+    await deleteItem(selected);
+    setSelected(null);
   };
 
   const filtered = items.filter(item =>
