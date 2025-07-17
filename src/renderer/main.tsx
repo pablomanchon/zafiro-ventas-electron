@@ -5,13 +5,22 @@ import App from './App'
 import { BrowserRouter as Router } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { store } from './store'
+import { ModalProvider } from './providers/ModalProvider'
+import { SearchProvider } from './providers/SearchProvider'
+import Modal from './layout/Modal'
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Provider store={store}>
-      <Router>
-        <App />
-      </Router>
+      <ModalProvider>
+        <SearchProvider>
+          <Router>
+            <App />
+            <Modal />
+          </Router>
+        </SearchProvider>
+      </ModalProvider>
     </Provider>
   </StrictMode>,
 )
