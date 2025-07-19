@@ -1,57 +1,72 @@
 // src/pages/CrudPage.tsx
-import { useCrud } from '../hooks/useCrud';
-import TableAndSearch from '../components/TableAndSearch';
-import PrimaryButton from '../components/PrimaryButton';
-import SecondaryButton from '../components/SecondaryButton';
-import DangerButton from '../components/DangerButton';
-import Title from '../layout/Title';
-import Steel from '../layout/Steel';
-import type { CrudConfig } from '../entities/CrudConfig';
+/// <reference lib="dom" />
+import { useCrud } from '../hooks/useCrud'
+import TableAndSearch from '../components/TableAndSearch'
+import PrimaryButton from '../components/PrimaryButton'
+import SecondaryButton from '../components/SecondaryButton'
+import DangerButton from '../components/DangerButton'
+import Title from '../layout/Title'
+import Steel from '../layout/Steel'
+import Main from '../layout/Main'
+import type { CrudConfig } from '../entities/CrudConfig'
 
 export default function CrudPage<T extends { id: number }>({
   config,
 }: {
-  config: CrudConfig;
+  config: CrudConfig
 }) {
-  const { entity, title, columns, formInputs, searchFields } = config;
-  const { items, selected, setSelected, showForm, handleDelete } = useCrud<T>(
+  const { entity, title, columns, formInputs, searchFields } = config
+  const { items, selected, setSelected, handleDelete } = useCrud<T>(
     entity,
     formInputs
-  );
+  )
 
   return (
-    <div className="flex flex-col h-screen p-2 w-full mt-8 md:mt-auto">
-      {/* Título */}
+    <Main className="flex flex-col h-screen p-2 w-full mt-8 md:mt-auto">
+      {/* Cabecera */}
       <Title>{title}</Title>
 
-      {/* Contenedor central con scroll */}
+      {/* Tabla y búsqueda */}
       <div className="flex-1 overflow-auto">
         <TableAndSearch
           datos={items}
           encabezados={columns}
-          onDobleClickFila={id =>
-            showForm(items.find(i => i.id === id) ?? null)
+          onDobleClickFila={rowId =>
+            // abre edición en ventana aparte
+            window.open(`#/crud/${entity}/edit/${rowId}`, '_blank')
           }
           onFilaSeleccionada={setSelected}
           searchFilters={searchFields}
         />
       </div>
 
-      {/* Barra pegada al fondo */}
+      {/* Barra de acciones */}
       <Steel className="flex gap-2 items-center mt-auto bg-gray-800 p-2">
-        <PrimaryButton title="Crear" functionClick={() => showForm(null)} />
+        {/* Crear en nueva ventana */}
+        <a
+          href={`#/crud/${entity}/create`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <PrimaryButton title="Crear" functionClick={() => {}} />
+        </a>
+
         {selected != null && (
           <>
-            <SecondaryButton
-              title="Modificar"
-              functionClick={() =>
-                showForm(items.find(i => i.id === selected) ?? null)
-              }
-            />
+            {/* Modificar en nueva ventana */}
+            <a
+              href={`#/crud/${entity}/edit/${selected}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <SecondaryButton title="Modificar" functionClick={() => {}} />
+            </a>
+
+            {/* Eliminar siga usando el modal */}
             <DangerButton title="Eliminar" functionClick={handleDelete} />
           </>
         )}
       </Steel>
-    </div>
-  );
+    </Main>
+  )
 }

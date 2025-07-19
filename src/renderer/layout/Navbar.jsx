@@ -26,7 +26,6 @@ export default function Navbar() {
   const location = useLocation()
   const [isOpen, setIsOpen] = useState(false)
 
-
   return (
     <>
       {/* Botón externo solo visible en mobile y cuando navbar está cerrado */}

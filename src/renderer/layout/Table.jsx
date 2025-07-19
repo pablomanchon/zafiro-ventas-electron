@@ -1,26 +1,27 @@
+// src/layout/Table.jsx
 import { useState } from "react";
 
-
-const Table = ({ encabezados, datos, onFilaSeleccionada, onDobleClickFila, formatoFecha = 'fecha-hora' }) => {
+const Table = ({
+  encabezados,
+  datos,
+  onFilaSeleccionada,
+  onDobleClickFila,
+  formatoFecha = 'fecha-hora'
+}) => {
   const [filaSeleccionada, setFilaSeleccionada] = useState(null);
 
   const manejarSeleccion = (index) => {
     setFilaSeleccionada(index);
-    if (onFilaSeleccionada) {
-      onFilaSeleccionada(datos[index].id);
-    }
+    onFilaSeleccionada?.(datos[index].id);
   };
 
   const manejarDobleClick = (index) => {
-    if (onDobleClickFila) {
-      onDobleClickFila(datos[index].id);
-    }
+    onDobleClickFila?.(datos[index].id);
   };
 
   const formatearFecha = (valor) => {
     const fecha = new Date(valor);
     if (isNaN(fecha.getTime())) return valor;
-
     const opciones = {
       ...(formatoFecha.includes('fecha') && {
         day: '2-digit',
@@ -32,28 +33,37 @@ const Table = ({ encabezados, datos, onFilaSeleccionada, onDobleClickFila, forma
         minute: '2-digit'
       })
     };
-
     return fecha.toLocaleString('es-AR', opciones);
   };
 
   const obtenerValor = (fila, encabezado) => {
-    let clave = typeof encabezado === 'string'
-      ? encabezado.toLowerCase()
-      : encabezado?.clave?.toLowerCase() ?? '';
+    // Tomamos la clave original
+    const claveOriginal = typeof encabezado === 'string'
+      ? encabezado
+      : encabezado.clave ?? '';
+    if (!claveOriginal) return null;
 
-    const keys = clave.split('.');
+    const keys = claveOriginal.split('.');
     let valor = fila;
-
     for (const key of keys) {
       if (valor == null) break;
-      valor = valor[key];
+      // Intento con clave exacta
+      if (Object.prototype.hasOwnProperty.call(valor, key)) {
+        valor = valor[key];
+      } else {
+        // Fallback: primera letra lowercase
+        const keyLower = key.charAt(0).toLowerCase() + key.slice(1);
+        if (Object.prototype.hasOwnProperty.call(valor, keyLower)) {
+          valor = valor[keyLower];
+        } else {
+          valor = undefined;
+        }
+      }
     }
-
-    // Formatear si es campo de fecha
-    if (keys[keys.length - 1].includes('fecha')) {
+    // Formatear fecha si aplica
+    if (keys[keys.length - 1].toLowerCase().includes('fecha')) {
       return formatearFecha(valor);
     }
-
     return valor;
   };
 
@@ -65,9 +75,9 @@ const Table = ({ encabezados, datos, onFilaSeleccionada, onDobleClickFila, forma
       <table className="w-full bg-sky-900 border-white text-white shadow-lg shadow-black">
         <thead className="border-white border-2">
           <tr>
-            {encabezados.map((encabezado, index) => (
-              <th key={index} className="border-white border-2 m-2 p-2">
-                {obtenerTitulo(encabezado)}
+            {encabezados.map((enc, idx) => (
+              <th key={idx} className="border-white border-2 m-2 p-2">
+                {obtenerTitulo(enc)}
               </th>
             ))}
           </tr>
@@ -78,16 +88,17 @@ const Table = ({ encabezados, datos, onFilaSeleccionada, onDobleClickFila, forma
               key={index}
               onClick={() => manejarSeleccion(index)}
               onDoubleClick={() => manejarDobleClick(index)}
-              className={`cursor-pointer hover:bg-cyan-700 ${filaSeleccionada === index
-                ? "bg-cyan-600"
-                : index % 2 === 0
-                  ? "bg-gray-950"
-                  : "bg-gray-800"
+              className={`cursor-pointer hover:bg-cyan-700 ${
+                filaSeleccionada === index
+                  ? "bg-cyan-600"
+                  : index % 2 === 0
+                    ? "bg-gray-950"
+                    : "bg-gray-800"
               }`}
             >
-              {encabezados.map((encabezado, i) => (
+              {encabezados.map((enc, i) => (
                 <td key={i} className="px-2 border-x-2 text-center">
-                  {obtenerValor(fila, encabezado)}
+                  {obtenerValor(fila, enc)}
                 </td>
               ))}
             </tr>
