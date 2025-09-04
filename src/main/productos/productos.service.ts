@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
-import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Producto } from './entities/producto.entity';
+import { ProductoDto } from './dto/create-producto.dto';
 
 @Injectable()
 export class ProductosService {
@@ -17,31 +17,31 @@ export class ProductosService {
     return repo.find();
   }
 
-  async create(createDto: CreateProductoDto, manager?: EntityManager) {
+  async create(createDto: ProductoDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     const entity = repo.create(createDto);
     return repo.save(entity);
   }
 
-  async findOne(id: number, manager?: EntityManager) {
+  async findOne(id: string, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     return repo.findOne({ where: { id } });
   }
 
-  async update(id: number, updateDto: UpdateProductoDto, manager?: EntityManager) {
+  async update(id: string, updateDto: UpdateProductoDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     await repo.update(id, updateDto);
     return repo.findOne({ where: { id } });
   }
 
-  async remove(id: number, manager?: EntityManager) {
+  async remove(id: string, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     await repo.delete(id);
     return { deleted: true };
   }
 
   async decrementStock(
-    productoId: number,
+    productoId: string,
     cantidad: number,
     manager?: EntityManager,
   ) {

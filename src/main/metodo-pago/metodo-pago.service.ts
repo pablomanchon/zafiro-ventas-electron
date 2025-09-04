@@ -24,18 +24,18 @@ export class MetodoPagoService {
     return repo.save(entity);
   }
 
-  async findOne(id: number, manager?: EntityManager) {
+  async findOne(id: string, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(MetodoPago) : this.repo;
     return repo.findOne({ where: { id } });
   }
 
-  async update(id: number, updateDto: UpdateMetodoPagoDto, manager?: EntityManager) {
+  async update(id: string, updateDto: UpdateMetodoPagoDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(MetodoPago) : this.repo;
     await repo.update(id, updateDto);
     return repo.findOne({ where: { id } });
   }
 
-  async remove(id: number, manager?: EntityManager) {
+  async remove(id: string, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(MetodoPago) : this.repo;
     await repo.delete(id);
     return { deleted: true };

@@ -1,141 +1,121 @@
 // src/ventas/ventas.service.ts
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import {
+  Between,
+  LessThan,
+  MoreThanOrEqual,
+  Repository,
+} from 'typeorm';
+import { Venta } from './entities/venta.entity';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { UpdateVentaDto } from './dto/update-venta.dto';
-import { Venta } from './entities/venta.entity';
-import { ItemVentaService } from '../item-venta/item-venta.service';
-import { VentaDetalleService } from '../venta-detalle/venta-detalle.service';
-import { VentaPagosService } from '../venta-pagos/venta-pagos.service';
-import { ProductosService } from '../productos/productos.service';
+import { FilterVentasDto } from './dto/filter-ventas.dto';
 import { ClientesService } from '../clientes/clientes.service';
-import { CreateVentaDetalleDto } from '../venta-detalle/dto/create-venta-detalle.dto';
+import { ProductosService } from '../productos/productos.service';
 
 @Injectable()
 export class VentasService {
   constructor(
-    private readonly dataSource: DataSource,
     @InjectRepository(Venta)
-    private readonly ventaRepo: Repository<Venta>,
-    private readonly clienteSvc: ClientesService,
-    private readonly productoSvc: ProductosService,
-    private readonly itemVentaSvc: ItemVentaService,
-    private readonly ventaDetalleSvc: VentaDetalleService,
-    private readonly ventaPagoSvc: VentaPagosService,
-  ) {}
+    private readonly repo: Repository<Venta>,
+    private readonly clienteService: ClientesService,
+    private readonly productoService: ProductosService
+  ) { }
 
-// src/ventas/ventas.service.ts
-async create(dto: CreateVentaDto, manager?: EntityManager): Promise<Venta> {
-  if (!manager) {
-    return this.dataSource.transaction(txn => this.create(dto, txn));
-  }
-
-  // 1) Cliente
-  const cliente = await this.clienteSvc.findOne(dto.clienteId, manager);
-  if (!cliente) throw new Error('Cliente no encontrado');
-
-  // 2) Cabecera
-  const venta = manager.create(Venta, { cliente, fecha: new Date() });
-
-  // 3) Detalles + snapshot
-  venta.detalles = [];
-  let totalEstimado = 0;
-  for (const det of dto.detalles) {
-    // — a) Descontar stock usando productId
-    const producto = await this.productoSvc.decrementStock(
-      det.productoId,
-      det.item.cantidad,
-      manager,
+  async create(createDto: CreateVentaDto): Promise<Venta> {
+    // 1) Validar al menos un detalle y un pago con ID no vacío
+    const validDetalles = createDto.detalles.filter(
+      d => d.productoId?.toString().trim() !== ''
     );
-
-    // — b) Prepara el DTO para VentaDetalleService (solo necesita el snapshot)
-    const detalleDto: CreateVentaDetalleDto = {
-      productoId: det.productoId,   // quedará en el DTO pero no se usa en la creación de VentaDetalle
-      item: {
-        nombre:      producto.nombre,
-        descripcion: producto.descripcion,
-        precio:      producto.precio,
-        cantidad:    det.item.cantidad,
-      },
-    };
-
-    // — c) Crear el detalle (con su ItemVenta dentro)
-    const ventaDet = await this.ventaDetalleSvc.create(detalleDto, manager);
-
-    totalEstimado += Number(producto.precio) * det.item.cantidad;
-    venta.detalles.push(ventaDet);
-  }
-
-  // 4) Pagos y verificación idéntica
-  venta.pagos = [];
-  let totalPagado = 0;
-  for (const p of dto.pagos) {
-    const pago = await this.ventaPagoSvc.create(
-      { metodoId: p.metodoId, monto: p.monto, cuotas: p.cuotas },
-      manager,
-    );
-    totalPagado += Number(pago.monto);
-    venta.pagos.push(pago);
-  }
-
-  if (totalPagado !== totalEstimado) {
-    throw new Error(
-      `Total pagado (${totalPagado.toFixed(2)}) no coincide con total de venta (${totalEstimado.toFixed(2)})`,
-    );
-  }
-
-  // 5) Guardar todo
-  return manager.save(venta);
-}
-
-
-  async findAll(manager?: EntityManager): Promise<Venta[]> {
-    const repo = manager
-      ? manager.getRepository(Venta)
-      : this.ventaRepo;
-
-    return repo.find({
-      relations: ['detalles', 'detalles.item', 'pagos'],
-    });
-  }
-
-  async findOne(
-    id: number,
-    manager?: EntityManager,
-  ): Promise<Venta | null> {
-    const repo = manager
-      ? manager.getRepository(Venta)
-      : this.ventaRepo;
-
-    return repo.findOne({
-      where: { id },
-      relations: ['detalles', 'detalles.item', 'pagos'],
-    });
-  }
-
-  async update(
-    id: number,
-    dto: UpdateVentaDto,
-    manager?: EntityManager,
-  ): Promise<Venta | null> {
-    const repo = manager
-      ? manager.getRepository(Venta)
-      : this.ventaRepo;
-
-    await repo.update(id, { cliente: { id: dto.clienteId } } as any);
-    return this.findOne(id, manager);
-  }
-
-  async remove(
-    id: number,
-    manager?: EntityManager,
-  ): Promise<{ deleted: boolean }> {
-    if (manager) {
-      await manager.getRepository(Venta).delete(id);
-    } else {
-      await this.ventaRepo.delete(id);
+    if (!validDetalles.length) {
+      throw new BadRequestException('Debe incluir al menos un producto con ID válido');
     }
+    const validPagos = createDto.pagos.filter(
+      p => p.metodoId?.toString().trim() !== ''
+    );
+    if (!validPagos.length) {
+      throw new BadRequestException('Debe incluir al menos un método de pago con ID válido');
+    }
+
+    // 2) Buscar cliente
+    const cliente = await this.clienteService.findOne(createDto.clienteId);
+    if (!cliente) {
+      throw new BadRequestException('Cliente no encontrado');
+    }
+
+    // 3) Descontar stock usando el método dedicado
+    for (const det of validDetalles) {
+      try {
+        await this.productoService.decrementStock(det.productoId.toString(), det.item.cantidad);
+      } catch (e) {
+        // Propagar errores de stock insuficiente o producto no encontrado
+        throw new BadRequestException((e as any).message);
+      }
+    }
+
+    // 4) Calcular totales
+    const totalDetalles = validDetalles.reduce(
+      (sum, det) => sum + det.item.precio * det.item.cantidad,
+      0
+    );
+    const totalPagos = validPagos.reduce(
+      (sum, pago) => sum + Number(pago.monto),
+      0
+    );
+    if (totalDetalles !== totalPagos) {
+      throw new BadRequestException(
+        `Total de pagos (${totalPagos}) no coincide con total de venta (${totalDetalles})`
+      );
+    }
+
+    // 5) Crear la venta con cascade de detalles, pagos y total
+    const venta = this.repo.create({
+      cliente,
+      detalles: validDetalles,
+      pagos: validPagos,
+      total: totalDetalles,
+    });
+
+    return this.repo.save(venta);
+  }
+
+
+  async findAll(filter?: FilterVentasDto): Promise<Venta[]> {
+    const where: any = {};
+
+    if (filter?.from && filter?.to) {
+      where.fecha = Between(new Date(filter.from), new Date(filter.to)); // [from, to]
+    } else if (filter?.from) {
+      where.fecha = MoreThanOrEqual(new Date(filter.from));
+    } else if (filter?.to) {
+      where.fecha = LessThan(new Date(filter.to)); // exclusivo
+    }
+
+    return this.repo.find({
+      where,
+      order: { fecha: 'DESC' },
+      relations: ['cliente', 'detalles', 'pagos'],
+    });
+  }
+
+  async findOne(id: number): Promise<Venta> {
+    return this.repo.findOneOrFail({
+      where: { id },
+      relations: ['cliente', 'detalles', 'pagos'],
+    });
+  }
+
+  async update(id: number, dto: UpdateVentaDto): Promise<Venta> {
+    await this.repo.update(id, dto);
+    return this.findOne(id);
+  }
+
+  async remove(id: number): Promise<{ deleted: boolean }> {
+    await this.repo.delete(id);
     return { deleted: true };
   }
 }

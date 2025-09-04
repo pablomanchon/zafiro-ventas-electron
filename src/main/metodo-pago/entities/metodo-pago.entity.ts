@@ -1,14 +1,15 @@
 // src/metodos-pago/entities/metodo-pago.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryColumn, Column } from 'typeorm';
 
 @Entity()
 export class MetodoPago {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryColumn({ type: 'varchar' })
+  id: string;
 
   @Column()
   nombre: string;
 
-  @Column({ nullable: true })
-  descripcion?: string;
+  @Column()
+  tipo: 'debito' | 'credito';
+
 }

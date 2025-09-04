@@ -3,9 +3,6 @@ import { AppModule } from './app.module';
 
 export async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  // Si necesitas CORS o rutas estáticas, configúralo aquí:
-  // app.enableCors();
-  // app.useStaticAssets(join(__dirname, 'public'));
 
   app.setGlobalPrefix('api');
 

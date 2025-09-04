@@ -9,8 +9,8 @@ export class PlatoIngredienteDto {
     ingredienteId: number;
     cantidad: number;
     unidad: UnidadMedida;
-
 }
+
 export class IngredienteDto {
     nombre:string;
     unidad:number;

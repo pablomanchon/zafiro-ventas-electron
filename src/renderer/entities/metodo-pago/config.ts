@@ -3,11 +3,22 @@ import type { CrudConfig } from '../CrudConfig';
 const metodoPagoConfig: CrudConfig = {
   entity: 'metodo-pago',
   title: 'Métodos de Pago',
-  columns: ['id', 'nombre', 'descripcion'],
-  searchFields: ['nombre', 'descripcion'],
+  columns: ['ID', 'Nombre'],
+  searchFields: ['id', 'nombre'],
   formInputs: [
+    { name: 'id', label: "Id", type: 'text', required: true },
     { name: 'nombre', label: 'Nombre', type: 'text', required: true },
-    { name: 'descripcion', label: 'Descripción', type: 'text' },
+    {
+      name: 'tipo',
+      label: 'Tipo de Pago',
+      type: 'select',
+      required: true,
+      options: [
+        { label: '-', value: '' },
+        { label: 'Debito', value: 'debito' },
+        { label: 'Credito', value: 'credito' },
+      ],
+    },
   ],
 };
 

@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+// src/ventas/ventas.controller.ts
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { VentasService } from './ventas.service';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { UpdateVentaDto } from './dto/update-venta.dto';
+import { FilterVentasDto } from './dto/filter-ventas.dto';
 
 @Controller('ventas')
 export class VentasController {
@@ -13,8 +15,8 @@ export class VentasController {
   }
 
   @Get()
-  findAll() {
-    return this.ventasService.findAll();
+  findAll(@Query() filter?: FilterVentasDto) {
+    return this.ventasService.findAll(filter);
   }
 
   @Get(':id')

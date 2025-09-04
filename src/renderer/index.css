@@ -6,6 +6,49 @@
   background-color: #333;
   min-height: 100vh;
 }
+
+/* Ancho de la scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px; /* si quieres scroll horizontal */
+}
+
+/* Fondo del track */
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 5px;
+}
+
+/* El thumb (la “ruedita” que arrastras) */
+::-webkit-scrollbar-thumb {
+  background-color: #404040;
+  border-radius: 5px;
+  border: 2px solid #2d2d2d;
+}
+
+/* Thumb al hover */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #777;
+}
+
+/* Opcional: quitar flechas */
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+
+
+* {
+  scrollbar-width: thin;  
+  /* “auto” es el tamaño normal, “none” la oculta */
+}
+
+/* Color del thumb y del track */
+* {
+  scrollbar-color: #888 #f1f1f1;
+}
+
+
 @keyframes pulse-animation {
   0% {
     transform: scale(1) rotate(0deg);

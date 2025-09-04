@@ -10,6 +10,7 @@ import { ItemVentaModule } from './item-venta/item-venta.module';
 import { MetodoPagoModule } from './metodo-pago/metodo-pago.module';
 import { VentaPagosModule } from './venta-pagos/venta-pagos.module';
 import { FacturasModule } from './facturas/facturas.module';
+import { GastronomiaModule } from './gastronomia/gastronomia.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { FacturasModule } from './facturas/facturas.module';
     MetodoPagoModule,
     VentaPagosModule,
     FacturasModule,
+    GastronomiaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

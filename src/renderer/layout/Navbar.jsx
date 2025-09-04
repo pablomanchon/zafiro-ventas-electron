@@ -18,7 +18,6 @@ const navItems = [
   { name: "Clientes", href: "/clientes", icon: <Users size={20} /> },
   { name: "Productos", href: "/productos", icon: <Package size={20} /> },
   { name: "Métodos de pago", href: "/metodos-pago", icon: <CreditCard size={20} /> },
-  { name: "Items de venta", href: "/items-venta", icon: <ShoppingCart size={20} /> },
   { name: "Ventas", href: "/ventas", icon: <Receipt size={20} /> },
 ]
 

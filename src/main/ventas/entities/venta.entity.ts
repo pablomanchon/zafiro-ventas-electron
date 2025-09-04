@@ -1,10 +1,11 @@
-// src/ventas/entities/venta.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
   OneToMany,
+  CreateDateColumn,
+  AfterLoad,
 } from 'typeorm';
 import { Cliente } from '../../clientes/entities/cliente.entity';
 import { VentaDetalle } from '../../venta-detalle/entities/venta-detalle.entity';
@@ -15,13 +16,13 @@ export class Venta {
   @PrimaryGeneratedColumn()
   id: number;
 
- @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @CreateDateColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   fecha: Date;
 
   @ManyToOne(() => Cliente, cliente => cliente.ventas, { eager: true })
   cliente: Cliente;
 
-  @OneToMany(() => VentaDetalle, det => det.venta, {
+  @OneToMany(() => VentaDetalle, detalle => detalle.venta, {
     cascade: true,
     eager: true,
   })
@@ -32,4 +33,19 @@ export class Venta {
     eager: true,
   })
   pagos: VentaPago[];
+
+  /**
+   * Total de la venta: suma (precio * cantidad) de cada detalle
+   * Este campo no se persiste en BD; se calcula tras cargar la entidad.
+   */
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  total: number;
+
+  @AfterLoad()
+  computeTotal(): void {
+    this.total = this.detalles.reduce(
+      (sum, det) => sum + Number(det.item.precio) * det.item.cantidad,
+      0,
+    );
+  }
 }

@@ -2,7 +2,10 @@
 import { useSaleItems, type SaleItem } from '../entities/item-venta/useSaleItems'
 import Table from '../layout/Table'
 
-export default function ItemsVentaTable({ value, onChange }: {
+export default function ItemsVentaTable({
+  value,
+  onChange,
+}: {
   value?: SaleItem[]
   onChange?: (items: SaleItem[]) => void
 }) {
@@ -12,8 +15,10 @@ export default function ItemsVentaTable({ value, onChange }: {
     error,
     updateRow,
     handleAdd,
-    handleRemove
+    handleRemove,
+    onProductIdChange,
   } = useSaleItems(value, onChange)
+
 
   const renderNumberCell = (
     idx: number,
@@ -24,11 +29,11 @@ export default function ItemsVentaTable({ value, onChange }: {
     <input
       type="number"
       value={items[idx][field] as number | ''}
-      onChange={e => {
+      onChange={(e) => {
         const val = parser(e.target.value)
         updateRow(idx, { [field]: val } as any)
       }}
-      onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
+      onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
       {...attrs}
     />
   )
@@ -43,23 +48,36 @@ export default function ItemsVentaTable({ value, onChange }: {
     { titulo: 'Acciones', clave: 'acciones' },
   ]
 
-  const datosTabla = items.map((it, i) => ({
+  const datosTabla = items.map((it: { nombre: any; precio: number; precioFinal: number }, i: number) => ({
     id: i,
-    productId: renderNumberCell(
-      i,
-      'productId',
-      raw => (raw === '' ? '' : parseInt(raw, 10)),
-      {
-        className: 'w-full bg-inherit outline-none text-white px-1',
-        disabled: loading,
-      }
+    productId: (
+      <input
+        type="text"
+        value={items[i].productId as string}
+        onChange={(e) => {
+          // guardamos el string tal cual para luego procesarlo al salir
+          updateRow(i, { productId: e.target.value } as any)
+        }}
+        onBlur={(e) => {
+          // al perder foco buscamos el producto
+          onProductIdChange(i, e.target.value)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            onProductIdChange(i, e.currentTarget.value)
+          }
+        }}
+        className="w-full bg-inherit outline-none text-white px-1"
+        disabled={loading}
+      />
     ),
     nombre: it.nombre,
     precio: it.precio.toFixed(2),
     cantidad: renderNumberCell(
       i,
       'cantidad',
-      raw => (raw === '' ? '' : parseInt(raw, 10)),
+      (raw) => (raw === '' ? '' : parseInt(raw, 10)),
       {
         min: 1,
         className: 'w-16 bg-inherit outline-none text-white px-1',
@@ -71,7 +89,7 @@ export default function ItemsVentaTable({ value, onChange }: {
         {renderNumberCell(
           i,
           'descuento',
-          raw => (raw === '' ? '' : parseFloat(raw)),
+          (raw) => (raw === '' ? '' : parseFloat(raw)),
           {
             min: 0,
             max: 100,
@@ -97,13 +115,13 @@ export default function ItemsVentaTable({ value, onChange }: {
   return (
     <div className="space-y-2">
       {loading && <p className="text-white">Cargando productos...</p>}
-      {error   && <p className="text-red-500">Error al cargar productos</p>}
+      {!!error && <p className="text-red-500">Error al cargar productos</p>}
 
       <Table
         encabezados={encabezados}
         datos={datosTabla}
-        onFilaSeleccionada={() => {}}
-        onDobleClickFila={() => {}}
+        onFilaSeleccionada={() => { }}
+        onDobleClickFila={() => { }}
       />
 
       <button

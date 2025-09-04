@@ -1,6 +1,6 @@
 // src/ventas/dto/create-venta-pago.dto.ts
 export class CreateVentaPagoDto {
-  metodoId: number;
+  metodoId: string;
   monto: number;
   cuotas?: number;
 }

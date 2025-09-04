@@ -4,7 +4,7 @@ const clientesConfig: CrudConfig = {
   entity: 'clientes',
   title: 'Clientes',
   columns: ['id', 'nombre', 'apellido', 'email', 'telefono', 'direccion'],
-  searchFields: ['nombre', 'apellido', 'email'],
+  searchFields: ['id', 'nombre', 'apellido', 'email'],
   formInputs: [
     { name: 'nombre', label: 'Nombre', type: 'text', required: true },
     { name: 'apellido', label: 'Apellido', type: 'text' },

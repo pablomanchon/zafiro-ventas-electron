@@ -1,8 +1,8 @@
 // src/productos/dto/create-producto.dto.ts
-export class CreateProductoDto {
+export class ProductoDto {
+  id?: string;
   nombre: string;
   descripcion?: string;
   precio: number;
   stock: number;
-  sku?: string;
 }

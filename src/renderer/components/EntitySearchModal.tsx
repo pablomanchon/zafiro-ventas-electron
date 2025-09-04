@@ -30,7 +30,7 @@ export default function EntitySearchModal<T extends { id: number }>({
     };
 
     return (
-        <div className="p-4 bg-cyan-800 text-white rounded">
+        <div className="p-4 bg-cyan-800 text-white rounded max-h-screen overflow-y-auto">
             <h3 className="text-lg font-bold mb-2">Buscar {entity}</h3>
             <TableAndSearch<T>
                 datos={items}

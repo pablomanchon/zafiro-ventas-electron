@@ -3,20 +3,19 @@ import { getAll } from '../../api/crud'
 import Table from '../../layout/Table'
 
 // src/components/PaymentMethodsTable.tsx
+// Extensión: soporta cuotas si el método es de tipo crédito
+
 export interface PaymentItem {
-  /** El ID numérico del método de pago */
-  metodoId: number | ''
-  /** Nombre derivado tras seleccionar el método */
+  metodoId: string
   nombre: string
-  /** Monto ingresado para este método */
-  monto: number
-  /** Opcional: número de cuotas si aplica */
-  cuotas?: number
+  monto: string
+  cuotas?: string   // número de cuotas (solo para crédito)
 }
 
 interface Metodo {
-  id: number
+  id: string
   nombre: string
+  tipo: 'debito' | 'credito'
   [key: string]: any
 }
 
@@ -28,15 +27,20 @@ interface Props {
 export default function PaymentMethodsTable({ value, onChange }: Props) {
   const [methods, setMethods] = useState<Metodo[]>([])
   const [items, setItems] = useState<PaymentItem[]>(() =>
-    Array.isArray(value) ? value : []
+    Array.isArray(value)
+      ? value.map(it => ({ ...it, monto: String(it.monto), cuotas: it.cuotas ?? '' }))
+      : []
   )
 
-  // Cargar métodos de pago una sola vez
+  // Carga de métodos de pago solo una vez
   useEffect(() => {
-    getAll<Metodo>('metodosPago').then(setMethods).catch(console.error)
+    getAll<Metodo>('metodo-pago')
+      .then(setMethods)
+      .catch(console.error)
   }, [])
 
-  // Función auxiliar para actualizar items y notificar al padre
+
+  // Función para actualizar items y notificar al padre justo después
   const updateItems = (updater: (prev: PaymentItem[]) => PaymentItem[]) => {
     setItems(prev => {
       const next = updater(prev)
@@ -46,21 +50,28 @@ export default function PaymentMethodsTable({ value, onChange }: Props) {
   }
 
   const onMetodoIdChange = (idx: number, raw: string) => {
-    const id = raw === '' ? '' : parseInt(raw, 10)
     updateItems(prev => {
       const next = [...prev]
-      next[idx] = { ...next[idx], metodoId: id, nombre: '' }
-      const m = methods.find(m => m.id === id)
-      if (m) next[idx] = { ...next[idx], nombre: m.nombre }
+      const current = { ...next[idx], metodoId: raw, nombre: '', cuotas: '' }
+      const m = methods.find(m => m.id === raw)
+      if (m) current.nombre = m.nombre
+      next[idx] = current
       return next
     })
   }
 
   const onMontoChange = (idx: number, raw: string) => {
-    const monto = parseFloat(raw) || 0
     updateItems(prev => {
       const next = [...prev]
-      next[idx] = { ...next[idx], monto }
+      next[idx] = { ...next[idx], monto: raw }
+      return next
+    })
+  }
+
+  const onCuotasChange = (idx: number, raw: string) => {
+    updateItems(prev => {
+      const next = [...prev]
+      next[idx] = { ...next[idx], cuotas: raw }
       return next
     })
   }
@@ -68,7 +79,7 @@ export default function PaymentMethodsTable({ value, onChange }: Props) {
   const handleAdd = () => {
     updateItems(prev => [
       ...prev,
-      { metodoId: '', nombre: '', monto: 0 }
+      { metodoId: '', nombre: '', monto: '', cuotas: '' }
     ])
   }
 
@@ -76,55 +87,100 @@ export default function PaymentMethodsTable({ value, onChange }: Props) {
     updateItems(prev => prev.filter((_, i) => i !== idx))
   }
 
-  const encabezados = [
+  const needsCuotas = items.some(it => {
+    const m = methods.find(m => m.id === it.metodoId)
+    return m?.tipo === 'credito'
+  })
+
+  const baseHeaders = [
     { titulo: 'ID Método', clave: 'metodoId' },
     { titulo: 'Nombre', clave: 'nombre' },
     { titulo: 'Monto', clave: 'monto' },
-    { titulo: 'Acciones', clave: 'acciones' },
   ]
+  const extraHeaders = needsCuotas
+    ? [
+      { titulo: 'Cuotas', clave: 'cuotas' },
+      { titulo: 'Valor cuota', clave: 'valorCuota' },
+      { titulo: 'Total', clave: 'total' },
+    ]
+    : []
+  const encabezados = [...baseHeaders, ...extraHeaders, { titulo: 'Acciones', clave: 'acciones' }]
 
-  const datosTabla = items.map((it, i) => ({
-    id: i,
-    metodoId: (
-      <input
-        type="number"
-        className="w-full bg-inherit outline-none text-white px-1"
-        value={it.metodoId}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          onMetodoIdChange(i, e.target.value)
-        }
-      />
-    ),
-    nombre: it.nombre,
-    monto: (
-      <input
-        type="number"
-        min={0}
-        className="w-20 bg-inherit outline-none text-white px-1"
-        value={it.monto}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          onMontoChange(i, e.target.value)
-        }
-      />
-    ),
-    acciones: (
-      <button
-        type="button"
-        className="p-1 bg-red-800 rounded shadow-inner shadow-black"
-        onClick={() => handleRemove(i)}
-      >
-        🗑
-      </button>
-    ),
-  }))
+  const datosTabla = items.map((it, i) => {
+    const m = methods.find(m => m.id === it.metodoId)
+    const isCredito = m?.tipo === 'credito'
+    const valorCuota = isCredito && it.cuotas
+      ? (parseFloat(it.monto || '0') / parseInt(it.cuotas || '1', 10)).toFixed(2)
+      : ''
+
+    return {
+      id: `${it.metodoId}-${i}`,
+      metodoId: (
+        <input
+          type="text"
+          className="w-full bg-inherit outline-none text-white px-1"
+          value={it.metodoId}
+          onChange={e => onMetodoIdChange(i, e.target.value)}
+          onBlur={e => onMetodoIdChange(i, e.currentTarget.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              e.stopPropagation()
+              onMetodoIdChange(i, e.currentTarget.value)
+            }
+          }}
+        />
+      ),
+      nombre: it.nombre,
+      monto: (
+        <input
+          type="number"
+          min={0}
+          className="w-20 bg-inherit outline-none text-white px-1"
+          value={it.monto}
+          onChange={e => onMontoChange(i, e.target.value)}
+          onBlur={e => onMontoChange(i, e.currentTarget.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              e.stopPropagation()
+              onMontoChange(i, e.currentTarget.value)
+            }
+          }}
+        />
+      ),
+      ...(needsCuotas && {
+        cuotas: (
+          <input
+            type="number"
+            min={1}
+            className="w-16 bg-inherit outline-none text-white px-1"
+            value={it.cuotas}
+            onChange={e => onCuotasChange(i, e.target.value)}
+          />
+        ),
+        valorCuota,
+        total: it.monto,
+      }),
+      acciones: (
+        <button
+          type="button"
+          className="p-1 bg-red-800 rounded shadow-inner shadow-black"
+          onClick={() => handleRemove(i)}
+        >
+          🗑
+        </button>
+      ),
+    }
+  })
 
   return (
     <div className="space-y-2">
       <Table
         encabezados={encabezados}
         datos={datosTabla}
-        onFilaSeleccionada={() => {}}
-        onDobleClickFila={() => {}}
+        onFilaSeleccionada={() => { }}
+        onDobleClickFila={() => { }}
       />
       <button
         type="button"
@@ -136,3 +192,9 @@ export default function PaymentMethodsTable({ value, onChange }: Props) {
     </div>
   )
 }
+
+// Nota: para que esto funcione, tu entidad MetodoPago en backend debe incluir
+// un campo `tipo: 'debito' | 'credito'`. P.ej. en NestJS:
+//
+// @Column({ type: 'text', default: 'debito' })
+// tipo: 'debito' | 'credito';

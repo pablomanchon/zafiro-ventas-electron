@@ -1,74 +1,103 @@
 // src/layout/Table.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const Table = ({
   encabezados,
   datos,
   onFilaSeleccionada,
   onDobleClickFila,
-  formatoFecha = 'fecha-hora'
+  formatoFecha = "fecha-hora",
 }) => {
   const [filaSeleccionada, setFilaSeleccionada] = useState(null);
 
-  const manejarSeleccion = (index) => {
-    setFilaSeleccionada(index);
-    onFilaSeleccionada?.(datos[index].id);
+  // Mover selección por delta (-1 o +1)
+  const shift = (delta) => {
+    setFilaSeleccionada((prev) => {
+      // si no hay selección aún, arrancamos en 0 si hay datos
+      const actual = prev == null ? -1 : prev;
+      let next = actual + delta;
+
+      if (datos.length === 0) return null;
+
+      // límites
+      if (next < 0) next = 0;
+      if (next > datos.length - 1) next = datos.length - 1;
+
+      onFilaSeleccionada?.(datos[next]?.id);
+      return next;
+    });
   };
 
+  const manejarSeleccion = (index) => {
+    setFilaSeleccionada(index);
+    onFilaSeleccionada?.(datos[index]?.id);
+  };
+
+  // (Opcional) helpers de next/prev si los querés usar en botones
+  const next = () => shift(1);
+  const prev = () => shift(-1);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "ArrowUp") shift(-1);
+      if (e.key === "ArrowDown") shift(1);
+
+      if (e.key === "Enter" && filaSeleccionada != null) {
+        // acá en lugar de onDobleClickFila, podrías exponer showForm
+        onDobleClickFila?.(datos[filaSeleccionada]?.id);
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [filaSeleccionada, datos, onDobleClickFila]);
+
   const manejarDobleClick = (index) => {
-    onDobleClickFila?.(datos[index].id);
+    onDobleClickFila?.(datos[index]?.id);
   };
 
   const formatearFecha = (valor) => {
     const fecha = new Date(valor);
     if (isNaN(fecha.getTime())) return valor;
     const opciones = {
-      ...(formatoFecha.includes('fecha') && {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
+      ...(formatoFecha.includes("fecha") && {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
       }),
-      ...(formatoFecha.includes('hora') && {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      ...(formatoFecha.includes("hora") && {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
-    return fecha.toLocaleString('es-AR', opciones);
+    return fecha.toLocaleString("es-AR", opciones);
   };
 
   const obtenerValor = (fila, encabezado) => {
-    // Tomamos la clave original
-    const claveOriginal = typeof encabezado === 'string'
-      ? encabezado
-      : encabezado.clave ?? '';
+    const claveOriginal =
+      typeof encabezado === "string" ? encabezado : encabezado.clave ?? "";
     if (!claveOriginal) return null;
 
-    const keys = claveOriginal.split('.');
+    const keys = claveOriginal.split(".");
     let valor = fila;
+
     for (const key of keys) {
       if (valor == null) break;
-      // Intento con clave exacta
-      if (Object.prototype.hasOwnProperty.call(valor, key)) {
-        valor = valor[key];
-      } else {
-        // Fallback: primera letra lowercase
-        const keyLower = key.charAt(0).toLowerCase() + key.slice(1);
-        if (Object.prototype.hasOwnProperty.call(valor, keyLower)) {
-          valor = valor[keyLower];
-        } else {
-          valor = undefined;
-        }
-      }
+      const lowerKey = key.toLowerCase();
+      const actualKey = Object.keys(valor).find(
+        (k) => k.toLowerCase() === lowerKey
+      );
+      valor = actualKey != null ? valor[actualKey] : undefined;
     }
-    // Formatear fecha si aplica
-    if (keys[keys.length - 1].toLowerCase().includes('fecha')) {
+
+    if (keys[keys.length - 1].toLowerCase().includes("fecha")) {
       return formatearFecha(valor);
     }
     return valor;
   };
 
   const obtenerTitulo = (encabezado) =>
-    typeof encabezado === 'string' ? encabezado : encabezado.titulo;
+    typeof encabezado === "string" ? encabezado : encabezado.titulo;
 
   return (
     <div className="w-full">
@@ -88,13 +117,12 @@ const Table = ({
               key={index}
               onClick={() => manejarSeleccion(index)}
               onDoubleClick={() => manejarDobleClick(index)}
-              className={`cursor-pointer hover:bg-cyan-700 ${
-                filaSeleccionada === index
-                  ? "bg-cyan-600"
-                  : index % 2 === 0
-                    ? "bg-gray-950"
-                    : "bg-gray-800"
-              }`}
+              className={`cursor-pointer hover:bg-cyan-700 ${filaSeleccionada === index
+                ? "bg-cyan-600"
+                : index % 2 === 0
+                  ? "bg-gray-950"
+                  : "bg-gray-800"
+                }`}
             >
               {encabezados.map((enc, i) => (
                 <td key={i} className="px-2 border-x-2 text-center">
@@ -105,6 +133,12 @@ const Table = ({
           ))}
         </tbody>
       </table>
+      {/* Ejemplo de botones opcionales
+      <div className="flex gap-2 mt-2">
+        <button onClick={prev}>Prev</button>
+        <button onClick={next}>Next</button>
+      </div>
+      */}
     </div>
   );
 };
