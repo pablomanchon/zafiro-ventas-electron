@@ -22,6 +22,7 @@ async function createWindow() {
     },
   });
 
+  mainWindow.maximize()
 
   // Cargar el index.html generado por Vite
   //mainWindow.loadFile(path.join(__dirname, 'index.html'));

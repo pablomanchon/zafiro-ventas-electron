@@ -2,7 +2,7 @@ import React from 'react'
 
 export default function Panel({ children }) {
     return (
-        <div className='flex flex-col gap-2 p-2 text-white rounded shadow-inner shadow-black w-full'>
+        <div className='flex flex-col gap-2 text-white rounded shadow-inner shadow-black w-full'>
             {
                 children
             }

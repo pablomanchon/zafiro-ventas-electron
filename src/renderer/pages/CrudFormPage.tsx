@@ -98,8 +98,8 @@ export default function CrudFormPage<T extends { id: number }>() {
   }
 
   return (
-    <Main className="text-white border-cyan-800 border-4 rounded-md h-screen">
-      <div>
+    <Main style={{ backgroundImage: `url('/fondo-w.png')`, backgroundSize: 'cover', backgroundPosition: 'center' }} className="text-white rounded-md h-screen">
+      <div className='bg-stone-900 bg-opacity-50 h-full rounded p-2 shadow-inner shadow-black'>
         <Title className='pb-2'>
           {mode === 'edit' ? 'Editar' : 'Crear'} {config.title.split("s", 1)}
         </Title>

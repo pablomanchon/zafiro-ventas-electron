@@ -1,30 +1,34 @@
 // src/pages/SalesPage.tsx
-import { useState, useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import type { CrudConfig } from '../CrudConfig'
 import { crudConfigs } from '..'
-import { getAll } from '../../api/crud'
+
 import Main from '../../layout/Main'
 import Title from '../../layout/Title'
-import TableAndSearch from '../../components/TableAndSearch'
 import Steel from '../../layout/Steel'
 import PrimaryButton from '../../components/PrimaryButton'
-import { DateNavigator, useDateRange } from '../../hooks/useDate'
+import TableAndSearch from '../../components/TableAndSearch'
+import { DateNavigator } from '../../hooks/useDate'
 import { useFocusBlocker } from '../../hooks/useFocusBlocker'
+import useSales from '../../hooks/useSales'
 
 export default function SalesPage() {
   const config = crudConfigs['ventas'] as CrudConfig
   const { columns, searchFields } = config
 
+  // Hook unificado
+  const {
+    ventas,
+    totales,
+    totalGeneral,
+    loading,
+    error,
+    filter, setFilter, shift, goToday, label,
+  } = useSales('day')
+
   // ⬇️ scope real (NO "contents")
   const scopeRef = useRef<HTMLDivElement>(null)
   useFocusBlocker(scopeRef)
-
-  const { filter, setFilter, range, shift, goToday, label } = useDateRange('day')
-  const [data, setData] = useState<any[]>([])
-
-  useEffect(() => {
-    getAll('ventas', range).then(res => setData(res))
-  }, [range])
 
   return (
     <Main className="flex flex-col h-screen p-4 gap-4">
@@ -43,9 +47,20 @@ export default function SalesPage() {
           label={label}
         />
 
+        {/* Errores / loading */}
+        {error && (
+          <Steel className="p-3 text-red-300 bg-red-900/30 border border-red-700">
+            {error}
+          </Steel>
+        )}
+        {loading && (
+          <Steel className="p-3 opacity-80">Cargando…</Steel>
+        )}
+
+        {/* Tabla principal */}
         <div className="flex-1 overflow-auto">
           <TableAndSearch
-            datos={data}
+            datos={ventas}
             encabezados={columns}
             searchFilters={searchFields}
             onDobleClickFila={() => null}
@@ -53,14 +68,28 @@ export default function SalesPage() {
           />
         </div>
 
+        {/* Totales por tipo + total general */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 items-stretch my-1">
+          {totales.map((p) => (
+            <Steel key={p.tipo} className="flex justify-between items-center max-w-96 min-w-60">
+              <p className="capitalize font-bold text-lg">{p.tipo}</p>
+              <p className="text-xl font-bold">${p.total}</p>
+            </Steel>
+          ))}
+          <Steel className="flex justify-between items-center max-w-96 min-w-60">
+            <p className="uppercase font-bold text-lg">Total</p>
+            <p className="text-xl font-bold">${totalGeneral}</p>
+          </Steel>
+        </div>
+
         <Steel className="flex justify-end bg-gray-800 p-2">
           <a
             href={`#/ventas/create`}
             target="_blank"
             rel="noopener noreferrer"
-            tabIndex={-1}                          // evita que TAB caiga aquí
-            onMouseDown={(e) => e.preventDefault()}// evita que el click le dé foco
-            onClick={(e) => (e.currentTarget as HTMLAnchorElement).blur()} // por si acaso
+            tabIndex={-1}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => (e.currentTarget as HTMLAnchorElement).blur()}
           >
             <PrimaryButton functionClick={() => null} title="Crear" />
           </a>

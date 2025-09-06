@@ -70,11 +70,11 @@ export default function CrudPage<T extends { id: number }>({
   }, [])
 
   return (
-    <Main className={`flex flex-col h-screen p-2 w-full mt-8 md:mt-auto ${color ?? ''}`}>
+    <Main className={`flex flex-col h-screen w-full mt-8 md:mt-auto bg-stone-800 ${color ?? ''}`}>
       <div
         ref={scopeRef}
         tabIndex={0}
-        className="flex flex-col h-full outline-none focus:outline-none"
+        className="flex flex-col h-full"
       >
         <Title>{title}</Title>
 

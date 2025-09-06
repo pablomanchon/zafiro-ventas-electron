@@ -181,7 +181,7 @@ export default function DynamicForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 flex flex-col py-2">
+    <form  onSubmit={handleSubmit} className="space-y-4 flex flex-col py-2">
       {inputs.map((input, idx) => {
         const commonProps = {
           required: input.required,
