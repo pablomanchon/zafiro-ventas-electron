@@ -4,6 +4,7 @@ import path from 'path';
 import { bootstrap } from './bootstrap';
 
 let mainWindow: BrowserWindow | null;
+const icon = path.join(__dirname, '../public/zafiro_rounded.ico')
 
 async function createWindow() {
   await bootstrap();
@@ -11,6 +12,7 @@ async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
+    icon,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -29,7 +31,6 @@ async function createWindow() {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     const isCrudRoute = url.includes('#/crud/');
     const isVentaCreate = url.includes('#/ventas/create');
-
     if (isCrudRoute || isVentaCreate) {
       const width = isVentaCreate
         ? 900
@@ -48,6 +49,7 @@ async function createWindow() {
           modal: false,
           width,
           height,
+          icon,
           webPreferences: {
             contextIsolation: true,
             nodeIntegration: false,

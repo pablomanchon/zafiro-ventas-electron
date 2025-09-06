@@ -7,7 +7,7 @@ import { FilterVentasDto } from './dto/filter-ventas.dto';
 
 @Controller('ventas')
 export class VentasController {
-  constructor(private readonly ventasService: VentasService) {}
+  constructor(private readonly ventasService: VentasService) { }
 
   @Post()
   create(@Body() createVentaDto: CreateVentaDto) {
@@ -33,4 +33,15 @@ export class VentasController {
   remove(@Param('id') id: string) {
     return this.ventasService.remove(+id);
   }
+  // src/ventas/ventas.controller.ts
+  @Get('totales/metodos')
+  totalesPorMetodo(@Query() q: FilterVentasDto) {
+    return this.ventasService.totalsByMetodoPago(q);
+  }
+
+  @Get('totales/tipos')
+  totalesPorTipo(@Query() q: FilterVentasDto) {
+    return this.ventasService.totalsByTipoPago(q);
+  }
+
 }

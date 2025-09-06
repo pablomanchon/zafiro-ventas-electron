@@ -12,11 +12,13 @@ import { ItemVentaModule } from '../item-venta/item-venta.module';
 import { VentaDetalleModule } from '../venta-detalle/venta-detalle.module';
 import { VentaPagosModule } from '../venta-pagos/venta-pagos.module';
 import { MetodoPagoModule } from '../metodo-pago/metodo-pago.module';
+import { VentaPagosService } from '../venta-pagos/venta-pagos.service';
+import { VentaPago } from '../venta-pagos/entities/venta-pago.entity';
 
 @Module({
   imports: [
     // Sólo la entidad principal
-    TypeOrmModule.forFeature([Venta]),
+    TypeOrmModule.forFeature([Venta, VentaPago]),
 
     // Importa todos los módulos cuyos servicios inyectas en VentasService
     ClientesModule,
@@ -29,4 +31,4 @@ import { MetodoPagoModule } from '../metodo-pago/metodo-pago.module';
   controllers: [VentasController],
   providers: [VentasService],
 })
-export class VentasModule {}
+export class VentasModule { }

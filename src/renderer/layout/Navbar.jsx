@@ -19,6 +19,7 @@ const navItems = [
   { name: "Productos", href: "/productos", icon: <Package size={20} /> },
   { name: "Métodos de pago", href: "/metodos-pago", icon: <CreditCard size={20} /> },
   { name: "Ventas", href: "/ventas", icon: <Receipt size={20} /> },
+  { name: "Resumenes", href: "/resumenes", icon: <Receipt size={20} /> },
 ]
 
 export default function Navbar() {
