@@ -24,10 +24,9 @@ async function createWindow() {
 
   mainWindow.maximize()
 
-  // Cargar el index.html generado por Vite
-  //mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
-  mainWindow.loadURL(path.join("http://localhost:5173"));
+  mainWindow.loadURL(path.join('http://localhost:5173'))
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     const isCrudRoute = url.includes('#/crud/');

@@ -10,6 +10,7 @@ import Title from '../layout/Title'
 import Main from '../layout/Main'
 import { useModal } from '../providers/ModalProvider'
 import Confirmation from '../layout/Confirmation'
+import bgUrl from '../../../public/fondo-w.png'
 
 export default function CrudFormPage<T extends { id: number }>() {
   const { entity, mode, id } = useParams<{
@@ -98,7 +99,7 @@ export default function CrudFormPage<T extends { id: number }>() {
   }
 
   return (
-    <Main style={{ backgroundImage: `url('/fondo-w.png')`, backgroundSize: 'cover', backgroundPosition: 'center' }} className="text-white rounded-md h-screen">
+    <Main style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} className="text-white rounded-md h-screen">
       <div className='bg-stone-900 bg-opacity-50 h-full rounded p-2 shadow-inner shadow-black'>
         <Title className='pb-2'>
           {mode === 'edit' ? 'Editar' : 'Crear'} {config.title.split("s", 1)}

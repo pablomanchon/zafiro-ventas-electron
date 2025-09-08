@@ -8,6 +8,7 @@ import {
   Menu,
   X,
 } from 'lucide-react'
+import bgUrl from '../../../public/fondo-h.png'
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import logo from '../../../public/zafiro_rounded.ico';
@@ -48,7 +49,7 @@ export default function Navbar() {
 
       {/* Navbar */}
       <nav
-        style={{ backgroundImage: `url('/public/fondo-h.png')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
         className={`text-white shadow-black shadow border-r-2 z-50
     border-cyan-700
     fixed top-0 left-0 h-full w-60 flex flex-col 

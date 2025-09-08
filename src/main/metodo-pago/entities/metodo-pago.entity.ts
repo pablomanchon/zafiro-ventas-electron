@@ -10,6 +10,6 @@ export class MetodoPago {
   nombre: string;
 
   @Column()
-  tipo: 'debito' | 'credito' | 'efectivo' | 'pendiente' | 'usd';
+  tipo: 'debito' | 'credito' | 'efectivo' | 'pendiente' | 'usd' | 'otro';
 
 }

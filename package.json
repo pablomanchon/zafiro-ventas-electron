@@ -1,7 +1,12 @@
 {
   "name": "mi-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
+  "description": "Sistema de gestión de stock y ventas para Zafiro",
+  "author": {
+    "name": "Pablo Manchon Richardi",
+    "email": "pablomanchon97@gmail.com"
+  },
   "type": "commonjs",
   "scripts": {
     "dev": "vite",
@@ -93,7 +98,7 @@
           ]
         }
       ],
-      "icon": "public/zafiro.ico"
+      "icon": "public/zafiro-rounded.ico"
     },
     "nsis": {
       "oneClick": false,
