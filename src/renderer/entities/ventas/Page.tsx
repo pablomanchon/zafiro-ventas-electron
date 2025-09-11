@@ -11,6 +11,7 @@ import TableAndSearch from '../../components/TableAndSearch'
 import { DateNavigator } from '../../hooks/useDate'
 import { useFocusBlocker } from '../../hooks/useFocusBlocker'
 import useSales from '../../hooks/useSales'
+import { formatCurrencyARS } from '../../utils'
 
 export default function SalesPage() {
   const config = crudConfigs['ventas'] as CrudConfig
@@ -73,12 +74,12 @@ export default function SalesPage() {
           {totales.map((p) => (
             <Steel key={p.tipo} className="flex justify-between items-center max-w-96 min-w-60">
               <p className="capitalize font-bold text-lg">{p.tipo}</p>
-              <p className="text-xl font-bold">${p.total}</p>
+              <p className="text-xl font-bold">{formatCurrencyARS(p.total)}</p>
             </Steel>
           ))}
           <Steel className="flex justify-between items-center max-w-96 min-w-60">
             <p className="uppercase font-bold text-lg">Total</p>
-            <p className="text-xl font-bold">${totalGeneral}</p>
+            <p className="text-xl font-bold">{formatCurrencyARS(totalGeneral)}</p>
           </Steel>
         </div>
 

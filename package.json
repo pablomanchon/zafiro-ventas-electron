@@ -1,5 +1,5 @@
 {
-  "name": "mi-app",
+  "name": "zafiro-stock-y-ventas",
   "private": true,
   "version": "0.0.1",
   "description": "Sistema de gestión de stock y ventas para Zafiro",
@@ -18,6 +18,8 @@
     "build": "vite build",
     "build:all": "npm run build:nest && npm run electron:build && npm run build",
     "dist:win": "electron-builder -w nsis",
+    "dist:msi": "electron-builder -w msi",
+    "dist:all": "electron-builder -w",
     "dist:portable": "electron-builder -w portable",
     "start": "concurrently \"npm run dev\" \"npm run electron\"",
     "lint": "eslint .",
@@ -79,7 +81,7 @@
   },
   "main": "dist/electron.cjs.js",
   "build": {
-    "appId": "Zafiro - Stock y Ventas",
+    "appId": "com.zafiro.stockyventas",
     "productName": "Zafiro - Stock y Ventas",
     "files": [
       "dist/**",
@@ -91,21 +93,18 @@
     ],
     "win": {
       "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "msi", "arch": ["x64"] }
       ],
-      "icon": "public/zafiro-rounded.ico"
+      "icon": "public/zafiro-rounded.ico",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Mi App"
+      "shortcutName": "Zafiro"
     }
   }
 }

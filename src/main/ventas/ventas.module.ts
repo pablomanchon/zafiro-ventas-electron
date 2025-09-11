@@ -14,19 +14,18 @@ import { VentaPagosModule } from '../venta-pagos/venta-pagos.module';
 import { MetodoPagoModule } from '../metodo-pago/metodo-pago.module';
 import { VentaPagosService } from '../venta-pagos/venta-pagos.service';
 import { VentaPago } from '../venta-pagos/entities/venta-pago.entity';
+import { CajaModule } from '../caja/caja.module';
+import { MetodoPago } from '../metodo-pago/entities/metodo-pago.entity';
 
 @Module({
   imports: [
-    // Sólo la entidad principal
-    TypeOrmModule.forFeature([Venta, VentaPago]),
-
-    // Importa todos los módulos cuyos servicios inyectas en VentasService
+    TypeOrmModule.forFeature([Venta, VentaPago, MetodoPago]),
     ClientesModule,
     ProductosModule,
     ItemVentaModule,
     VentaDetalleModule,
     VentaPagosModule,
-    MetodoPagoModule,
+    CajaModule,
   ],
   controllers: [VentasController],
   providers: [VentasService],

@@ -1,5 +1,6 @@
 // src/layout/Table.jsx
 import { useEffect, useState } from "react";
+import { formatCurrencyARS, looksLikeMoneyKey } from "../utils";
 
 const Table = ({
   encabezados,
@@ -13,13 +14,11 @@ const Table = ({
   // Mover selección por delta (-1 o +1)
   const shift = (delta) => {
     setFilaSeleccionada((prev) => {
-      // si no hay selección aún, arrancamos en 0 si hay datos
       const actual = prev == null ? -1 : prev;
       let next = actual + delta;
 
       if (datos.length === 0) return null;
 
-      // límites
       if (next < 0) next = 0;
       if (next > datos.length - 1) next = datos.length - 1;
 
@@ -33,7 +32,6 @@ const Table = ({
     onFilaSeleccionada?.(datos[index]?.id);
   };
 
-  // (Opcional) helpers de next/prev si los querés usar en botones
   const next = () => shift(1);
   const prev = () => shift(-1);
 
@@ -41,13 +39,10 @@ const Table = ({
     const handler = (e) => {
       if (e.key === "ArrowUp") shift(-1);
       if (e.key === "ArrowDown") shift(1);
-
       if (e.key === "Enter" && filaSeleccionada != null) {
-        // acá en lugar de onDobleClickFila, podrías exponer showForm
         onDobleClickFila?.(datos[filaSeleccionada]?.id);
       }
     };
-
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [filaSeleccionada, datos, onDobleClickFila]);
@@ -74,8 +69,11 @@ const Table = ({
   };
 
   const obtenerValor = (fila, encabezado) => {
-    const claveOriginal =
-      typeof encabezado === "string" ? encabezado : encabezado.clave ?? "";
+    const isObj = typeof encabezado === "object" && encabezado !== null;
+    const claveOriginal = isObj
+      ? (encabezado.clave ?? encabezado.key ?? "")
+      : encabezado ?? "";
+
     if (!claveOriginal) return null;
 
     const keys = claveOriginal.split(".");
@@ -90,9 +88,23 @@ const Table = ({
       valor = actualKey != null ? valor[actualKey] : undefined;
     }
 
-    if (keys[keys.length - 1].toLowerCase().includes("fecha")) {
+    const lastKey = keys[keys.length - 1] ?? "";
+
+    // 1) Fecha
+    if (lastKey.toLowerCase().includes("fecha")) {
       return formatearFecha(valor);
     }
+
+    // 2) Dinero (explícito por columna o por nombre de clave)
+    const isMoneyColumn =
+      (isObj && (encabezado.tipo === "money" || encabezado.formato === "moneda")) ||
+      looksLikeMoneyKey(lastKey);
+
+    if (isMoneyColumn) {
+      return formatCurrencyARS(valor);
+    }
+
+    // 3) Valor por defecto
     return valor;
   };
 
@@ -117,12 +129,13 @@ const Table = ({
               key={index}
               onClick={() => manejarSeleccion(index)}
               onDoubleClick={() => manejarDobleClick(index)}
-              className={`cursor-pointer hover:bg-cyan-700 ${filaSeleccionada === index
-                ? "bg-cyan-600"
-                : index % 2 === 0
+              className={`cursor-pointer hover:bg-cyan-700 ${
+                filaSeleccionada === index
+                  ? "bg-cyan-600"
+                  : index % 2 === 0
                   ? "bg-gray-950"
                   : "bg-gray-800"
-                }`}
+              }`}
             >
               {encabezados.map((enc, i) => (
                 <td key={i} className="px-2 border-x-2 text-center">
@@ -133,12 +146,6 @@ const Table = ({
           ))}
         </tbody>
       </table>
-      {/* Ejemplo de botones opcionales
-      <div className="flex gap-2 mt-2">
-        <button onClick={prev}>Prev</button>
-        <button onClick={next}>Next</button>
-      </div>
-      */}
     </div>
   );
 };
