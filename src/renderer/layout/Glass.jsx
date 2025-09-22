@@ -1,8 +1,8 @@
 import React from 'react'
 
-export default function Glass({ children, styles = '' }) {
+export default function Glass({ children, className = '' }) {
 
     return (
-        <div className={`backdrop-blur-sm ${styles}`}>{children}</div>
+        <div style={{backdropFilter:'blur(1px)'}} className={`bg-black bg-opacity-55 rounded p-2 ${className}`}>{children}</div>
     )
 }

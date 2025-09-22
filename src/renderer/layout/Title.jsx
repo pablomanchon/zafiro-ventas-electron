@@ -2,6 +2,6 @@ import React from 'react'
 
 export default function Title({ children, className = '' }) {
     return (
-        <h2 className={`text-xl font-bold border-b-2 w-full text-center ${className}`}>{children}</h2>
+        <h2 className={`text-xl font-bold border-b-2 w-full text-center pb-2 ${className}`}>{children}</h2>
     )
 }

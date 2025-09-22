@@ -4,6 +4,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { EntityManager, Repository } from "typeorm";
 import { Cliente } from "./entities/cliente.entity";
 import { UpdateClienteDto } from "./dto/update-cliente.dto";
+import { emitChange } from "../broadcast/event-bus";
 
 @Injectable()
 export class ClientesService {
@@ -20,7 +21,11 @@ export class ClientesService {
   async create(createDto: CreateClienteDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Cliente) : this.repo;
     const entity = repo.create(createDto);
-    return repo.save(entity);
+    const saved = await repo.save(entity);
+
+    // 🔔 notificar creación/actualización
+    emitChange('clientes:changed', { type: 'upsert', data: saved });
+    return saved;
   }
 
   async findOne(id: number, manager?: EntityManager) {
@@ -31,12 +36,21 @@ export class ClientesService {
   async update(id: number, updateDto: UpdateClienteDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Cliente) : this.repo;
     await repo.update(id, updateDto);
-    return repo.findOne({ where: { id } });
+    const updated = await repo.findOne({ where: { id } });
+
+    if (updated) {
+      // 🔔 notificar actualización
+      emitChange('clientes:changed', { type: 'upsert', data: updated });
+    }
+    return updated;
   }
 
   async remove(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Cliente) : this.repo;
     await repo.delete(id);
+
+    // 🔔 notificar eliminación
+    emitChange('clientes:changed', { type: 'remove', data: { id } });
     return { deleted: true };
   }
 }

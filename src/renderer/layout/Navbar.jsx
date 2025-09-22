@@ -7,6 +7,8 @@ import {
   Receipt,
   Menu,
   X,
+  BarChart3,
+  Wallet,
 } from 'lucide-react'
 import bgUrl from '../../../public/fondo-h.png'
 import React, { useState } from 'react'
@@ -20,7 +22,8 @@ const navItems = [
   { name: "Productos", href: "/productos", icon: <Package size={20} /> },
   { name: "Métodos de pago", href: "/metodos-pago", icon: <CreditCard size={20} /> },
   { name: "Ventas", href: "/ventas", icon: <Receipt size={20} /> },
-  { name: "Resumenes", href: "/resumenes", icon: <Receipt size={20} /> },
+  { name: "Resumenes", href: "/resumenes", icon: <BarChart3 size={20} /> },
+  { name: "Caja", href: "/caja", icon: <Wallet size={20} /> },
 ]
 
 export default function Navbar() {
@@ -74,10 +77,10 @@ export default function Navbar() {
               key={item.name}
               to={item.href}
               onClick={() => setIsOpen(false)}
-              className={`rounded p-2 transition-all flex items-center gap-2 z-10 hover:shadow-black shadow-inner shadow-black hover:shadow-inner
+              className={`rounded p-2 transition-all flex items-center backgrou gap-2 z-10 hover:shadow-black shadow-inner shadow-black hover:shadow-inner
                 ${location.pathname === item.href
                   ? ' shadow-black bg-stone-900 bg-opacity-70 font-extrabold shadow-inner'
-                  : 'bg-gay-900 hover:bg-sky-600 bg-opacity-70'}`}
+                  : 'bg-gay-900 hover:bg-sky-600 hover:bg-opacity-80 bg-opacity-70'}`}
             >
               {item.icon}
               <span className='w-full font-bold'>{item.name}</span>

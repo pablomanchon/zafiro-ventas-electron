@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react'
+// src/components/PaymentMethodsTable.tsx
+import { useEffect, useMemo, useState } from 'react'
 import { getAll } from '../../api/crud'
 import Table from '../../layout/Table'
-
-// src/components/PaymentMethodsTable.tsx
-// Extensión: soporta cuotas si el método es de tipo crédito
 
 export interface PaymentItem {
   metodoId: string
@@ -22,25 +20,43 @@ interface Metodo {
 interface Props {
   value?: PaymentItem[]
   onChange?: (items: PaymentItem[]) => void
+  /** Total de la venta (para calcular "restante") */
+  total?: number
 }
 
-export default function PaymentMethodsTable({ value, onChange }: Props) {
+const EMPTY_PAYMENT = (): PaymentItem => ({ metodoId: '', nombre: '', monto: '', cuotas: '' })
+
+export default function PaymentMethodsTable({ value, onChange, total = 0 }: Props) {
   const [methods, setMethods] = useState<Metodo[]>([])
-  const [items, setItems] = useState<PaymentItem[]>(() =>
-    Array.isArray(value)
-      ? value.map(it => ({ ...it, monto: String(it.monto), cuotas: it.cuotas ?? '' }))
-      : []
+  const [items, setItems] = useState<PaymentItem[]>(
+    Array.isArray(value) && value.length > 0
+      ? value.map(it => ({ ...it, monto: String(it.monto ?? ''), cuotas: it.cuotas ?? '' }))
+      : [EMPTY_PAYMENT(), EMPTY_PAYMENT(), EMPTY_PAYMENT(), EMPTY_PAYMENT()] // ← 4 filas iniciales
   )
 
-  // Carga de métodos de pago solo una vez
+  // si llega un value nuevo desde afuera (reset formulario, etc.), reflejarlo;
+  // si viene vacío, mantenemos 4 filas
   useEffect(() => {
-    getAll<Metodo>('metodo-pago')
-      .then(setMethods)
-      .catch(console.error)
+    if (Array.isArray(value)) {
+      setItems(
+        value.length > 0
+          ? value.map(it => ({ ...it, monto: String(it.monto ?? ''), cuotas: it.cuotas ?? '' }))
+          : [EMPTY_PAYMENT(), EMPTY_PAYMENT(), EMPTY_PAYMENT(), EMPTY_PAYMENT()]
+      )
+    }
+  }, [value])
+
+  useEffect(() => {
+    getAll<Metodo>('metodo-pago').then(setMethods).catch(console.error)
   }, [])
 
+  // Suma de montos actuales
+  const sumaMontos = useMemo(
+    () => items.reduce((acc, it) => acc + (parseFloat(it.monto || '0') || 0), 0),
+    [items]
+  )
 
-  // Función para actualizar items y notificar al padre justo después
+  // helper set + notify
   const updateItems = (updater: (prev: PaymentItem[]) => PaymentItem[]) => {
     setItems(prev => {
       const next = updater(prev)
@@ -49,13 +65,28 @@ export default function PaymentMethodsTable({ value, onChange }: Props) {
     })
   }
 
+  // autocompletar nombre y monto (con restante) al setear metodoId
   const onMetodoIdChange = (idx: number, raw: string) => {
     updateItems(prev => {
       const next = [...prev]
-      const current = { ...next[idx], metodoId: raw, nombre: '', cuotas: '' }
-      const m = methods.find(m => m.id === raw)
-      if (m) current.nombre = m.nombre
-      next[idx] = current
+      const m = methods.find(mm => mm.id === raw)
+
+      // calcular restante EXCLUYENDO la fila actual
+      const sumaOtros = prev.reduce((acc, it, i) => {
+        if (i === idx) return acc
+        return acc + (parseFloat(it.monto || '0') || 0)
+      }, 0)
+      const restante = Math.max(0, Number((total - sumaOtros).toFixed(2)))
+
+      next[idx] = {
+        ...next[idx],
+        metodoId: raw,
+        nombre: m?.nombre ?? '',
+        // sobrescribimos siempre el monto cuando se define el método
+        monto: restante ? String(restante) : '',
+        // al cambiar método, limpiamos cuotas (se mostrará si corresponde)
+        cuotas: '',
+      }
       return next
     })
   }
@@ -76,10 +107,12 @@ export default function PaymentMethodsTable({ value, onChange }: Props) {
     })
   }
 
+  // Al agregar una nueva fila: autocompletar con saldo restante
   const handleAdd = () => {
+    const restante = Math.max(0, Number((total - sumaMontos).toFixed(2)))
     updateItems(prev => [
       ...prev,
-      { metodoId: '', nombre: '', monto: '', cuotas: '' }
+      { metodoId: '', nombre: '', monto: restante ? String(restante) : '', cuotas: '' },
     ])
   }
 
@@ -88,7 +121,7 @@ export default function PaymentMethodsTable({ value, onChange }: Props) {
   }
 
   const needsCuotas = items.some(it => {
-    const m = methods.find(m => m.id === it.metodoId)
+    const m = methods.find(mm => mm.id === it.metodoId)
     return m?.tipo === 'credito'
   })
 
@@ -99,22 +132,23 @@ export default function PaymentMethodsTable({ value, onChange }: Props) {
   ]
   const extraHeaders = needsCuotas
     ? [
-      { titulo: 'Cuotas', clave: 'cuotas' },
-      { titulo: 'Valor cuota', clave: 'valorCuota' },
-      { titulo: 'Total', clave: 'total' },
-    ]
+        { titulo: 'Cuotas', clave: 'cuotas' },
+        { titulo: 'Valor cuota', clave: 'valorCuota' },
+        { titulo: 'Total', clave: 'total' },
+      ]
     : []
   const encabezados = [...baseHeaders, ...extraHeaders, { titulo: 'Acciones', clave: 'acciones' }]
 
   const datosTabla = items.map((it, i) => {
-    const m = methods.find(m => m.id === it.metodoId)
+    const m = methods.find(mm => mm.id === it.metodoId)
     const isCredito = m?.tipo === 'credito'
-    const valorCuota = isCredito && it.cuotas
-      ? (parseFloat(it.monto || '0') / parseInt(it.cuotas || '1', 10)).toFixed(2)
-      : ''
+    const valorCuota =
+      isCredito && it.cuotas
+        ? (parseFloat(it.monto || '0') / Math.max(1, parseInt(it.cuotas || '1', 10))).toFixed(2)
+        : ''
 
     return {
-      id: `${it.metodoId}-${i}`,
+      id: `${i}`,
       metodoId: (
         <input
           type="text"
@@ -136,7 +170,7 @@ export default function PaymentMethodsTable({ value, onChange }: Props) {
         <input
           type="number"
           min={0}
-          className="w-20 bg-inherit outline-none text-white px-1"
+          className="w-24 bg-inherit outline-none text-white px-1 text-right"
           value={it.monto}
           onChange={e => onMontoChange(i, e.target.value)}
           onBlur={e => onMontoChange(i, e.currentTarget.value)}
@@ -176,12 +210,17 @@ export default function PaymentMethodsTable({ value, onChange }: Props) {
 
   return (
     <div className="space-y-2">
+      <div className="text-white/80 text-sm">
+        Pagado: ${sumaMontos.toFixed(2)} • Restante: ${(Math.max(0, total - sumaMontos)).toFixed(2)}
+      </div>
+
       <Table
         encabezados={encabezados}
         datos={datosTabla}
-        onFilaSeleccionada={() => { }}
-        onDobleClickFila={() => { }}
+        onFilaSeleccionada={() => {}}
+        onDobleClickFila={() => {}}
       />
+
       <button
         type="button"
         className="px-4 py-2 bg-green-800 rounded shadow-inner shadow-black text-white"
@@ -192,9 +231,3 @@ export default function PaymentMethodsTable({ value, onChange }: Props) {
     </div>
   )
 }
-
-// Nota: para que esto funcione, tu entidad MetodoPago en backend debe incluir
-// un campo `tipo: 'debito' | 'credito'`. P.ej. en NestJS:
-//
-// @Column({ type: 'text', default: 'debito' })
-// tipo: 'debito' | 'credito';

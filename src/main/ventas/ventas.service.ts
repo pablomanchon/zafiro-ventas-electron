@@ -1,4 +1,4 @@
-// src/ventas/ventas.service.ts
+// src/main/ventas/ventas.service.ts  (ajustá la ruta real de tu proyecto)
 import {
   Injectable,
   BadRequestException,
@@ -27,9 +27,9 @@ import { ItemVenta } from '../item-venta/entities/item-venta.entity';
 import { Cliente } from '../clientes/entities/cliente.entity';
 import { CajaService } from '../caja/caja.service';
 import { Producto } from '../productos/entities/producto.entity';
+import { emitChange } from '../broadcast/event-bus';
 
-// Helpers (fuera de la clase)
-type NumberLike = string | number;
+// 👇 importar bus de eventos (ajustá la ruta si es necesario)
 
 function normalizeRange(from?: string, to?: string) {
   const parts: string[] = [];
@@ -40,19 +40,17 @@ function normalizeRange(from?: string, to?: string) {
     parts.push('v.fecha >= :from');
     params.from = fromDate;
   }
-
   if (to) {
     const toDate = new Date(to);
     toDate.setDate(toDate.getDate() + 1); // incluir todo el día "to"
     parts.push('v.fecha < :to');
     params.to = toDate;
   }
-
   return { where: parts.join(' AND '), params };
 }
 
 function sumExpr(db: string) {
-  // En SQLite DECIMAL puede ser texto: conviene castear
+  // En SQLite DECIMAL puede venir como texto: conviene castear
   return db === 'sqlite' ? 'SUM(CAST(pg.monto AS REAL))' : 'SUM(pg.monto)';
 }
 
@@ -63,10 +61,10 @@ export class VentasService {
     @InjectRepository(VentaPago) private readonly pagoRepo: Repository<VentaPago>,
     @InjectRepository(MetodoPago) private readonly metodoRepo: Repository<MetodoPago>,
     private readonly clienteService: ClientesService,
-    private readonly productoService: ProductosService, // lo dejo por si lo usás en otros métodos
+    private readonly productoService: ProductosService, // por si lo usás en otros métodos
     private readonly dataSource: DataSource,
     private readonly cajaService: CajaService,
-  ) { }
+  ) {}
 
   async create(createDto: CreateVentaDto): Promise<Venta> {
     // 1) Validaciones base
@@ -107,14 +105,13 @@ export class VentasService {
       );
     }
 
-    // 4) Traer tipos de método de pago para calcular EFECTIVO
+    // 4) Tipos de método de pago (para caja)
     const metodoIds = validPagos.map(p => p.metodoId);
     const metodos = await this.metodoRepo.find({ where: { id: In(metodoIds) } });
     const metodosById = new Map(metodos.map(m => [m.id, m]));
     const totalEfectivo = validPagos
       .filter(p => metodosById.get(p.metodoId)?.tipo === 'efectivo')
       .reduce((acc, p) => acc + Number(p.monto || 0), 0);
-
     const totalUsd = validPagos
       .filter(p => metodosById.get(p.metodoId)?.tipo === 'usd')
       .reduce((acc, p) => acc + Number(p.monto || 0), 0);
@@ -137,68 +134,75 @@ export class VentasService {
       } as DeepPartial<ItemVenta>,
     }));
 
-    // 6) TRANSACCIÓN: descuento de stock + venta + detalles + pagos + caja
-    return await this.dataSource.transaction(async (manager) => {
-      const ventaRepoTx = manager.getRepository(Venta);
-      const pagoRepoTx = manager.getRepository(VentaPago);
-      const detalleRepoTx = manager.getRepository(VentaDetalle);
-      const productoRepoTx = manager.getRepository(Producto);
+    // 6) TRANSACCIÓN: stock + venta + detalles + pagos + caja
+    const { venta: savedVenta, productos: productosActualizados } =
+      await this.dataSource.transaction(async (manager) => {
+        const ventaRepoTx = manager.getRepository(Venta);
+        const pagoRepoTx = manager.getRepository(VentaPago);
+        const detalleRepoTx = manager.getRepository(VentaDetalle);
+        const productoRepoTx = manager.getRepository(Producto);
 
-      // 6.a) Descontar stock por cada detalle (atómico)
-      for (const det of validDetalles) {
-        const productoId = det.productoId.toString();
-        const cant = Number(det.item.cantidad);
+        const productosActualizados: Producto[] = [];
 
-        const prod = await productoRepoTx.findOne({ where: { id: productoId } });
-        if (!prod) {
-          throw new NotFoundException(`Producto ${productoId} no encontrado`);
+        // 6.a) Descontar stock
+        for (const det of validDetalles) {
+          const productoId = det.productoId.toString();
+          const cant = Number(det.item.cantidad);
+
+          const prod = await productoRepoTx.findOne({ where: { id: productoId } });
+          if (!prod) throw new NotFoundException(`Producto ${productoId} no encontrado`);
+
+          const stockActual = Number(prod.stock ?? 0);
+          if (stockActual < cant) {
+            throw new BadRequestException(
+              `Stock insuficiente para "${prod.nombre ?? productoId}" (stock: ${stockActual}, solicitado: ${cant})`,
+            );
+          }
+
+          prod.stock = stockActual - cant;
+          const savedProd = await productoRepoTx.save(prod);
+          productosActualizados.push(savedProd); // guardar para emitir tras commit
         }
-        const stockActual = Number(prod.stock ?? 0);
-        if (stockActual < cant) {
-          throw new BadRequestException(
-            `Stock insuficiente para "${prod.nombre ?? productoId}" (stock: ${stockActual}, solicitado: ${cant})`,
-          );
+
+        // 6.b) Crear venta base
+        const venta = ventaRepoTx.create({
+          cliente: { id: cliente.id } as DeepPartial<Cliente>,
+          total: Number(totalDetalles.toFixed(2)),
+        });
+        await ventaRepoTx.save(venta);
+
+        // 6.c) Detalles
+        for (const d of detallesEntity) {
+          const det = detalleRepoTx.create({ ...d, venta: { id: venta.id } as any });
+          await detalleRepoTx.save(det);
         }
 
-        // Actualizar y guardar
-        prod.stock = stockActual - cant;
-        await productoRepoTx.save(prod);
-      }
+        // 6.d) Pagos
+        for (const p of pagosEntity) {
+          const pago = pagoRepoTx.create({ ...p, venta: { id: venta.id } as any });
+          await pagoRepoTx.save(pago);
+        }
 
-      // 6.b) Crear venta base
-      const venta = ventaRepoTx.create({
-        cliente: { id: cliente.id } as DeepPartial<Cliente>,
-        total: Number(totalDetalles.toFixed(2)),
+        // 6.e) Caja
+        if (totalEfectivo > 0) await this.cajaService.incrementarPesosTx(totalEfectivo, manager);
+        if (totalUsd > 0)     await this.cajaService.incrementarUsdTx(totalUsd, manager);
+
+        // 6.f) Venta completa
+        const ventaCompleta = await ventaRepoTx.findOneOrFail({
+          where: { id: venta.id },
+          relations: ['cliente', 'detalles', 'pagos'],
+        });
+
+        return { venta: ventaCompleta, productos: productosActualizados };
       });
-      await ventaRepoTx.save(venta);
 
-      // 6.c) Guardar detalles
-      for (const d of detallesEntity) {
-        const det = detalleRepoTx.create({ ...d, venta: { id: venta.id } as any });
-        await detalleRepoTx.save(det);
-      }
+    // ✅ Fuera de la transacción (commit OK): emitir a todas las ventanas
+    emitChange('ventas:changed',   { type: 'upsert', data: savedVenta });
+    for (const p of productosActualizados) {
+      emitChange('productos:changed', { type: 'upsert', data: p });
+    }
 
-      // 6.d) Guardar pagos
-      for (const p of pagosEntity) {
-        const pago = pagoRepoTx.create({ ...p, venta: { id: venta.id } as any });
-        await pagoRepoTx.save(pago);
-      }
-
-      // 6.e) Actualizar CAJA con el total en EFECTIVO
-      if (totalEfectivo > 0) {
-        await this.cajaService.incrementarPesosTx(totalEfectivo, manager);
-      }
-
-      if (totalUsd > 0) {
-        await this.cajaService.incrementarUsdTx(totalUsd, manager);
-      }
-
-      // 6.f) Devolver venta completa con relaciones
-      return await ventaRepoTx.findOneOrFail({
-        where: { id: venta.id },
-        relations: ['cliente', 'detalles', 'pagos'],
-      });
-    });
+    return savedVenta;
   }
 
   async findAll(filter?: FilterVentasDto): Promise<Venta[]> {
@@ -228,11 +232,22 @@ export class VentasService {
 
   async update(id: number, dto: UpdateVentaDto): Promise<Venta> {
     await this.repo.update(id, dto);
-    return this.findOne(id);
+    const updated = await this.findOne(id);
+
+    // Si tu update no cambia stock, con esto alcanza.
+    // (Si en algún flujo ajusta stock, hacé la tx y emite productos:changed también)
+    emitChange('ventas:changed', { type: 'upsert', data: updated });
+
+    return updated;
   }
 
   async remove(id: number): Promise<{ deleted: boolean }> {
     await this.repo.delete(id);
+
+    // Según tu regla: “al anular NO debe cambiar stock”.
+    // Si alguna vez devolvés stock, hacelo en tx y emite productos:changed.
+    emitChange('ventas:changed', { type: 'remove', data: { id } });
+
     return { deleted: true };
   }
 
@@ -246,8 +261,8 @@ export class VentasService {
     const { where, params } = normalizeRange(filter?.from, filter?.to);
 
     const qb = this.pagoRepo.createQueryBuilder('pg')
-      .innerJoin('pg.venta', 'v')      // para filtrar por fecha
-      .innerJoin('pg.metodo', 'mp')    // asegura que tenga método
+      .innerJoin('pg.venta', 'v')      // para fecha
+      .innerJoin('pg.metodo', 'mp')    // asegura método
       .select('mp.tipo', 'tipo')
       .addSelect(`${sumExpr(dbType)}`, 'total');
 

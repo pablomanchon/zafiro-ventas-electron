@@ -118,7 +118,7 @@ export function DateNavigator({
                 : 'bg-gray-700 text-white') + ' px-3 py-1 rounded'
             }
           >
-            {f === 'day' ? 'Hoy' : f === 'week' ? 'Semana' : 'Mes'}
+            {f === 'day' ? 'Día' : f === 'week' ? 'Semana' : 'Mes'}
           </button>
         ))}
       </div>

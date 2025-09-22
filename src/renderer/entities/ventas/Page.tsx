@@ -1,5 +1,5 @@
 // src/pages/SalesPage.tsx
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import type { CrudConfig } from '../CrudConfig'
 import { crudConfigs } from '..'
 
@@ -17,19 +17,33 @@ export default function SalesPage() {
   const config = crudConfigs['ventas'] as CrudConfig
   const { columns, searchFields } = config
 
-  // Hook unificado
   const {
     ventas,
     totales,
     totalGeneral,
     loading,
     error,
-    filter, setFilter, shift, goToday, label,
+    filter, setFilter, shift, goToday, label, reload
   } = useSales('day')
 
-  // ⬇️ scope real (NO "contents")
   const scopeRef = useRef<HTMLDivElement>(null)
+  const tableRef = useRef<HTMLDivElement>(null)
   useFocusBlocker(scopeRef)
+
+  useEffect(() => {
+    const ch = new BroadcastChannel('ventas')
+    const onMsg = (ev: MessageEvent) => {
+      if (ev.data?.type === 'VENTA_CREADA') {
+        // forzar un refetch usando setFilter igual a sí mismo
+        reload()
+      }
+    }
+    ch.addEventListener('message', onMsg)
+    return () => {
+      ch.removeEventListener('message', onMsg)
+      ch.close()
+    }
+  }, [setFilter])
 
   return (
     <Main className="flex flex-col h-screen p-4 gap-4">
@@ -48,7 +62,6 @@ export default function SalesPage() {
           label={label}
         />
 
-        {/* Errores / loading */}
         {error && (
           <Steel className="p-3 text-red-300 bg-red-900/30 border border-red-700">
             {error}
@@ -58,8 +71,7 @@ export default function SalesPage() {
           <Steel className="p-3 opacity-80">Cargando…</Steel>
         )}
 
-        {/* Tabla principal */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto" ref={tableRef} tabIndex={-1}>
           <TableAndSearch
             datos={ventas}
             encabezados={columns}
@@ -69,7 +81,6 @@ export default function SalesPage() {
           />
         </div>
 
-        {/* Totales por tipo + total general */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 items-stretch my-1">
           {totales.map((p) => (
             <Steel key={p.tipo} className="flex justify-between items-center max-w-96 min-w-60">

@@ -8,4 +8,4 @@ export const formatCurrencyARS = (monto: number | string) => {
 };
 
 export const looksLikeMoneyKey = (key = "") =>
-  /(monto|total|precio|importe)/i.test(key);
+  /(total|precio|importe)/i.test(key);
