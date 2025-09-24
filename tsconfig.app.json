@@ -2,11 +2,15 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable", "ESNext"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
     "module": "ESNext",
     "skipLibCheck": true,
     "allowJs": true,
-
     /* Resolución de módulos */
     "moduleResolution": "node",
     "allowImportingTsExtensions": true,
@@ -14,12 +18,13 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-
     /* Linting y seguridad */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/renderer"]
+  "include": [
+    "src/renderer",
+    "src/types/**/*.d.ts" ]
 }

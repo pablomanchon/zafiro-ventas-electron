@@ -1,16 +1,18 @@
+// src/productos/productos.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Producto } from './entities/producto.entity';
 import { ProductoDto } from './dto/create-producto.dto';
+import { emitChange } from '../broadcast/event-bus'; // 👈
 
 @Injectable()
 export class ProductosService {
   constructor(
     @InjectRepository(Producto)
     private readonly repo: Repository<Producto>,
-  ) { }
+  ) {}
 
   async findAll(manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
@@ -20,7 +22,10 @@ export class ProductosService {
   async create(createDto: ProductoDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     const entity = repo.create(createDto);
-    return repo.save(entity);
+    const saved = await repo.save(entity);
+    // 🔔 notificar alta
+    emitChange('productos:changed', { type: 'upsert', data: saved });
+    return saved;
   }
 
   async findOne(id: string, manager?: EntityManager) {
@@ -31,26 +36,29 @@ export class ProductosService {
   async update(id: string, updateDto: UpdateProductoDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     await repo.update(id, updateDto);
-    return repo.findOne({ where: { id } });
+    const updated = await repo.findOne({ where: { id } });
+    if (updated) emitChange('productos:changed', { type: 'upsert', data: updated }); // 🔔
+    return updated;
   }
 
   async remove(id: string, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     await repo.delete(id);
+    // 🔔 notificar baja
+    emitChange('productos:changed', { type: 'remove', data: { id } });
     return { deleted: true };
   }
 
-  async decrementStock(
-    productoId: string,
-    cantidad: number,
-    manager?: EntityManager,
-  ) {
+  async decrementStock(productoId: string, cantidad: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     const producto = await repo.findOne({ where: { id: productoId } });
     if (!producto) throw new Error('Producto no encontrado');
     if (producto.stock < cantidad) throw new Error('Stock insuficiente');
 
     producto.stock -= cantidad;
-    return repo.save(producto);
+    const saved = await repo.save(producto);
+    // 🔔 notificar cambio de stock
+    emitChange('productos:changed', { type: 'upsert', data: saved });
+    return saved;
   }
 }

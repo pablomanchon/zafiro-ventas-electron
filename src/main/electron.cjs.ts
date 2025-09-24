@@ -84,6 +84,7 @@ async function createWindow() {
 
   onChange('clientes:changed', (p) => broadcast('clientes:changed', p))
   onChange('productos:changed', (p) => broadcast('productos:changed', p))
+  onChange('metodos:changed', (p) => broadcast('metodos:changed', p))
   onChange('ventas:changed', (p) => broadcast('ventas:changed', p))
 
   Menu.setApplicationMenu(null);
