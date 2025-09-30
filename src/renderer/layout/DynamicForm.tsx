@@ -27,10 +27,12 @@ type InputDef =
     })
   | (InputDefBase & {
       type: 'component'
+      // 👇 acepta props extra para inyectar al componente
       Component: React.ComponentType<{
         value: any
         onChange: (value: any) => void
-      }>
+      } & Record<string, any>> // 👈 clave para poder pasar props adicionales
+      componentProps?: Record<string, any> // 👈 nuevo
     })
 
 export type FormInput = InputDef
@@ -181,7 +183,7 @@ export default function DynamicForm({
   }
 
   return (
-    <form  onSubmit={handleSubmit} className="space-y-4 flex flex-col py-2">
+    <form onSubmit={handleSubmit} className="space-y-4 flex flex-col py-2">
       {inputs.map((input, idx) => {
         const commonProps = {
           required: input.required,
@@ -205,6 +207,7 @@ export default function DynamicForm({
               <input.Component
                 value={formValues[input.name]}
                 onChange={val => handleChange(input.name, val, input.type)}
+                {...(input.componentProps || {})}  // 👈 inyectamos props extra
               />
             ) : input.type === 'select' ? (
               <select {...commonProps}>

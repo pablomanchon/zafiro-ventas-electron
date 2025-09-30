@@ -16,11 +16,7 @@ export class Venta {
   @PrimaryGeneratedColumn()
   id: number;
 
-<<<<<<< HEAD
-    @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
-=======
   @CreateDateColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
->>>>>>> ea180063c0026f70251ecc79a35690c6819c4697
   fecha: Date;
 
   @ManyToOne(() => Cliente, cliente => cliente.ventas, { eager: true })
@@ -38,10 +34,6 @@ export class Venta {
   })
   pagos: VentaPago[];
 
-  /**
-   * Total de la venta: suma (precio * cantidad) de cada detalle
-   * Este campo no se persiste en BD; se calcula tras cargar la entidad.
-   */
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   total: number;
 

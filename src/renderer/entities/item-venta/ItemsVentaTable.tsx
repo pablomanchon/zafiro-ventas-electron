@@ -1,6 +1,6 @@
 // src/components/ItemsVentaTable.tsx
-import { useSaleItems, type SaleItem } from '../entities/item-venta/useSaleItems'
-import Table from '../layout/Table'
+import { useSaleItems, type SaleItem } from './useSaleItems'
+import Table from '../../layout/Table'
 
 export default function ItemsVentaTable({
   value,
