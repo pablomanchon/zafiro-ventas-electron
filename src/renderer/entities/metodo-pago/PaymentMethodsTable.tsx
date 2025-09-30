@@ -78,14 +78,15 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
       }, 0)
       const restante = Math.max(0, Number((total - sumaOtros).toFixed(2)))
 
+      const esCredito = m?.tipo === 'credito'
+
       next[idx] = {
         ...next[idx],
         metodoId: raw,
         nombre: m?.nombre ?? '',
-        // sobrescribimos siempre el monto cuando se define el método
         monto: restante ? String(restante) : '',
-        // al cambiar método, limpiamos cuotas (se mostrará si corresponde)
-        cuotas: '',
+        // 👉 si es crédito, seteamos cuotas=1 automáticamente
+        cuotas: esCredito ? '1' : '',
       }
       return next
     })
@@ -107,7 +108,7 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
     })
   }
 
-  // Al agregar una nueva fila: autocompletar con saldo restante
+  // Al agregar nueva fila (restante con el mismo redondeo)
   const handleAdd = () => {
     const restante = Math.max(0, Number((total - sumaMontos).toFixed(2)))
     updateItems(prev => [
@@ -132,10 +133,10 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
   ]
   const extraHeaders = needsCuotas
     ? [
-        { titulo: 'Cuotas', clave: 'cuotas' },
-        { titulo: 'Valor cuota', clave: 'valorCuota' },
-        { titulo: 'Total', clave: 'total' },
-      ]
+      { titulo: 'Cuotas', clave: 'cuotas' },
+      { titulo: 'Valor cuota', clave: 'valorCuota' },
+      { titulo: 'Total', clave: 'total' },
+    ]
     : []
   const encabezados = [...baseHeaders, ...extraHeaders, { titulo: 'Acciones', clave: 'acciones' }]
 
@@ -217,8 +218,8 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
       <Table
         encabezados={encabezados}
         datos={datosTabla}
-        onFilaSeleccionada={() => {}}
-        onDobleClickFila={() => {}}
+        onFilaSeleccionada={() => { }}
+        onDobleClickFila={() => { }}
       />
 
       <button
