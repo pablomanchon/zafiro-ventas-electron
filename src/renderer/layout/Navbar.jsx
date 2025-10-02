@@ -1,24 +1,34 @@
 import {
-  Calendar, Home, PawPrint, User, Users, Menu, X,
-  FileBarChart, Activity
+  Home,
+  Users,
+  Package,
+  CreditCard,
+  ShoppingCart,
+  Receipt,
+  Menu,
+  X,
+  BarChart3,
+  Wallet,
 } from 'lucide-react'
+import bgUrl from '../../../public/fondo-h.png'
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import logo from '../assets/logo.webp';
+import logo from '../../../public/zafiro_rounded.ico';
 
 
 const navItems = [
   { name: "Inicio", href: "/", icon: <Home size={20} /> },
-  { name: "Movimientos", href: "/moves", icon: <Activity size={20} /> },
-  { name: "Usuarios", href: "/users", icon: <User size={20} /> },
-  { name: "Cuentas corrientes", href: "/ctas-ctes", icon: <FileBarChart size={20} /> },
-  { name: "Informes", href: "/data", icon: <FileBarChart size={20} /> }
+  { name: "Clientes", href: "/clientes", icon: <Users size={20} /> },
+  { name: "Productos", href: "/productos", icon: <Package size={20} /> },
+  { name: "Métodos de pago", href: "/metodos-pago", icon: <CreditCard size={20} /> },
+  { name: "Ventas", href: "/ventas", icon: <Receipt size={20} /> },
+  { name: "Resumenes", href: "/resumenes", icon: <BarChart3 size={20} /> },
+  { name: "Caja", href: "/caja", icon: <Wallet size={20} /> },
 ]
 
 export default function Navbar() {
   const location = useLocation()
   const [isOpen, setIsOpen] = useState(false)
-
 
   return (
     <>
@@ -42,11 +52,12 @@ export default function Navbar() {
 
       {/* Navbar */}
       <nav
-        className={`bg-gradient-to-t from-gray-900 to-cyan-800 text-white shadow-black shadow border-r-2 z-50
-          border-cyan-700
-          fixed top-0 left-0 h-full w-60 flex flex-col 
-          ${isOpen ? '' : 'hidden'}
-          md:block md:relative md:min-w-52 md:hover:border-r-cyan-600 md:hover:shadow-cyan-500 md:hover:shadow-md md:hover:transition-shadow transition-shadow`}
+        style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        className={`text-white shadow-black shadow border-r-2 z-50
+    border-cyan-700
+    fixed top-0 left-0 h-full w-60 flex flex-col 
+    ${isOpen ? '' : 'hidden'}
+    md:block md:relative md:min-w-52 md:hover:border-r-cyan-600 md:hover:shadow-cyan-500 md:hover:shadow-md md:hover:transition-shadow transition-shadow`}
       >
         {/* Encabezado móvil con logo y botón de cerrar */}
         <div className="flex items-center justify-between p-4 md:hidden">
@@ -55,7 +66,7 @@ export default function Navbar() {
           </button>
         </div>
 
-        <div className='p-2'>
+        <div className='rounded-xl border-black border shadow-inner shadow-blac m-5 p-5 shadow-black bg-black bg-opacity-50'>
           <img src={logo} alt="Logo" className="m-auto animate-spin-slower p-2" />
         </div>
 
@@ -66,10 +77,10 @@ export default function Navbar() {
               key={item.name}
               to={item.href}
               onClick={() => setIsOpen(false)}
-              className={`rounded p-2 transition-all flex items-center gap-2 z-10 hover:shadow-black shadow-inner shadow-black hover:shadow-inner
+              className={`rounded p-2 transition-all flex items-center backgrou gap-2 z-10 hover:shadow-black shadow-inner shadow-black hover:shadow-inner
                 ${location.pathname === item.href
-                  ? ' shadow-black bg-sky-600 font-extrabold shadow-inner'
-                  : 'bg-gay-900 hover:bg-sky-600'}`}
+                  ? ' shadow-black bg-stone-900 bg-opacity-70 font-extrabold shadow-inner'
+                  : 'bg-gay-900 hover:bg-sky-600 hover:bg-opacity-80 bg-opacity-70'}`}
             >
               {item.icon}
               <span className='w-full font-bold'>{item.name}</span>

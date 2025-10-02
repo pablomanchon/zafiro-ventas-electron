@@ -1,6 +1,6 @@
 // src/clientes/dto/create-cliente.dto.ts
 export class CreateClienteDto {
-  nombre: string;
+  nombre2: string;
   apellido?: string;
   email?: string;
   telefono?: string;

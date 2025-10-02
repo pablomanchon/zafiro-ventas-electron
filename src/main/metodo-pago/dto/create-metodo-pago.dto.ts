@@ -1,5 +1,7 @@
 // src/metodos-pago/dto/create-metodo-pago.dto.ts
 export class CreateMetodoPagoDto {
+  /** Identificador que defines tú (p. ej. 'efectivo', 'tarjeta1', etc.) */
+  id: string;
   nombre: string;
-  descripcion?: string;
+  tipo: 'debito' | 'credito';
 }

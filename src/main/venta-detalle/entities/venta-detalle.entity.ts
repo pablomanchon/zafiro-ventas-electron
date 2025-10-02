@@ -13,7 +13,4 @@ export class VentaDetalle {
 
   @ManyToOne(() => ItemVenta, { cascade: true, eager: true })
   item: ItemVenta;
-
-  @Column('int')
-  cantidad: number;
 }

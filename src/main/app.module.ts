@@ -9,6 +9,10 @@ import { VentaDetalleModule } from './venta-detalle/venta-detalle.module';
 import { ItemVentaModule } from './item-venta/item-venta.module';
 import { MetodoPagoModule } from './metodo-pago/metodo-pago.module';
 import { VentaPagosModule } from './venta-pagos/venta-pagos.module';
+import { FacturasModule } from './facturas/facturas.module';
+import { GastronomiaModule } from './gastronomia/gastronomia.module';
+import { CajaModule } from './caja/caja.module';
+import { VendedoresModule } from './vendedores/vendedores.module';
 
 @Module({
   imports: [
@@ -26,6 +30,10 @@ import { VentaPagosModule } from './venta-pagos/venta-pagos.module';
     ItemVentaModule,
     MetodoPagoModule,
     VentaPagosModule,
+    FacturasModule,
+    GastronomiaModule,
+    CajaModule,
+    VendedoresModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -11,7 +11,7 @@ export class VentaPago {
   @ManyToOne(() => Venta, venta => venta.pagos)
   venta: Venta;
 
-  @ManyToOne(() => MetodoPago, { eager: true })
+  @ManyToOne(() => MetodoPago, { eager: true, nullable: false })
   metodo: MetodoPago;
 
   @Column('decimal', { precision: 10, scale: 2 })
