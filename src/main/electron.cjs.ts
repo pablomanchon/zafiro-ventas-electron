@@ -1,113 +1,66 @@
-import 'reflect-metadata'
-import { app, BrowserWindow, Menu, shell } from 'electron'
-import path from 'path'
-import { URL, pathToFileURL } from 'url'
-import { bootstrap } from './bootstrap'
-import { onChange } from './broadcast/event-bus'
-import { broadcast } from './broadcast/ipc-broadcast'
+import 'reflect-metadata';          // Necesario para NestJS
+import { app, BrowserWindow, Menu, ipcMain } from 'electron';
+import type { BrowserWindowConstructorOptions } from 'electron';
+import path from 'path';
+import { bootstrap } from './bootstrap';
 
-let mainWindow: BrowserWindow | null
-const icon = path.join(__dirname, '../public/zafiro_rounded.ico')
+const RENDERER_URL = process.env.VITE_DEV_SERVER_URL ?? 'http://localhost:5173';
 
-// ⚙️ Detección de entorno
-// - app.isPackaged es confiable: true cuando está empaquetado.
-// - En dev usamos Vite dev server (VARIABLE o fallback a localhost).
-const isProd = app.isPackaged
-const DEV_SERVER = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
+const DEFAULT_CHILD_OPTIONS = {
+  width: 1000,
+  height: 700,
+  show: true,
+  webPreferences: {
+    contextIsolation: true,
+    nodeIntegration: false,
+    nativeWindowOpen: true,
+    preload: path.join(__dirname, 'preload.js'),
+  },
+} as const;
 
-function getRendererUrl(hash = ''): string {
-  if (!isProd) return `${DEV_SERVER}${hash}`
+function buildWindowOptions(
+  overrides: BrowserWindowConstructorOptions = {},
+): BrowserWindowConstructorOptions {
+  return {
+    ...DEFAULT_CHILD_OPTIONS,
+    ...overrides,
+    webPreferences: {
+      ...DEFAULT_CHILD_OPTIONS.webPreferences,
+      ...(overrides.webPreferences ?? {}),
+    },
+  };
+}
 
-  // En prod: el index.html del renderer generado por tu build.
-  // Normalmente queda en .../dist/renderer/index.html si estás usando vite-electron.
-  const indexHtml = path.join(__dirname, '../renderer/index.html')
-  return pathToFileURL(indexHtml).toString() + hash
+let mainWindow: BrowserWindow | null;
+
+
+function buildRendererUrl(route: string): string {
+  const url = new URL(RENDERER_URL);
+  const normalizedRoute = route.startsWith('/') ? route : `/${route}`;
+  url.hash = normalizedRoute;
+  return url.toString();
+}
+
+function attachWindowHandlers(win: BrowserWindow) {
+  win.webContents.setWindowOpenHandler(() => ({
+    action: 'allow',
+    overrideBrowserWindowOptions: {
+      ...buildWindowOptions(),
+    },
+  }));
 }
 
 async function createWindow() {
-  await bootstrap()
+  await bootstrap();
 
-  mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 700,
-    icon,
-    show: false,
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-      // @ts-ignore
-      nativeWindowOpen: true,
-      preload: path.join(__dirname, 'preload.js'),
-    },
-  })
+  mainWindow = new BrowserWindow(buildWindowOptions());
 
-  mainWindow.maximize()
-  // ⬇️ Carga correcta según entorno
-  mainWindow.loadURL(getRendererUrl())
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show()
-    mainWindow?.focus()
-  })
+  attachWindowHandlers(mainWindow);
 
-  // 🪟 Abrir rutas internas (HashRouter) en nueva ventana de Electron
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    const u = new URL(url)
+  mainWindow.loadURL(buildRendererUrl('/'));
 
-    // ¿Es la misma origin de la app y usa hash #/ ?
-    const isSameOriginDev = !isProd && u.origin === new URL(DEV_SERVER).origin
-    const isSameOriginProd = isProd && url.startsWith('file:')
-    const isHashRoute = u.hash?.startsWith('#/')
+  Menu.setApplicationMenu(null);
 
-    if ((isSameOriginDev || isSameOriginProd) && isHashRoute) {
-      const isCreateOrEdit = /\/(create|edit)/.test(u.hash)
-      const isVentaCreate = u.hash.includes('#/ventas/create')
-
-      const width = isVentaCreate ? 900 : (isCreateOrEdit ? 500 : 800)
-      const height = isVentaCreate ? 750 : 600
-
-      return {
-        action: 'allow',
-        overrideBrowserWindowOptions: {
-          modal: false,
-          alwaysOnTop: false,
-          focusable: true,
-          show: false,
-          width,
-          height,
-          icon,
-          webPreferences: {
-            contextIsolation: true,
-            nodeIntegration: false,
-            // @ts-ignore
-            nativeWindowOpen: true,
-            preload: path.join(__dirname, 'preload.js'),
-          },
-        },
-      }
-    }
-
-    // Externas → navegador del sistema
-    shell.openExternal(url)
-    return { action: 'deny' }
-  })
-
-  // Mostrar y enfocar toda ventana hija
-  mainWindow.webContents.on('did-create-window', (child: BrowserWindow) => {
-    child.setAlwaysOnTop(false)
-    child.once('ready-to-show', () => {
-      child.show()
-      child.focus()
-      try { child.moveTop() } catch {}
-    })
-  })
-
-  // Broadcasts
-  onChange('clientes:changed', (p) => broadcast('clientes:changed', p))
-  onChange('productos:changed', (p) => broadcast('productos:changed', p))
-  onChange('metodos:changed', (p) => broadcast('metodos:changed', p))
-  onChange('ventas:changed', (p) => broadcast('ventas:changed', p))
-
-  Menu.setApplicationMenu(null)
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -115,7 +68,37 @@ async function createWindow() {
   })
 }
 
-app.whenReady().then(createWindow)
+function createChildWindow(route: string, payload: unknown, opener?: BrowserWindow) {
+  const childWindow = new BrowserWindow(
+    buildWindowOptions({
+      parent: opener ?? undefined,
+    }),
+  );
+
+  attachWindowHandlers(childWindow);
+
+  childWindow.loadURL(buildRendererUrl(route));
+
+  if (payload !== undefined) {
+    childWindow.webContents.once('did-finish-load', () => {
+      childWindow.webContents.send('init-data', payload);
+    });
+  }
+
+  return childWindow;
+}
+
+app.whenReady().then(() => {
+  createWindow();
+
+  ipcMain.handle('open-child', async (event, { route, payload }) => {
+    const opener = BrowserWindow.fromWebContents(event.sender);
+    const normalizedRoute = typeof route === 'string' && route.trim() ? route : '/';
+    const child = createChildWindow(normalizedRoute, payload ?? null, opener ?? undefined);
+    return child.id;
+  });
+});
+
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
