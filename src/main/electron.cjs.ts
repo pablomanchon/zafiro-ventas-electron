@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { app, BrowserWindow, Menu, shell } from 'electron'
+import { app, BrowserWindow, Menu, shell, ipcMain } from 'electron'
 import path from 'path'
 import { URL, pathToFileURL } from 'url'
 import { bootstrap } from './bootstrap'
@@ -22,6 +22,32 @@ function getRendererUrl(hash = ''): string {
   // Normalmente queda en .../dist/renderer/index.html si estás usando vite-electron.
   const indexHtml = path.join(__dirname, '../renderer/index.html')
   return pathToFileURL(indexHtml).toString() + hash
+}
+
+function normalizeHashRoute(route: string): string {
+  if (!route) return ''
+  if (route.startsWith('#')) return route
+  if (route.startsWith('/')) return `#${route}`
+  return `#/${route}`
+}
+
+function buildChildWindowOptions(): Electron.BrowserWindowConstructorOptions {
+  return {
+    modal: false,
+    alwaysOnTop: false,
+    focusable: true,
+    show: false,
+    width: 900,
+    height: 700,
+    icon,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      // @ts-ignore
+      nativeWindowOpen: true,
+      preload: path.join(__dirname, 'preload.js'),
+    },
+  }
 }
 
 async function createWindow() {
@@ -65,24 +91,13 @@ async function createWindow() {
       const width = isVentaCreate ? 900 : (isCreateOrEdit ? 500 : 800)
       const height = isVentaCreate ? 750 : 600
 
+      const overrideOptions = buildChildWindowOptions()
+      overrideOptions.width = width
+      overrideOptions.height = height
+
       return {
         action: 'allow',
-        overrideBrowserWindowOptions: {
-          modal: false,
-          alwaysOnTop: false,
-          focusable: true,
-          show: false,
-          width,
-          height,
-          icon,
-          webPreferences: {
-            contextIsolation: true,
-            nodeIntegration: false,
-            // @ts-ignore
-            nativeWindowOpen: true,
-            preload: path.join(__dirname, 'preload.js'),
-          },
-        },
+        overrideBrowserWindowOptions: overrideOptions,
       }
     }
 
@@ -114,6 +129,40 @@ async function createWindow() {
     app.quit()
   })
 }
+
+ipcMain.handle('open-child', async (event, options: { route: string; payload?: unknown }) => {
+  const { route, payload } = options ?? { route: '' }
+  const parent = BrowserWindow.fromWebContents(event.sender) ?? undefined
+
+  const child = new BrowserWindow({
+    ...buildChildWindowOptions(),
+    parent,
+  })
+
+  const targetRoute = normalizeHashRoute(route)
+  const targetUrl = getRendererUrl(targetRoute)
+
+  child.once('ready-to-show', () => {
+    try {
+      child.show()
+      child.focus()
+      child.moveTop()
+    } catch {}
+  })
+
+  child.webContents.once('did-finish-load', () => {
+    child.webContents.send('init-data', payload)
+  })
+
+  try {
+    await child.loadURL(targetUrl)
+  } catch (err) {
+    child.close()
+    throw err
+  }
+
+  return { windowId: child.id }
+})
 
 app.whenReady().then(createWindow)
 

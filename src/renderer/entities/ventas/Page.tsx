@@ -1,5 +1,5 @@
 // src/pages/SalesPage.tsx
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { CrudConfig } from '../CrudConfig'
 import { crudConfigs } from '..'
 
@@ -26,10 +26,57 @@ export default function SalesPage() {
     filter, setFilter, shift, goToday, label, reload
   } = useSales('day')
 
-  const handleDobleClickFila = (id: number) => {
-    // abrimos nueva ventana con la ruta hash
-    window.open(`#/detail/ventas/${id}`, "_blank", "noopener,noreferrer")
-  }
+  const openChildWithPayload = useCallback((hashRoute: string, payload?: unknown) => {
+    if (window.windowApi?.openChild) {
+      window.windowApi.openChild(hashRoute, payload).catch((err: unknown) => {
+        console.error('No se pudo abrir la ventana desde el proceso main', err)
+      })
+      return
+    }
+
+    const child = window.open(hashRoute, '_blank', 'noopener,noreferrer')
+    if (!child) return
+
+    const origin = window.location.origin
+    let intervalId: number | null = null
+
+    function cleanup() {
+      window.removeEventListener('message', handleReady)
+      if (intervalId !== null) {
+        window.clearInterval(intervalId)
+        intervalId = null
+      }
+    }
+
+    function handleReady(event: MessageEvent) {
+      if (event.source !== child) return
+      if (event.origin !== origin) return
+      if (event.data?.type === 'READY') {
+        child.postMessage({ type: 'INIT_DATA', payload }, origin)
+        cleanup()
+      }
+    }
+
+    window.addEventListener('message', handleReady)
+
+    intervalId = window.setInterval(() => {
+      if (child.closed) cleanup()
+    }, 500)
+  }, [])
+
+  const openVenta = useCallback((id: number) => {
+    const venta = ventas.find(v => Number(v.id) === Number(id))
+    const payload = venta ? { venta, idVenta: id } : { idVenta: id }
+    openChildWithPayload(`#/ventas/${id}`, payload)
+  }, [ventas, openChildWithPayload])
+
+  const handleDobleClickFila = useCallback((id: number) => {
+    openVenta(id)
+  }, [openVenta])
+
+  const handleOpenCreate = useCallback(() => {
+    openChildWithPayload('#/ventas/create', { from: 'ventas' })
+  }, [openChildWithPayload])
 
   const scopeRef = useRef<HTMLDivElement>(null)
   const tableRef = useRef<HTMLDivElement>(null)
@@ -100,16 +147,7 @@ export default function SalesPage() {
         </div>
 
         <Steel className="flex justify-end bg-gray-800 p-2">
-          <a
-            href={`#/ventas/create`}
-            target="_blank"
-            rel="noopener noreferrer"
-            tabIndex={-1}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={(e) => (e.currentTarget as HTMLAnchorElement).blur()}
-          >
-            <PrimaryButton functionClick={() => null} title="Crear" />
-          </a>
+          <PrimaryButton functionClick={handleOpenCreate} title="Crear" />
         </Steel>
       </div>
     </Main>
