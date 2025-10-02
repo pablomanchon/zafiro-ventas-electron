@@ -26,6 +26,11 @@ export default function SalesPage() {
     filter, setFilter, shift, goToday, label, reload
   } = useSales('day')
 
+  const handleDobleClickFila = (id: number) => {
+    // abrimos nueva ventana con la ruta hash
+    window.open(`#/detail/ventas/${id}`, "_blank", "noopener,noreferrer")
+  }
+
   const scopeRef = useRef<HTMLDivElement>(null)
   const tableRef = useRef<HTMLDivElement>(null)
   useFocusBlocker(scopeRef)
@@ -76,7 +81,7 @@ export default function SalesPage() {
             datos={ventas}
             encabezados={columns}
             searchFilters={searchFields}
-            onDobleClickFila={() => null}
+            onDobleClickFila={handleDobleClickFila}
             onFilaSeleccionada={() => null}
           />
         </div>

@@ -1,20 +1,37 @@
-import 'reflect-metadata';
-import { app, BrowserWindow, Menu, shell } from 'electron';
-import path from 'path';
-import { bootstrap } from './bootstrap';
-import { onChange } from './broadcast/event-bus';
-import { broadcast } from './broadcast/ipc-broadcast';
+import 'reflect-metadata'
+import { app, BrowserWindow, Menu, shell } from 'electron'
+import path from 'path'
+import { URL, pathToFileURL } from 'url'
+import { bootstrap } from './bootstrap'
+import { onChange } from './broadcast/event-bus'
+import { broadcast } from './broadcast/ipc-broadcast'
 
-let mainWindow: BrowserWindow | null;
-const icon = path.join(__dirname, '../public/zafiro_rounded.ico');
+let mainWindow: BrowserWindow | null
+const icon = path.join(__dirname, '../public/zafiro_rounded.ico')
+
+// ⚙️ Detección de entorno
+// - app.isPackaged es confiable: true cuando está empaquetado.
+// - En dev usamos Vite dev server (VARIABLE o fallback a localhost).
+const isProd = app.isPackaged
+const DEV_SERVER = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
+
+function getRendererUrl(hash = ''): string {
+  if (!isProd) return `${DEV_SERVER}${hash}`
+
+  // En prod: el index.html del renderer generado por tu build.
+  // Normalmente queda en .../dist/renderer/index.html si estás usando vite-electron.
+  const indexHtml = path.join(__dirname, '../renderer/index.html')
+  return pathToFileURL(indexHtml).toString() + hash
+}
 
 async function createWindow() {
-  await bootstrap();
+  await bootstrap()
 
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
     icon,
+    show: false,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -22,37 +39,39 @@ async function createWindow() {
       nativeWindowOpen: true,
       preload: path.join(__dirname, 'preload.js'),
     },
-  });
+  })
 
-  mainWindow.maximize();
+  mainWindow.maximize()
+  // ⬇️ Carga correcta según entorno
+  mainWindow.loadURL(getRendererUrl())
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show()
+    mainWindow?.focus()
+  })
 
-  // Si estás en Vite dev, con loadURL alcanza:
-  // mainWindow.loadFile(path.join(__dirname, 'index.html'));
-  mainWindow.loadURL(path.join('http://localhost:5173'));
-
-  // Permitir ventanas nuevas SIN 'parent' y mostrarlas con foco
+  // 🪟 Abrir rutas internas (HashRouter) en nueva ventana de Electron
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    const isCrudRoute = url.includes('#/crud/');
-    const isVentaCreate = url.includes('#/ventas/create');
+    const u = new URL(url)
 
-    if (isCrudRoute || isVentaCreate) {
-      const width = isVentaCreate
-        ? 900
-        : (url.includes('/create') || url.includes('/edit'))
-          ? 500
-          : 800;
+    // ¿Es la misma origin de la app y usa hash #/ ?
+    const isSameOriginDev = !isProd && u.origin === new URL(DEV_SERVER).origin
+    const isSameOriginProd = isProd && url.startsWith('file:')
+    const isHashRoute = u.hash?.startsWith('#/')
 
-      const height = isVentaCreate ? 750 : 600;
+    if ((isSameOriginDev || isSameOriginProd) && isHashRoute) {
+      const isCreateOrEdit = /\/(create|edit)/.test(u.hash)
+      const isVentaCreate = u.hash.includes('#/ventas/create')
+
+      const width = isVentaCreate ? 900 : (isCreateOrEdit ? 500 : 800)
+      const height = isVentaCreate ? 750 : 600
 
       return {
         action: 'allow',
         overrideBrowserWindowOptions: {
-          // ⚠️ Sin parent para que no quede “siempre encima” del padre
-          // parent: mainWindow!,
           modal: false,
           alwaysOnTop: false,
           focusable: true,
-          show: false, // mostramos manualmente cuando esté lista
+          show: false,
           width,
           height,
           icon,
@@ -64,39 +83,44 @@ async function createWindow() {
             preload: path.join(__dirname, 'preload.js'),
           },
         },
-      };
+      }
     }
 
-    // Resto de URLs: abrir en el navegador del sistema
-    shell.openExternal(url);
-    return { action: 'deny' };
-  });
+    // Externas → navegador del sistema
+    shell.openExternal(url)
+    return { action: 'deny' }
+  })
 
-  // Mostrar y ENFOCAR cada nueva ventana cuando esté lista
+  // Mostrar y enfocar toda ventana hija
   mainWindow.webContents.on('did-create-window', (child: BrowserWindow) => {
-    child.setAlwaysOnTop(false);
+    child.setAlwaysOnTop(false)
     child.once('ready-to-show', () => {
-      child.show();   // visible
-      child.focus();  // toma foco
-      try { child.moveTop(); } catch { }
-    });
-  });
+      child.show()
+      child.focus()
+      try { child.moveTop() } catch {}
+    })
+  })
 
+  // Broadcasts
   onChange('clientes:changed', (p) => broadcast('clientes:changed', p))
   onChange('productos:changed', (p) => broadcast('productos:changed', p))
   onChange('metodos:changed', (p) => broadcast('metodos:changed', p))
   onChange('ventas:changed', (p) => broadcast('ventas:changed', p))
 
-  Menu.setApplicationMenu(null);
+  Menu.setApplicationMenu(null)
 
   mainWindow.on('closed', () => {
-    mainWindow = null;
-    app.quit();
-  });
+    mainWindow = null
+    app.quit()
+  })
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+  if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})

@@ -1,7 +1,7 @@
 // src/store/sales/sales.slice.ts
 
-import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { getAll } from "../api/crud";
+import { createAsyncThunk, createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { getAll, getById } from "../api/crud";
 
 export type TotalPorTipo = { tipo: string; total: number }
 export type DateRange = { from?: string; to?: string } | null
@@ -10,6 +10,8 @@ type SalesState = {
   ventas: any[]
   totales: TotalPorTipo[]
   loading: boolean
+  loadingById: Record<string, boolean>   // 👈 nuevo
+  fetchedAt: Record<string, number>      // 👈 nuevo
   error: string | null
   lastRange: DateRange
 }
@@ -18,6 +20,8 @@ const initialState: SalesState = {
   ventas: [],
   totales: [],
   loading: false,
+  loadingById: {},
+  fetchedAt: {},
   error: null,
   lastRange: null,
 }
@@ -38,6 +42,18 @@ export const fetchSales = createAsyncThunk(
       }
     } catch (e: any) {
       return rejectWithValue(e?.message ?? 'Error cargando ventas')
+    }
+  }
+)
+
+export const fetchSaleById = createAsyncThunk(
+  'sales/fetchVentaById',
+  async (id: string | number, { rejectWithValue }) => {
+    try {
+      const venta = await getById('ventas', id) // GET /ventas/:id
+      return venta
+    } catch (e: any) {
+      return rejectWithValue(e?.message ?? 'Error cargando venta')
     }
   }
 )
@@ -70,6 +86,21 @@ const salesSlice = createSlice({
         state.loading = false
         state.error = (action.payload as string) ?? 'Error cargando ventas'
       })
+      .addCase(fetchSaleById.pending, (state, { meta }) => {
+        state.loadingById[String(meta.arg)] = true
+      })
+      .addCase(fetchSaleById.fulfilled, (state, { payload }) => {
+        const id = String(payload.id)
+        const idx = state.ventas.findIndex(v => String(v.id) === id)
+        if (idx >= 0) state.ventas[idx] = { ...state.ventas[idx], ...payload }
+        else state.ventas.push(payload)
+        state.fetchedAt[id] = Date.now()
+        state.loadingById[id] = false
+      })
+      .addCase(fetchSaleById.rejected, (state, { meta, payload }) => {
+        state.loadingById[String(meta.arg)] = false
+        state.error = (payload as string) ?? 'Error cargando venta'
+      })
   },
 })
 
@@ -84,3 +115,12 @@ export const selectError = (s: any) => s.sales.error as string | null
 export const selectLastRange = (s: any) => s.sales.lastRange as DateRange
 export const selectTotalGeneral = (s: any) =>
   (s.sales.totales as TotalPorTipo[]).reduce((acc, t) => acc + Number(t.total ?? 0), 0)
+export const makeSelectVentaById = () =>
+  createSelector([selectVentas, (_: any, id: string | number) => String(id)],
+    (ventas, id) => ventas.find(v => String(v.id) === id) ?? null)
+    
+export const needsRefresh = (s: any, id: string | number, ttl = 60_000) =>
+  Date.now() - (s.sales.fetchedAt[String(id)] ?? 0) > ttl
+
+export const selectLoadingVenta = (s: any, id: string | number) =>
+  !!s.sales.loadingById[String(id)]

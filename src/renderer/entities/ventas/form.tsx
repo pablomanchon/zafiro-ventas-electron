@@ -12,7 +12,7 @@ import { toast } from 'react-toastify'
 import type { PaymentItem } from '../metodo-pago/PaymentMethodsTable'
 import ItemsVentaTable from '../item-venta/ItemsVentaTable'
 import PaymentMethodsTable from '../metodo-pago/PaymentMethodsTable'
-
+import bgUrl from '../../assets/fondo-w.png'
 export default function FormVenta() {
   const { products } = useProducts()
 
@@ -153,7 +153,7 @@ export default function FormVenta() {
   }
 
   return (
-    <Main className="flex flex-col gap-4 md:mt-auto text-white">
+    <Main style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} className="flex flex-col gap-4 md:mt-auto text-white">
       <div className="flex items-center justify-between">
         <Title className="text-white pb-2">Crear Venta</Title>
       </div>
