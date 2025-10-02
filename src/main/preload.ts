@@ -7,6 +7,7 @@ const allowedIncoming = new Set([
   'productos:changed',
   'metodos:changed',
   'ventas:changed',
+  'init-data',
 ])
 
 type Listener = (payload: unknown) => void
@@ -46,5 +47,17 @@ contextBridge.exposeInMainWorld('entityEvents', {
     if (!allowedIncoming.has(channel)) return
     const wrapped = (_ev: Electron.IpcRendererEvent, payload: unknown) => listener(payload)
     ipcRenderer.once(channel, wrapped)
+  },
+})
+
+contextBridge.exposeInMainWorld('windowApi', {
+  openChild(route: string, payload?: unknown) {
+    return ipcRenderer.invoke('open-child', { route, payload })
+  },
+
+  onInitData(listener: (payload: unknown) => void) {
+    const wrapped = (_event: Electron.IpcRendererEvent, payload: unknown) => listener(payload)
+    ipcRenderer.on('init-data', wrapped)
+    return () => ipcRenderer.removeListener('init-data', wrapped)
   },
 })

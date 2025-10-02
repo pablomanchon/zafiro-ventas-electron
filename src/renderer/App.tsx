@@ -6,7 +6,7 @@ import PageMetodoPago from "./entities/metodo-pago/Page";
 import PageVentas from "./entities/ventas/Page";
 import CrudFormPage from "./pages/CrudFormPage";
 import MainLayout from "./layout/MainWithNav";
-import FormVenta from "./entities/ventas/form";
+import VentaCreate from "./entities/ventas/VentaCreate";
 import PageResumen from "./entities/resumen/Page";
 import PageCaja from "./entities/caja/Page";
 import SaleDetail from "./entities/ventas/Detail";
@@ -18,7 +18,8 @@ export default function App() {
       {/* 1) Rutas standalone sin Navbar/Panel */}
       <Route path="/crud/:entity/:mode/:id?" element={<CrudFormPage />} />
       <Route path="/detail/:entity/:id" element={<SaleDetail />} />
-      <Route path="/ventas/create" element={<FormVenta />} />
+      <Route path="/ventas/create" element={<VentaCreate />} />
+      <Route path="/ventas/:idVenta" element={<VentaCreate />} />
 
       {/* 2) Rutas normales bajo MainLayout */}
       <Route element={<MainLayout />}>
