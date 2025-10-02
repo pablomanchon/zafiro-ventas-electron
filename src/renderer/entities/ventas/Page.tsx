@@ -36,6 +36,7 @@ export default function SalesPage() {
 
     const child = window.open(hashRoute, '_blank', 'noopener,noreferrer')
     if (!child) return
+    const childWindow = child
 
     const origin = window.location.origin
     let intervalId: number | null = null
@@ -49,10 +50,10 @@ export default function SalesPage() {
     }
 
     function handleReady(event: MessageEvent) {
-      if (event.source !== child) return
+      if (event.source !== childWindow) return
       if (event.origin !== origin) return
       if (event.data?.type === 'READY') {
-        child.postMessage({ type: 'INIT_DATA', payload }, origin)
+        childWindow.postMessage({ type: 'INIT_DATA', payload }, origin)
         cleanup()
       }
     }
@@ -60,7 +61,7 @@ export default function SalesPage() {
     window.addEventListener('message', handleReady)
 
     intervalId = window.setInterval(() => {
-      if (child.closed) cleanup()
+      if (childWindow.closed) cleanup()
     }, 500)
   }, [])
 
