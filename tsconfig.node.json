@@ -37,7 +37,7 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "outDir": "./dist",
+    "outDir": "dist/",
     "rootDir": "./src/main",
     "strict": true,
     "skipLibCheck": true

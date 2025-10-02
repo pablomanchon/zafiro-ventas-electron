@@ -1,26 +1,43 @@
+// src/item-venta/item-venta.service.ts
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import { CreateItemVentaDto } from './dto/create-item-venta.dto';
 import { UpdateItemVentaDto } from './dto/update-item-venta.dto';
+import { ItemVenta } from './entities/item-venta.entity';
 
 @Injectable()
 export class ItemVentaService {
-  create(createItemVentaDto: CreateItemVentaDto) {
-    return 'This action adds a new itemVenta';
+  constructor(
+    @InjectRepository(ItemVenta)
+    private readonly repo: Repository<ItemVenta>,
+  ) { }
+
+  async findAll(manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(ItemVenta) : this.repo;
+    return repo.find();
   }
 
-  findAll() {
-    return `This action returns all itemVenta`;
+  async create(createDto: CreateItemVentaDto, manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(ItemVenta) : this.repo;
+    const entity = repo.create(createDto);
+    return repo.save(entity);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} itemVenta`;
+  async findOne(id: number, manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(ItemVenta) : this.repo;
+    return repo.findOne({ where: { id } });
   }
 
-  update(id: number, updateItemVentaDto: UpdateItemVentaDto) {
-    return `This action updates a #${id} itemVenta`;
+  async update(id: number, updateDto: UpdateItemVentaDto, manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(ItemVenta) : this.repo;
+    await repo.update(id, updateDto);
+    return repo.findOne({ where: { id } });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} itemVenta`;
+  async remove(id: number, manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(ItemVenta) : this.repo;
+    await repo.delete(id);
+    return { deleted: true };
   }
 }

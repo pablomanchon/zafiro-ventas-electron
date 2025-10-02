@@ -33,6 +33,7 @@ function buildWindowOptions(
 
 let mainWindow: BrowserWindow | null;
 
+
 function buildRendererUrl(route: string): string {
   const url = new URL(RENDERER_URL);
   const normalizedRoute = route.startsWith('/') ? route : `/${route}`;
@@ -60,10 +61,11 @@ async function createWindow() {
 
   Menu.setApplicationMenu(null);
 
+
   mainWindow.on('closed', () => {
-    mainWindow = null;
-    app.quit();
-  });
+    mainWindow = null
+    app.quit()
+  })
 }
 
 function createChildWindow(route: string, payload: unknown, opener?: BrowserWindow) {
@@ -97,6 +99,11 @@ app.whenReady().then(() => {
   });
 });
 
+
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+  if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})

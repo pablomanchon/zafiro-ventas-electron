@@ -1,26 +1,64 @@
+// src/productos/productos.service.ts
 import { Injectable } from '@nestjs/common';
-import { CreateProductoDto } from './dto/create-producto.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, EntityManager } from 'typeorm';
 import { UpdateProductoDto } from './dto/update-producto.dto';
+import { Producto } from './entities/producto.entity';
+import { ProductoDto } from './dto/create-producto.dto';
+import { emitChange } from '../broadcast/event-bus'; // 👈
 
 @Injectable()
 export class ProductosService {
-  create(createProductoDto: CreateProductoDto) {
-    return 'This action adds a new producto';
+  constructor(
+    @InjectRepository(Producto)
+    private readonly repo: Repository<Producto>,
+  ) {}
+
+  async findAll(manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(Producto) : this.repo;
+    return repo.find();
   }
 
-  findAll() {
-    return `This action returns all productos`;
+  async create(createDto: ProductoDto, manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(Producto) : this.repo;
+    const entity = repo.create(createDto);
+    const saved = await repo.save(entity);
+    // 🔔 notificar alta
+    emitChange('productos:changed', { type: 'upsert', data: saved });
+    return saved;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} producto`;
+  async findOne(id: string, manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(Producto) : this.repo;
+    return repo.findOne({ where: { id } });
   }
 
-  update(id: number, updateProductoDto: UpdateProductoDto) {
-    return `This action updates a #${id} producto`;
+  async update(id: string, updateDto: UpdateProductoDto, manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(Producto) : this.repo;
+    await repo.update(id, updateDto);
+    const updated = await repo.findOne({ where: { id } });
+    if (updated) emitChange('productos:changed', { type: 'upsert', data: updated }); // 🔔
+    return updated;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} producto`;
+  async remove(id: string, manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(Producto) : this.repo;
+    await repo.delete(id);
+    // 🔔 notificar baja
+    emitChange('productos:changed', { type: 'remove', data: { id } });
+    return { deleted: true };
+  }
+
+  async decrementStock(productoId: string, cantidad: number, manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(Producto) : this.repo;
+    const producto = await repo.findOne({ where: { id: productoId } });
+    if (!producto) throw new Error('Producto no encontrado');
+    if (producto.stock < cantidad) throw new Error('Stock insuficiente');
+
+    producto.stock -= cantidad;
+    const saved = await repo.save(producto);
+    // 🔔 notificar cambio de stock
+    emitChange('productos:changed', { type: 'upsert', data: saved });
+    return saved;
   }
 }
