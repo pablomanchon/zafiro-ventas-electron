@@ -10,6 +10,7 @@ import VentaCreate from "./entities/ventas/VentaCreate";
 import PageResumen from "./entities/resumen/Page";
 import PageCaja from "./entities/caja/Page";
 import SaleDetail from "./entities/ventas/Detail";
+import PageVendedores from "./entities/vendedores/Page";
 
 export default function App() {
 
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/ventas" element={<PageVentas />} />
         <Route path="/resumenes" element={<PageResumen />} />
         <Route path="/caja" element={<PageCaja/>}/>
+        <Route path="/vendedores" element={<PageVendedores/>}/>
       </Route>
     </Routes>
   )

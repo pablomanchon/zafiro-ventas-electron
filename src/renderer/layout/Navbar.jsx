@@ -18,12 +18,13 @@ import logo from '../../../public/zafiro_rounded.ico';
 
 const navItems = [
   { name: "Inicio", href: "/", icon: <Home size={20} /> },
-  { name: "Clientes", href: "/clientes", icon: <Users size={20} /> },
-  { name: "Productos", href: "/productos", icon: <Package size={20} /> },
-  { name: "Métodos de pago", href: "/metodos-pago", icon: <CreditCard size={20} /> },
   { name: "Ventas", href: "/ventas", icon: <Receipt size={20} /> },
-  { name: "Resumenes", href: "/resumenes", icon: <BarChart3 size={20} /> },
+  { name: "Productos", href: "/productos", icon: <Package size={20} /> },
   { name: "Caja", href: "/caja", icon: <Wallet size={20} /> },
+  { name: "Resumenes", href: "/resumenes", icon: <BarChart3 size={20} /> },
+  { name: "Clientes", href: "/clientes", icon: <Users size={20} /> },
+  { name: "Vendedores", href: "/vendedores", icon: <Users size={20} /> },
+  { name: "Métodos de pago", href: "/metodos-pago", icon: <CreditCard size={20} /> },
 ]
 
 export default function Navbar() {

@@ -4,6 +4,7 @@ import { CreateVentaPagoDto } from '../../venta-pagos/dto/create-venta-pago.dto'
 
 export class CreateVentaDto {
   clienteId: number;
+  vendedorId: number;
   detalles: CreateVentaDetalleDto[];
   pagos: CreateVentaPagoDto[];
 }

@@ -3,6 +3,7 @@ export {}
 declare global {
   type EntityChannel =
     | 'clientes:changed'
+    | 'vendedores:changed'
     | 'productos:changed'
     | 'metodos:changed'
     | 'ventas:changed'

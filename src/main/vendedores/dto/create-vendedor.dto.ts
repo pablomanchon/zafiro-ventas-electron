@@ -1,1 +1,4 @@
-export class CreateVendedorDto {}
+export class CreateVendedorDto {
+    id: number
+    nombre: string
+}

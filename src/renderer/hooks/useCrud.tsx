@@ -21,6 +21,7 @@ export function useCrud<T extends { id: number }>(
   const fetchItems = async (): Promise<void> => {
     try {
       const data = await getAll<T>(entity)
+      console.log(data)
       setItems(data)
     } catch (err) {
       console.error(err)

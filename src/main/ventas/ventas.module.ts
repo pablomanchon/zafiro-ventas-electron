@@ -16,6 +16,7 @@ import { VentaPagosService } from '../venta-pagos/venta-pagos.service';
 import { VentaPago } from '../venta-pagos/entities/venta-pago.entity';
 import { CajaModule } from '../caja/caja.module';
 import { MetodoPago } from '../metodo-pago/entities/metodo-pago.entity';
+import { VendedoresModule } from '../vendedores/vendedores.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { MetodoPago } from '../metodo-pago/entities/metodo-pago.entity';
     VentaDetalleModule,
     VentaPagosModule,
     CajaModule,
+    VendedoresModule
   ],
   controllers: [VentasController],
   providers: [VentasService],
