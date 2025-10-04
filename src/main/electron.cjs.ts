@@ -133,11 +133,9 @@ async function createWindow() {
 
 ipcMain.handle('open-child', async (event, options: { route: string; payload?: unknown }) => {
   const { route, payload } = options ?? { route: '' }
-  const parent = BrowserWindow.fromWebContents(event.sender) ?? undefined
 
   const child = new BrowserWindow({
     ...buildChildWindowOptions(),
-    parent,
   })
 
   const targetRoute = normalizeHashRoute(route)

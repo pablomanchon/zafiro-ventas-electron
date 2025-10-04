@@ -7,6 +7,7 @@ const allowedIncoming = new Set([
   'productos:changed',
   'metodos:changed',
   'ventas:changed',
+  'vendedores:changed',
   'init-data',
 ])
 
