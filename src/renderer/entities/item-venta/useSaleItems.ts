@@ -64,7 +64,7 @@ export function useSaleItems(
   // ✅ Si no viene "value", arrancá con 4 filas pre-cargadas
   const [items, setItems] = useState<SaleItem[]>(() => {
     if (Array.isArray(value)) return value           // modo controlado/edición
-    return [makeBase(), makeBase(), makeBase(), makeBase()] // modo crear
+    return [makeBase(), makeBase(), makeBase()] // modo crear
   })
 
   // Flags/refs de control

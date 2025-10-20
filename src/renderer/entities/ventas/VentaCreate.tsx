@@ -172,14 +172,6 @@ export default function VentaCreate() {
     />
   ), [])
 
-  const makePaymentBase = (): PaymentItem =>
-    ({ metodoId: '', nombre: '', monto: '', cuotas: '' })
-
-  const defaultPayments = useMemo<PaymentItem[]>(
-    () => [makePaymentBase(), makePaymentBase(), makePaymentBase()],
-    []
-  )
-
   const calcTotalConDescuento = (items: SaleItem[]): number => {
     return (items ?? []).reduce((acc, it: any) => {
       const prod = products.find(p => p.id === it.productId)
@@ -218,9 +210,9 @@ export default function VentaCreate() {
       label: 'Métodos de Pago',
       type: 'component',
       Component: PaymentMethodsTable,
-      value: defaults.pagos ?? defaultPayments,
+      value: defaults.pagos,
     },
-  ], [defaults, defaultPayments, ItemsProxy])
+  ], [defaults, ItemsProxy])
 
   const inputsWithTotal: FormInput[] = useMemo(() => {
     return inputsBase.map(inp =>

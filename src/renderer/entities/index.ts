@@ -1,8 +1,6 @@
 import type { CrudConfig } from './CrudConfig'
-/**
- * Carga en build-time todos los `config.ts` bajo cada carpeta de entidad:
- *   ./clientes/config.ts, ./productos/config.ts, …
- */
+import vendedoresConfig from './sellers/config' // 👈 import manual
+
 const modules = import.meta.glob<{ default: CrudConfig }>('./*/config.ts', {
   eager: true,
 })
@@ -16,3 +14,8 @@ export const crudConfigs: Record<string, CrudConfig> = Object.entries(modules)
     }
     return acc
   }, {} as Record<string, CrudConfig>)
+
+// ✅ Agregar vendedores manualmente si por algún motivo el glob no lo incluyó
+if (!crudConfigs['vendedores']) {
+  crudConfigs['vendedores'] = vendedoresConfig
+}

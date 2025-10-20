@@ -1,6 +1,6 @@
 import type { CrudConfig } from '../CrudConfig';
 
-const vendedoresConfig: CrudConfig = {
+export const vendedoresConfig: CrudConfig = {
   entity: 'vendedores',
   title: 'Vendedores',
   columns: ['id', 'nombre'],

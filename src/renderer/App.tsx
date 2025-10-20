@@ -10,7 +10,7 @@ import VentaCreate from "./entities/ventas/VentaCreate";
 import PageResumen from "./entities/resumen/Page";
 import PageCaja from "./entities/caja/Page";
 import SaleDetail from "./entities/ventas/Detail";
-import PageVendedores from "./entities/vendedores/Page";
+import PageVendedores from "./entities/sellers/Page";
 
 export default function App() {
 
@@ -20,7 +20,7 @@ export default function App() {
       <Route path="/crud/:entity/:mode/:id?" element={<CrudFormPage />} />
       <Route path="/detail/:entity/:id" element={<SaleDetail />} />
       <Route path="/ventas/create" element={<VentaCreate />} />
-      <Route path="/ventas/:idVenta" element={<VentaCreate />} />
+      <Route path="/ventas/:idVenta" element={<SaleDetail />} />
 
       {/* 2) Rutas normales bajo MainLayout */}
       <Route element={<MainLayout />}>

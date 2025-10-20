@@ -31,7 +31,7 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
   const [items, setItems] = useState<PaymentItem[]>(
     Array.isArray(value) && value.length > 0
       ? value.map(it => ({ ...it, monto: String(it.monto ?? ''), cuotas: it.cuotas ?? '' }))
-      : [EMPTY_PAYMENT(), EMPTY_PAYMENT(), EMPTY_PAYMENT(), EMPTY_PAYMENT()] // ← 4 filas iniciales
+      : [EMPTY_PAYMENT(), EMPTY_PAYMENT()] // ← 3 filas iniciales
   )
 
   // si llega un value nuevo desde afuera (reset formulario, etc.), reflejarlo;
@@ -41,7 +41,7 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
       setItems(
         value.length > 0
           ? value.map(it => ({ ...it, monto: String(it.monto ?? ''), cuotas: it.cuotas ?? '' }))
-          : [EMPTY_PAYMENT(), EMPTY_PAYMENT(), EMPTY_PAYMENT(), EMPTY_PAYMENT()]
+          : [EMPTY_PAYMENT(), EMPTY_PAYMENT()]
       )
     }
   }, [value])

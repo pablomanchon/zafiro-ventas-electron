@@ -31,12 +31,14 @@ const salesColumns = [
 
 export default function SaleDetail() {
   // useParams siempre devuelve string | undefined
-  const { id } = useParams<{ id: string }>();
-  
-  // solo invocamos el hook si hay id
-  const { venta, loading } = useSale(id ?? "");
+  const { idVenta } = useParams<{ idVenta: string }>();
 
-  if (!id) return <div>No se encontró el ID de la venta</div>;
+  console.log(idVenta)
+  
+  // solo invocamos el hook si hay idVenta
+  const { venta, loading } = useSale(idVenta ?? "");
+
+  if (!idVenta) return <div>No se encontró el ID de la venta</div>;
   if (loading) return <div>Cargando venta...</div>;
   if (!venta) return <div>Venta no encontrada</div>;
 
