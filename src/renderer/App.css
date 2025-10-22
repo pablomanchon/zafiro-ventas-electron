@@ -2,3 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Quita las flechas en Chrome / Edge / Opera / Electron */
+.no-spin::-webkit-inner-spin-button,
+.no-spin::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Quita las flechas en Firefox */
+.no-spin {
+  -moz-appearance: textfield;
+}

@@ -1,18 +1,16 @@
-// src/caja/caja.entity.ts
 import {
   Entity,
-  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
-import { CajaMoveDetail } from './cajaMove.entity';
 import { cajaMoveDto } from '../dto/caja-move.dto';
 
 @Entity({ name: 'caja' })
-export class Caja {
-  @PrimaryColumn({ type: 'text' })
-  id: string = 'main';
+export class CajaMoveDetail {
+  @PrimaryGeneratedColumn()
+  id: number;
 
   // Saldo en pesos argentinos
   @Column('decimal', { precision: 12, scale: 2, default: 0 })
@@ -28,14 +26,9 @@ export class Caja {
   @UpdateDateColumn()
   updatedAt: Date;
 }
-
 export function toEntity(dto: cajaMoveDto): CajaMoveDetail {
   const entity = new CajaMoveDetail();
-
-  // Asignamos los valores que llegan desde el DTO
   entity.saldoPesos = dto.saldoPesos;
   entity.saldoUSD = dto.saldoUSD;
-
-  // createdAt y updatedAt se llenan solos por TypeORM
   return entity;
 }

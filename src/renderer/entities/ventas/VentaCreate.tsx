@@ -16,6 +16,9 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { fetchSaleById, makeSelectVentaById, needsRefresh } from '../../store/salesReduce'
 import bgUrl from '../../assets/fondo-w.png'
 
+// 👇 helpers de dinero: usamos centavos para evitar problemas con coma/decimales
+import { toCents, formatCentsARS } from '../../utils'
+
 type VentaInitPayload = {
   clienteId?: string | number
   items?: SaleItem[]
@@ -60,6 +63,7 @@ const normalizePayments = (raw?: unknown): PaymentItem[] | undefined => {
   return raw.map((entry: any) => ({
     metodoId: coerceId(entry?.metodoId ?? entry?.metodo?.id ?? entry?.id) ?? '',
     nombre: entry?.metodo?.nombre ?? entry?.nombre ?? '',
+    // dejamos el monto como string (puede venir con coma) — se parsea a centavos al validar
     monto: String(entry?.monto ?? ''),
     cuotas: entry?.cuotas !== undefined && entry?.cuotas !== null ? String(entry.cuotas) : '',
   }))
@@ -109,7 +113,7 @@ export default function VentaCreate() {
       window.opener?.postMessage({ type: 'READY' }, origin)
     } catch {}
 
-    const unsubscribe = window.windowApi?.onInitData?.((payload) => {
+    const unsubscribe = (window as any).windowApi?.onInitData?.((payload: any) => {
       setInitPayload(payload as VentaInitPayload ?? null)
     })
 
@@ -229,18 +233,23 @@ export default function VentaCreate() {
       const items: SaleItem[] = values.items || []
       const pagos: PaymentItem[] = values.pagos || []
 
-      const totalCD = Number(totalConDescuento.toFixed(2))
+      // ==== VALIDACIÓN EN CENTAVOS ====
+      const totalCDCents = Math.round((totalConDescuento ?? 0) * 100)
 
-      const sumaPagos = Number(
-        ((pagos ?? []).reduce((acc, p) => acc + (parseFloat((p as any).monto || '0') || 0), 0)).toFixed(2)
-      )
+      const sumaPagosCents = (pagos ?? [])
+        .filter(p => p?.metodoId) // ignorar filas vacías
+        .reduce((acc, p) => acc + toCents((p as any).monto), 0)
 
-      if (sumaPagos !== totalCD) {
-        toast.error(`Los métodos de pago ($${sumaPagos.toFixed(2)}) no coinciden con el total con descuentos ($${totalCD.toFixed(2)}).`)
+      if (sumaPagosCents !== totalCDCents) {
+        toast.error(
+          `Los métodos de pago (${formatCentsARS(sumaPagosCents)}) ` +
+          `no coinciden con el total con descuentos (${formatCentsARS(totalCDCents)}).`
+        )
         setSubmitting(false)
         return
       }
 
+      // ==== DETALLES ====
       const detalles = items.map((item: any) => {
         const prod = products.find(p => p.id === item.productId)
         const base = Number(prod?.precio ?? item?.precio ?? 0)
@@ -261,14 +270,21 @@ export default function VentaCreate() {
         }
       })
 
-      const pagosPayload = pagos.map(p => {
-        const dto: Record<string, any> = {
-          metodoId: p.metodoId,
-          monto: Number((p as any).monto || 0),
-        }
-        if ((p as any).cuotas != null && (p as any).cuotas !== '') dto.cuotas = Number((p as any).cuotas)
-        return dto
-      })
+      // ==== PAGOS (payload en pesos como number; si tu backend usa centavos INTEGER, cambia a montoCentavos) ====
+      const pagosPayload = (pagos ?? [])
+        .filter(p => p?.metodoId)
+        .map(p => {
+          const cents = toCents((p as any).monto)
+          const dto: Record<string, any> = {
+            metodoId: p.metodoId,
+            monto: cents / 100,           // PESOS con decimales correctos
+            // montoCentavos: cents,       // <- usa este si la DB guarda INTEGER (centavos)
+          }
+          if ((p as any).cuotas != null && (p as any).cuotas !== '') {
+            dto.cuotas = Number((p as any).cuotas) || 0
+          }
+          return dto
+        })
 
       const venta = await create('ventas', {
         clienteId: values.clienteId ?? null,

@@ -1,4 +1,5 @@
 export class CreateCajaDto {
-    id: string;
-    saldo: number;
+    id: number;
+    saldoPesos: number;
+    saldoUsd: number;
 }

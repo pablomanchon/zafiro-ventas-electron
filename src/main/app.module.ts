@@ -13,6 +13,7 @@ import { FacturasModule } from './facturas/facturas.module';
 import { GastronomiaModule } from './gastronomia/gastronomia.module';
 import { CajaModule } from './caja/caja.module';
 import { VendedoresModule } from './vendedores/vendedores.module';
+import { MovimientoStockModule } from './movimiento-stock/movimiento-stock.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { VendedoresModule } from './vendedores/vendedores.module';
     GastronomiaModule,
     CajaModule,
     VendedoresModule,
+    MovimientoStockModule,
   ],
   controllers: [AppController],
   providers: [AppService],

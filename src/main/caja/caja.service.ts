@@ -1,5 +1,5 @@
 // src/caja/caja.service.ts
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Caja } from './entities/caja.entity';
 
@@ -55,6 +55,45 @@ export class CajaService {
     await this.dataSource.transaction(async (manager) => {
       const caja = await this.ensureCaja(manager);
       caja.saldoUSD = Number(newSaldo).toFixed(2);
+      await manager.save(caja);
+    });
+  }
+
+  /** Aumenta el saldo en pesos o USD (según `moneda`) */
+  async aumentarSaldo(moneda: 'pesos' | 'usd', monto: number) {
+    await this.dataSource.transaction(async (manager) => {
+      const caja = await this.ensureCaja(manager);
+      if (moneda === 'pesos') {
+        caja.saldoPesos == 'NaN' ? caja.saldoPesos = "0" : null
+        caja.saldoPesos = (Number(caja.saldoPesos) + monto).toFixed(2);
+      } else {
+        caja.saldoUSD == 'NaN' ? caja.saldoUSD = "0" : null
+        caja.saldoUSD = (Number(caja.saldoUSD) + monto).toFixed(2);
+      }
+      console.log(caja)
+      await manager.save(caja);
+    });
+  }
+
+  /** Disminuye el saldo en pesos o USD (según `moneda`) */
+  async disminuirSaldo(moneda: 'pesos' | 'usd', monto: number) {
+    await this.dataSource.transaction(async (manager) => {
+      const caja = await this.ensureCaja(manager);
+
+      if (moneda === 'pesos') {
+        const nuevoSaldo = Number(caja.saldoPesos) - monto;
+        if (nuevoSaldo < 0) {
+          throw new BadRequestException('Saldo en pesos insuficiente.');
+        }
+        caja.saldoPesos = nuevoSaldo.toFixed(2);
+      } else {
+        const nuevoSaldo = Number(caja.saldoUSD) - monto;
+        if (nuevoSaldo < 0) {
+          throw new BadRequestException('Saldo en dólares insuficiente.');
+        }
+        caja.saldoUSD = nuevoSaldo.toFixed(2);
+      }
+
       await manager.save(caja);
     });
   }

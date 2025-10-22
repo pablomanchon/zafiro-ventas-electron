@@ -1,5 +1,4 @@
-// src/layout/Table.jsx
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { formatCurrencyARS, looksLikeMoneyKey } from "../utils";
 
 const Table = ({
@@ -11,7 +10,6 @@ const Table = ({
 }) => {
   const [filaSeleccionada, setFilaSeleccionada] = useState(null);
 
-  // Mover selección por delta (-1 o +1)
   const shift = (delta) => {
     setFilaSeleccionada((prev) => {
       const actual = prev == null ? -1 : prev;
@@ -31,9 +29,6 @@ const Table = ({
     setFilaSeleccionada(index);
     onFilaSeleccionada?.(datos[index]?.id);
   };
-
-  const next = () => shift(1);
-  const prev = () => shift(-1);
 
   useEffect(() => {
     const handler = (e) => {
@@ -69,7 +64,8 @@ const Table = ({
   };
 
   const obtenerValor = (fila, encabezado) => {
-    const isObj = typeof encabezado === "object" && encabezado !== null;
+    const isObj =
+      typeof encabezado === "object" && encabezado !== null;
     const claveOriginal = isObj
       ? (encabezado.clave ?? encabezado.key ?? "")
       : encabezado ?? "";
@@ -90,18 +86,34 @@ const Table = ({
 
     const lastKey = keys[keys.length - 1] ?? "";
 
+    // 👉 si es React element (inputs, botones, etc.), lo devolvemos tal cual
+    if (React.isValidElement(valor)) return valor;
+
     // 1) Fecha
     if (lastKey.toLowerCase().includes("fecha")) {
       return formatearFecha(valor);
     }
 
-    // 2) Dinero (explícito por columna o por nombre de clave)
+    // 2) Dinero (explícito o por nombre de clave)
     const isMoneyColumn =
-      (isObj && (encabezado.tipo === "money" || encabezado.formato === "moneda")) ||
+      (isObj &&
+        (encabezado.tipo === "money" ||
+          encabezado.formato === "moneda")) ||
       looksLikeMoneyKey(lastKey);
 
     if (isMoneyColumn) {
-      return formatCurrencyARS(valor);
+      // Solo auto-formateamos si es number o string numérica "pura"
+      if (typeof valor === "number") return formatCurrencyARS(valor);
+      if (typeof valor === "string") {
+        const trimmed = valor.trim();
+        // 1234 | 1234.56 | 1234,56
+        if (/^-?\d+(?:[.,]\d+)?$/.test(trimmed)) {
+          return formatCurrencyARS(trimmed.replace(",", "."));
+        }
+        // Si viene con símbolos ($, puntos separadores, texto), lo dejamos como está
+        return valor;
+      }
+      return valor;
     }
 
     // 3) Valor por defecto
