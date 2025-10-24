@@ -53,7 +53,7 @@ const DEFAULT_COLORS = [
 export default function Pie2DChart({
     title,
     data,
-    innerRadius = 0,
+    innerRadius = "40%",
     outerRadius = "90%",
     showLegend = true,
     valueFormatter = (n) => new Intl.NumberFormat().format(n),
@@ -80,7 +80,7 @@ export default function Pie2DChart({
         if (!showLabels || percent < 0.02) return null; // ocultar <2%
 
         const RADIAN = Math.PI / 180;
-        const radius = ir + (or - ir) * 0.5;
+        const radius = ir + (or - ir) * 0.3;
         const x = cx + radius * Math.cos(-midAngle * RADIAN);
         const y = cy + radius * Math.sin(-midAngle * RADIAN);
         const anchor = x > cx ? "start" : "end";
@@ -161,7 +161,8 @@ export default function Pie2DChart({
                                 isAnimationActive={true}
                                 labelLine={false}
                                 label={label}
-                                cornerRadius={cornerRadius}
+                                cornerRadius={cornerRadius}    
+                                paddingAngle={3}
                                 onClick={(_, idx) => onSliceClick?.(safeData[idx], idx)} // ✔ firma correcta
                             >
                                 {safeData.map((entry, index) => (

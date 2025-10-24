@@ -29,6 +29,36 @@ import { CajaService } from '../caja/caja.service';
 import { Producto } from '../productos/entities/producto.entity';
 import { emitChange } from '../broadcast/event-bus';
 
+type Granularity = 'day' | 'week' | 'month';
+
+function timeBucketExpr(db: string, granularity: Granularity) {
+  // Devuelve el texto del bucket temporal para SELECT/GROUP BY
+  if (db === 'sqlite') {
+    switch (granularity) {
+      case 'day': return "strftime('%Y-%m-%d', v.fecha)";
+      case 'week': return "strftime('%Y-W%W', v.fecha)"; // año-semana
+      case 'month': return "strftime('%Y-%m', v.fecha)";
+    }
+  } else {
+    // Postgres / motores con date_trunc
+    switch (granularity) {
+      case 'day': return "to_char(date_trunc('day', v.fecha), 'YYYY-MM-DD')";
+      case 'week': return "to_char(date_trunc('week', v.fecha), 'IYYY-\"W\"IW')";
+      case 'month': return "to_char(date_trunc('month', v.fecha), 'YYYY-MM')";
+    }
+  }
+}
+
+function sumCantidadExpr(db: string) {
+  return db === 'sqlite' ? 'SUM(CAST(it.cantidad AS REAL))' : 'SUM(it.cantidad)';
+}
+
+function sumImporteExpr(db: string) {
+  // importe = precio * cantidad (ambos pueden ser DECIMAL en SQLite)
+  return db === 'sqlite'
+    ? 'SUM(CAST(it.precio AS REAL) * CAST(it.cantidad AS REAL))'
+    : 'SUM(it.precio * it.cantidad)';
+}
 // 👇 importar bus de eventos (ajustá la ruta si es necesario)
 
 function normalizeRange(from?: string, to?: string) {
@@ -64,7 +94,7 @@ export class VentasService {
     private readonly productoService: ProductosService, // por si lo usás en otros métodos
     private readonly dataSource: DataSource,
     private readonly cajaService: CajaService,
-  ) {}
+  ) { }
 
   async create(createDto: CreateVentaDto): Promise<Venta> {
     // 1) Validaciones base
@@ -185,7 +215,7 @@ export class VentasService {
 
         // 6.e) Caja
         if (totalEfectivo > 0) await this.cajaService.incrementarPesosTx(totalEfectivo, manager);
-        if (totalUsd > 0)     await this.cajaService.incrementarUsdTx(totalUsd, manager);
+        if (totalUsd > 0) await this.cajaService.incrementarUsdTx(totalUsd, manager);
 
         // 6.f) Venta completa
         const ventaCompleta = await ventaRepoTx.findOneOrFail({
@@ -197,7 +227,7 @@ export class VentasService {
       });
 
     // ✅ Fuera de la transacción (commit OK): emitir a todas las ventanas
-    emitChange('ventas:changed',   { type: 'upsert', data: savedVenta });
+    emitChange('ventas:changed', { type: 'upsert', data: savedVenta });
     for (const p of productosActualizados) {
       emitChange('productos:changed', { type: 'upsert', data: p });
     }
@@ -308,4 +338,45 @@ export class VentasService {
       total: Number(r.total),
     }));
   }
+  /** Agrega cantidades/importe por nombre de ItemVenta, bucket: día/semana/mes */
+async productosVendidosPorPeriodo(
+  granularity: Granularity,
+  from?: string,
+  to?: string,
+): Promise<Array<{ periodo: string; nombre: string; cantidad: number; importe: number }>> {
+  const conn = this.repo.manager.connection;
+  const dbType = conn.options.type as string;
+
+  const bucket = timeBucketExpr(dbType, granularity);
+  const sumCant = sumCantidadExpr(dbType);
+  const sumImp  = sumImporteExpr(dbType);
+  const { where, params } = normalizeRange(from, to);
+
+  // 👇 Empezamos desde VentaDetalle, y unimos explícito a Venta e ItemVenta
+  const qb = this.dataSource
+    .getRepository(VentaDetalle)
+    .createQueryBuilder('det')
+    .innerJoin('det.venta', 'v')
+    .innerJoin('det.item',  'it')
+    .select(`${bucket}`, 'periodo')
+    .addSelect('it.nombre', 'nombre')
+    .addSelect(`${sumCant}`, 'cantidad')
+    .addSelect(`${sumImp}`,  'importe');
+
+  if (where) qb.where(where, params);
+
+  const rows = await qb
+    .groupBy(bucket)
+    .addGroupBy('it.nombre')
+    .orderBy('periodo', 'ASC')
+    .addOrderBy('cantidad', 'DESC')
+    .getRawMany<{ periodo: string; nombre: string; cantidad: string | number; importe: string | number }>();
+
+  return rows.map(r => ({
+    periodo: r.periodo,
+    nombre: r.nombre,
+    cantidad: Number(r.cantidad) || 0,
+    importe: Number(r.importe) || 0,
+  }));
+}
 }

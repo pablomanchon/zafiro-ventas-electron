@@ -2,6 +2,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Caja } from './entities/caja.entity';
+import { CajaMoveDetail } from './entities/cajaMove.entity';
+import { CajaMoveDetailDto, CajaMoveDto, toDto, toMoveDetailDto } from './dto/caja-move.dto';
 
 @Injectable()
 export class CajaService {
@@ -29,8 +31,36 @@ export class CajaService {
     };
   }
 
+  async getMoves(): Promise<CajaMoveDetailDto[]> {
+    const cajaMoves = await this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(CajaMoveDetail)
+      return await repo.find();
+    })
+    const cajaMovesDto = cajaMoves.map(c => {
+      return Number(c.saldoPesos) > 0 ?
+        toMoveDetailDto(c, 'pesos') : toMoveDetailDto(c, 'usd')
+    })
+
+    return cajaMovesDto;
+  }
+
+  async getMoveById(id: number): Promise<CajaMoveDetailDto> {
+    const cajaMove = await this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(CajaMoveDetail)
+      return await repo.findOne({ where: { id } })
+    })
+    if (!cajaMove) throw new Error('No se encuentra el movimiento de caja')
+    const cajaMoveDto = Number(cajaMove?.saldoPesos) > 0 ?
+      toMoveDetailDto(cajaMove, 'pesos') :
+      toMoveDetailDto(cajaMove, 'usd')
+    return cajaMoveDto;
+  }
+
   async incrementarPesosTx(monto: number, manager: EntityManager) {
     const r = manager.getRepository(Caja);
+    const rMove = manager.getRepository(CajaMoveDetail);
+    const detail = rMove.create({ saldoPesos: monto.toString(), moveType: 'in' })
+    rMove.save(detail)
     const caja = await this.ensureCaja(manager);
     caja.saldoPesos = (Number(caja.saldoPesos) + monto).toFixed(2);
     await r.save(caja);
@@ -38,6 +68,9 @@ export class CajaService {
 
   async incrementarUsdTx(monto: number, manager: EntityManager) {
     const r = manager.getRepository(Caja);
+    const rMove = manager.getRepository(CajaMoveDetail);
+    const detail = rMove.create({ saldoUSD: monto.toString(), moveType: 'in' })
+    rMove.save(detail)
     const caja = await this.ensureCaja(manager);
     caja.saldoUSD = (Number(caja.saldoUSD) + monto).toFixed(2);
     await r.save(caja);
@@ -82,12 +115,18 @@ export class CajaService {
 
       if (moneda === 'pesos') {
         const nuevoSaldo = Number(caja.saldoPesos) - monto;
+        const rMove = manager.getRepository(CajaMoveDetail);
+        const detail = rMove.create({ saldoPesos: monto.toString(), moveType: 'out' })
+        rMove.save(detail)
         if (nuevoSaldo < 0) {
           throw new BadRequestException('Saldo en pesos insuficiente.');
         }
         caja.saldoPesos = nuevoSaldo.toFixed(2);
       } else {
         const nuevoSaldo = Number(caja.saldoUSD) - monto;
+        const rMove = manager.getRepository(CajaMoveDetail);
+        const detail = rMove.create({ saldoUSD: monto.toString(), moveType: 'out' })
+        rMove.save(detail)
         if (nuevoSaldo < 0) {
           throw new BadRequestException('Saldo en dólares insuficiente.');
         }

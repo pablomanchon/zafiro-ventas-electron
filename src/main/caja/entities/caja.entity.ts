@@ -7,7 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { CajaMoveDetail } from './cajaMove.entity';
-import { cajaMoveDto } from '../dto/caja-move.dto';
+import { CajaMoveDto } from '../dto/caja-move.dto';
 
 @Entity({ name: 'caja' })
 export class Caja {
@@ -29,7 +29,7 @@ export class Caja {
   updatedAt: Date;
 }
 
-export function toEntity(dto: cajaMoveDto): CajaMoveDetail {
+export function toEntity(dto: CajaMoveDto): CajaMoveDetail {
   const entity = new CajaMoveDetail();
 
   // Asignamos los valores que llegan desde el DTO

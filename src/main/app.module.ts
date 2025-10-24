@@ -23,6 +23,8 @@ import { MovimientoStockModule } from './movimiento-stock/movimiento-stock.modul
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,      // en dev sincroniza esquema
       autoLoadEntities: true, // carga entities de cada módulo
+      logging:['error','query','schema'],
+      logger: 'advanced-console'
     }),
     ProductosModule,
     ClientesModule,

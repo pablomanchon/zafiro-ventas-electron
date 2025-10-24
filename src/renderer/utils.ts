@@ -98,3 +98,12 @@ export const centsToInput = (cents: number) => {
   const dec = (abs % 100).toString().padStart(2, "0");
   return dec === "00" ? ent : `${ent},${dec}`;
 };
+
+export function formatDate(d: string | Date) {
+  const date = typeof d === 'string' ? new Date(d) : d
+  if (isNaN(date.getTime())) return String(d)
+  return new Intl.DateTimeFormat('es-AR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
+}

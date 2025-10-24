@@ -9,6 +9,8 @@ import { formatCurrencyARS } from '../../utils'
 import { useModal } from '../../providers/ModalProvider'
 import MoneyMove from './MoneyMove'
 import { toast } from 'react-toastify'
+import PrimaryButton from '../../components/PrimaryButton'
+import MoneyMoves from './MoneyMoves'
 type salesType = {
   pesos: number,
   usd: number
@@ -34,6 +36,10 @@ export default function PageCaja() {
     toast.info(`¡${moveType == 'in' ? 'Ingreso: ' : 'Egreso: '} de dinero creado con éxito!`)
   }
 
+  const handleShowMoveDetails = () => {
+    openModal(<MoneyMoves />)
+  }
+
   return (
     <Main>
       <Title>Caja</Title>
@@ -43,6 +49,7 @@ export default function PageCaja() {
           <Steel className='w-full text-xl font-bold flex'><h3 className='mr-auto'>USD:</h3>{formatCurrencyARS(sales.usd)}</Steel>
         </div>
         <Steel className='w-full flex gap-2'>
+          <PrimaryButton functionClick={handleShowMoveDetails} title={"Movimientos de Dinero"} />
           <SecondaryBtn functionClick={() => { handleOpenMove("in") }} title={"Ingreso de Dinero"} />
           <DangerBtn functionClick={() => { handleOpenMove("out") }} title={"Egreso de Dinero"} />
         </Steel>

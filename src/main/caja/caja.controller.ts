@@ -1,5 +1,5 @@
 // src/caja/caja.controller.ts
-import { Controller, Get, Post, Patch, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
 import { CajaService } from './caja.service';
 
 type Moneda = 'pesos' | 'usd';
@@ -13,6 +13,16 @@ export class CajaController {
   async saldos() {
     return this.cajaService.getSaldos();
   }
+
+  @Get('moves')
+  async moves() {
+    return this.cajaService.getMoves();
+  }
+
+   @Get('moves/:id')
+    findOne(@Param('id') id: number) {
+      return this.cajaService.getMoveById(id);
+    }
 
   // Operación NO idempotente → POST
   @Post('ingresar')

@@ -60,7 +60,7 @@ export default function PageResumen() {
               innerRadius={60}          // si querés torta sólida, poné 0
               outerRadius="90%"
               showLegend={true}
-              cornerRadius={6}
+              cornerRadius={8}
               height={320}
               valueFormatter={(n: string | number) => formatCurrencyARS(n)}
               onSliceClick={(item: { name: any; value: string | number }) => toast.info(`${item.name}: ${formatCurrencyARS(item.value)}`)}

@@ -10,9 +10,13 @@ export type ProductMoveStock = {
     quantity: number;
 }
 
+export class MovimientoStockDto extends CreateMovimientoStockDto {
+    id: number
+}
+
 export function toDto(entity: MovimientoStock): CreateMovimientoStockDto {
     return {
-        moveType: 'in', // no se guarda, pero podés devolver el tipo según tu lógica
+        moveType: entity.moveType,
         products: entity.productsMoveStock,
     };
 }
