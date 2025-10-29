@@ -14,17 +14,21 @@ import { GastronomiaModule } from './gastronomia/gastronomia.module';
 import { CajaModule } from './caja/caja.module';
 import { VendedoresModule } from './vendedores/vendedores.module';
 import { MovimientoStockModule } from './movimiento-stock/movimiento-stock.module';
+import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: 'db.sqlite',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,      // en dev sincroniza esquema
-      autoLoadEntities: true, // carga entities de cada módulo
-      logging:['error','query','schema'],
-      logger: 'advanced-console'
+    TypeOrmModule.forRootAsync({
+      useFactory: () => ({
+        type: 'postgres',
+        url: process.env.DATABASE_URL,            // <- usa SOLO url
+        ssl: { rejectUnauthorized: false },
+        autoLoadEntities: true,
+        synchronize: true,
+        logging: ['error', 'warn'],
+        extra: { max: 5, idleTimeoutMillis: 30000 },
+      }),
     }),
     ProductosModule,
     ClientesModule,
@@ -38,8 +42,10 @@ import { MovimientoStockModule } from './movimiento-stock/movimiento-stock.modul
     CajaModule,
     VendedoresModule,
     MovimientoStockModule,
+    UserModule,
+    AuthModule
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

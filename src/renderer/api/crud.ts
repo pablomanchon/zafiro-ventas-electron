@@ -2,7 +2,7 @@
 // src/api/crud.ts
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'http://10.0.0.183:3000/api';
 
 export async function getAll<T = any>(
   entity: string,

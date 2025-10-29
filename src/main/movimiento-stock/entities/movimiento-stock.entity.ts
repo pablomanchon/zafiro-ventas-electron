@@ -6,7 +6,7 @@ export class MovimientoStock {
   id: number;
   @Column()
   productsMoveStock: ProductMoveStock[]
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz', default: () => 'now()' })
   fecha: Date
   @Column()
   moveType: 'in' | 'out'

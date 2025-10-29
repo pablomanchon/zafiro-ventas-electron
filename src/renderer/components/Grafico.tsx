@@ -183,7 +183,6 @@ export default function Pie2DChart({
                             {showLegend && (
                                 <Legend
                                     verticalAlign="bottom"
-                                    height={24}
                                     wrapperStyle={{ paddingTop: 8 }}
                                     formatter={(value: string, entry: any) => (
                                         <span>

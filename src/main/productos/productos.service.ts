@@ -6,13 +6,14 @@ import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Producto } from './entities/producto.entity';
 import { ProductoDto } from './dto/create-producto.dto';
 import { emitChange } from '../broadcast/event-bus'; // 👈
+import { Column, getFromXlsx } from './utils';
 
 @Injectable()
 export class ProductosService {
   constructor(
     @InjectRepository(Producto)
     private readonly repo: Repository<Producto>,
-  ) {}
+  ) { }
 
   async findAll(manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
@@ -60,5 +61,8 @@ export class ProductosService {
     // 🔔 notificar cambio de stock
     emitChange('productos:changed', { type: 'upsert', data: saved });
     return saved;
+  }
+  async getFromXlsx(path: string, index: number, columns: Column[]) {
+    getFromXlsx(path, index, columns)
   }
 }

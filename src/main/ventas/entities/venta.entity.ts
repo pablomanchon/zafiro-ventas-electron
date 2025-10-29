@@ -19,7 +19,7 @@
     @PrimaryGeneratedColumn()
     id: number;
 
-    @CreateDateColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ type: 'timestamptz', default: () => 'now()' })
     fecha: Date;
 
     @ManyToOne(() => Cliente, cliente => cliente.ventas, { eager: true })

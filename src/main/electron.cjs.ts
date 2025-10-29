@@ -13,7 +13,7 @@ const icon = path.join(__dirname, '../public/zafiro_rounded.ico')
 // - app.isPackaged es confiable: true cuando está empaquetado.
 // - En dev usamos Vite dev server (VARIABLE o fallback a localhost).
 const isProd = app.isPackaged
-const DEV_SERVER = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
+const DEV_SERVER = process.env.VITE_DEV_SERVER_URL || 'http://10.0.0.183:5173'
 
 function getRendererUrl(hash = ''): string {
   if (!isProd) return `${DEV_SERVER}${hash}`
