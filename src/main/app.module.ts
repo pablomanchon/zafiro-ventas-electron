@@ -15,7 +15,7 @@ import { CajaModule } from './caja/caja.module';
 import { VendedoresModule } from './vendedores/vendedores.module';
 import { MovimientoStockModule } from './movimiento-stock/movimiento-stock.module';
 import { UserModule } from './user/user.module';
-import { AuthModule } from './auth/auth.module';
+import { SupabaseAuthGuard } from './guards/supabase-guard.auth';
 
 @Module({
   imports: [
@@ -42,10 +42,9 @@ import { AuthModule } from './auth/auth.module';
     CajaModule,
     VendedoresModule,
     MovimientoStockModule,
-    UserModule,
-    AuthModule
+    UserModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SupabaseAuthGuard],
 })
 export class AppModule { }

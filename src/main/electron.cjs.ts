@@ -6,20 +6,31 @@ import { bootstrap } from './bootstrap'
 import { onChange } from './broadcast/event-bus'
 import { broadcast } from './broadcast/ipc-broadcast'
 
+// 🧩 🔹 Supabase + Keytar (agregado)
+import { createClient } from '@supabase/supabase-js'
+import keytar from 'keytar'
+
+// 🧩 Variables Supabase (leídas desde .env)
+const SUPABASE_URL = process.env.SUPABASE_URL!
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+  auth: { persistSession: false },
+})
+
+// 🧩 Configuración de almacenamiento seguro del token
+const SERVICE = 'zafiro-stock'
+const ACCOUNT = 'supabase-session'
+
+// -------------------------------------------------------
 let mainWindow: BrowserWindow | null
 const icon = path.join(__dirname, '../public/zafiro_rounded.ico')
 
 // ⚙️ Detección de entorno
-// - app.isPackaged es confiable: true cuando está empaquetado.
-// - En dev usamos Vite dev server (VARIABLE o fallback a localhost).
 const isProd = app.isPackaged
 const DEV_SERVER = process.env.VITE_DEV_SERVER_URL || 'http://10.0.0.183:5173'
 
 function getRendererUrl(hash = ''): string {
   if (!isProd) return `${DEV_SERVER}${hash}`
-
-  // En prod: el index.html del renderer generado por tu build.
-  // Normalmente queda en .../dist/renderer/index.html si estás usando vite-electron.
   const indexHtml = path.join(__dirname, '../renderer/index.html')
   return pathToFileURL(indexHtml).toString() + hash
 }
@@ -68,18 +79,14 @@ async function createWindow() {
   })
 
   mainWindow.maximize()
-  // ⬇️ Carga correcta según entorno
   mainWindow.loadURL(getRendererUrl())
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show()
     mainWindow?.focus()
   })
 
-  // 🪟 Abrir rutas internas (HashRouter) en nueva ventana de Electron
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     const u = new URL(url)
-
-    // ¿Es la misma origin de la app y usa hash #/ ?
     const isSameOriginDev = !isProd && u.origin === new URL(DEV_SERVER).origin
     const isSameOriginProd = isProd && url.startsWith('file:')
     const isHashRoute = u.hash?.startsWith('#/')
@@ -87,7 +94,6 @@ async function createWindow() {
     if ((isSameOriginDev || isSameOriginProd) && isHashRoute) {
       const isCreateOrEdit = /\/(create|edit)/.test(u.hash)
       const isVentaCreate = u.hash.includes('#/ventas/create')
-
       const width = isVentaCreate ? 900 : (isCreateOrEdit ? 500 : 800)
       const height = isVentaCreate ? 750 : 600
 
@@ -101,12 +107,10 @@ async function createWindow() {
       }
     }
 
-    // Externas → navegador del sistema
     shell.openExternal(url)
     return { action: 'deny' }
   })
 
-  // Mostrar y enfocar toda ventana hija
   mainWindow.webContents.on('did-create-window', (child: BrowserWindow) => {
     child.setAlwaysOnTop(false)
     child.once('ready-to-show', () => {
@@ -116,7 +120,6 @@ async function createWindow() {
     })
   })
 
-  // Broadcasts
   onChange('clientes:changed', (p) => broadcast('clientes:changed', p))
   onChange('productos:changed', (p) => broadcast('productos:changed', p))
   onChange('metodos:changed', (p) => broadcast('metodos:changed', p))
@@ -162,6 +165,52 @@ ipcMain.handle('open-child', async (event, options: { route: string; payload?: u
 
   return { windowId: child.id }
 })
+
+// ---------------------------------------------------------------------------
+// 🔐 IPC Supabase Auth (agregado)
+// ---------------------------------------------------------------------------
+
+// Login
+ipcMain.handle('auth:login', async (_e, { email, password }) => {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error || !data.session) throw error || new Error('Error de inicio de sesión')
+  await keytar.setPassword(SERVICE, ACCOUNT, data.session.access_token)
+  return { user: data.user, access_token: data.session.access_token }
+})
+
+// Logout
+ipcMain.handle('auth:logout', async () => {
+  await keytar.deletePassword(SERVICE, ACCOUNT)
+  await supabase.auth.signOut()
+  return true
+})
+
+// Obtener usuario actual
+ipcMain.handle('auth:getUser', async () => {
+  const token = await keytar.getPassword(SERVICE, ACCOUNT)
+  if (!token) return null
+  const { data, error } = await supabase.auth.getUser(token)
+  if (error || !data?.user) return null
+  return data.user
+})
+
+// Token directo (para fetch)
+ipcMain.handle('auth:getToken', async () => {
+  const token = await keytar.getPassword(SERVICE, ACCOUNT)
+  return token ?? null
+})
+
+// Fetch proxy (inyecta Authorization)
+ipcMain.handle('net:fetch', async (_e, { input, init }) => {
+  const token = await keytar.getPassword(SERVICE, ACCOUNT)
+  const headers = new Headers(init?.headers || {})
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+  const res = await fetch(input, { ...init, headers })
+  const text = await res.text()
+  return { status: res.status, ok: res.ok, body: text }
+})
+
+// ---------------------------------------------------------------------------
 
 app.whenReady().then(createWindow)
 

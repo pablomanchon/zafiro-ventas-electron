@@ -1,7 +1,9 @@
 // src/main/preload.ts
 import { contextBridge, ipcRenderer } from 'electron'
 
-// 🔒 Sólo los canales que vas a usar
+// ─────────────────────────────────────────────
+// 🔐 EVENTOS PERMITIDOS (lo que ya tenías)
+// ─────────────────────────────────────────────
 const allowedIncoming = new Set([
   'clientes:changed',
   'productos:changed',
@@ -12,15 +14,9 @@ const allowedIncoming = new Set([
 ])
 
 type Listener = (payload: unknown) => void
-
-// Mapa para poder desuscribir correctamente
 const registered = new WeakMap<Listener, (...args: any[]) => void>()
 
 contextBridge.exposeInMainWorld('entityEvents', {
-  /**
-   * Suscribite a un canal permitido y recibí el payload "limpio".
-   * Devuelve una función para desuscribir.
-   */
   on(channel: string, listener: Listener) {
     if (!allowedIncoming.has(channel)) return
     const wrapped = (_ev: Electron.IpcRendererEvent, payload: unknown) => listener(payload)
@@ -29,9 +25,6 @@ contextBridge.exposeInMainWorld('entityEvents', {
     return () => ipcRenderer.removeListener(channel, wrapped)
   },
 
-  /**
-   * Desuscribite pasando el mismo listener que usaste en .on(...)
-   */
   off(channel: string, listener: Listener) {
     if (!allowedIncoming.has(channel)) return
     const wrapped = registered.get(listener)
@@ -41,9 +34,6 @@ contextBridge.exposeInMainWorld('entityEvents', {
     }
   },
 
-  /**
-   * (Opcional) Suscribirse una sola vez.
-   */
   once(channel: string, listener: Listener) {
     if (!allowedIncoming.has(channel)) return
     const wrapped = (_ev: Electron.IpcRendererEvent, payload: unknown) => listener(payload)
@@ -51,6 +41,9 @@ contextBridge.exposeInMainWorld('entityEvents', {
   },
 })
 
+// ─────────────────────────────────────────────
+// 🪟 UTILIDADES DE VENTANAS (lo que ya tenías)
+// ─────────────────────────────────────────────
 contextBridge.exposeInMainWorld('windowApi', {
   openChild(route: string, payload?: unknown) {
     return ipcRenderer.invoke('open-child', { route, payload })
@@ -61,4 +54,27 @@ contextBridge.exposeInMainWorld('windowApi', {
     ipcRenderer.on('init-data', wrapped)
     return () => ipcRenderer.removeListener('init-data', wrapped)
   },
+})
+
+// ─────────────────────────────────────────────
+// 🔑 AUTH SEGURA (token en main mediante IPC)
+// ─────────────────────────────────────────────
+contextBridge.exposeInMainWorld('secureAuth', {
+  setToken: (token: string) => ipcRenderer.invoke('auth:setToken', token),
+  getToken: () => ipcRenderer.invoke('auth:getToken') as Promise<string | null>,
+  clearToken: () => ipcRenderer.invoke('auth:clearToken'),
+})
+
+// ─────────────────────────────────────────────
+// 🌐 NET PROXY (inyecta Authorization si hay token)
+// Devuelve {status, ok, body, headers} para manejar errores
+// ─────────────────────────────────────────────
+contextBridge.exposeInMainWorld('secureNet', {
+  fetch: (input: RequestInfo, init?: RequestInit) =>
+    ipcRenderer.invoke('net:fetch', { input, init }) as Promise<{
+      status: number
+      ok: boolean
+      body: string
+      headers: Record<string, string>
+    }>,
 })
