@@ -1,7 +1,7 @@
 // src/pages/PageHome.tsx
 import { useEffect, useMemo, useState } from "react";
 import Steel from "../layout/Steel";
-import { formatCurrencyARS, todayYMD } from "../utils";
+import { formatCurrencyARS, todayYMD } from "../utils/utils";
 import { getSelledProductsByDate } from "../api/db";
 import {
   BarChart,
@@ -15,9 +15,6 @@ import {
 import Main from "../layout/Main";
 import Glass from "../layout/Glass";
 import VentasPorMetodoChartSmart from "../components/GraficoVtasPorMetodoSmart";
-import PrimaryButton from "../components/PrimaryButton";
-import { toast } from "react-toastify";
-import axios from "axios";
 
 type Vendido = {
   periodo: string;
@@ -155,25 +152,8 @@ export default function PageHome() {
           </Glass>
         </div>
       </Steel>
-      <Steel className="mt-2">
+      <Steel>
         <VentasPorMetodoChartSmart from={todayYMD()} to={todayYMD()} />
-        <PrimaryButton title={'xlsxAction'} functionClick={async () => {
-          try {
-            const res = await axios.post("http://localhost:3000/api/productos/xlsx-service", {
-              path: "Libro1.xlsx",
-              index: 0,
-              columns: [
-                { key: "producto|servicio" },
-                { key: "Precio de lista" },
-                { key: "Precio en pesos" },
-                { key: "Valor dólar" },
-              ],
-            });
-            console.log(res.data);
-          } catch (error) {
-            toast.error(error)
-          }
-        }} />
       </Steel>
     </Main>
   );

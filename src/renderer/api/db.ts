@@ -1,6 +1,6 @@
 import axios from "axios"
 
-export const baseUrl = "http://10.0.0.183:3000/api"
+export const baseUrl = "http://localhost:3000/api"
 
 export const getAllProducts = async () => {
     try {
@@ -70,7 +70,7 @@ export const getSelledProductsByDate = async (granularity: 'day' | 'week' | 'mon
 
 export const getUser = async (id:string)=>{
     try {
-        const res = await axios.get(`${baseUrl}/user/${id}`)
+        const res = await axios.get(`${baseUrl}/users/${id}`)
         return res.data;
     } catch (error) {
         console.log(error)

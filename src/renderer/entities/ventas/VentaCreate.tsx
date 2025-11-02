@@ -17,7 +17,7 @@ import { fetchSaleById, makeSelectVentaById, needsRefresh } from '../../store/sa
 import bgUrl from '../../assets/fondo-w.png'
 
 // 👇 helpers de dinero: usamos centavos para evitar problemas con coma/decimales
-import { toCents, formatCentsARS } from '../../utils'
+import { toCents, formatCentsARS } from '../../utils/utils'
 
 type VentaInitPayload = {
   clienteId?: string | number

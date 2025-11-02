@@ -10,6 +10,7 @@ export default function useUser() {
 
   const computeExpired = (u: any) => {
     if (!u?.vencDate) return false
+    console.log(u)
     const venc = new Date(u.vencDate)
     return venc.getTime() < Date.now()
   }
@@ -17,7 +18,7 @@ export default function useUser() {
   const refetch = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await getUser('9ad47eb2-fb5f-438b-b239-a36c7ec8aa0e')
+      const data = await getUser('9baebbad-9edc-4520-8bda-7ea3fba88174')
       if (!data) throw new Error('Usuario no encontrado')
       setUser(data)
       const isExpired = computeExpired(data)

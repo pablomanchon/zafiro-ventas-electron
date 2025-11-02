@@ -1,5 +1,5 @@
 // src/layout/Confirmation.tsx
-import  { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useModal } from '../providers/ModalProvider';
 import DangerBtn from '../components/DangerButton';
 import PrimaryButton from '../components/PrimaryButton';
@@ -28,6 +28,7 @@ export default function Confirmation({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    e.stopPropagation()
     if (e.key === 'Enter') {
       confirmar();
     }

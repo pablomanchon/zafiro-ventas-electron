@@ -1,7 +1,7 @@
 // src/components/VentasPorMetodoChartSmart.tsx
 import { useEffect } from "react";
 import { toast } from "react-toastify";
-import { formatCurrencyARS } from "../utils";
+import { formatCurrencyARS } from "../utils/utils";
 import useSales from "../hooks/useSales";
 import VentasPorMetodoChart from "./GraficoVentasPorMetodoChart";
 

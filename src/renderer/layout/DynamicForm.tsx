@@ -27,12 +27,11 @@ type InputDef =
     })
   | (InputDefBase & {
       type: 'component'
-      // 👇 acepta props extra para inyectar al componente
       Component: React.ComponentType<{
         value: any
         onChange: (value: any) => void
-      } & Record<string, any>> // 👈 clave para poder pasar props adicionales
-      componentProps?: Record<string, any> // 👈 nuevo
+      } & Record<string, any>>
+      componentProps?: Record<string, any>
     })
 
 export type FormInput = InputDef
@@ -42,8 +41,11 @@ interface DynamicFormProps {
   onSubmit: (formValues: Record<string, any>) => void | Promise<void>
   typeBtn?: 'primary' | 'secondary' | 'danger'
   titleBtn: string
-  /** Opcional: si querés resetear desde el padre, cambiá este valor */
   resetOn?: any
+  /** Deshabilitar inputs mientras envía (default: true) */
+  disableWhileSubmitting?: boolean
+  /** Texto del botón durante el envío (default: "Guardando...") */
+  submittingText?: string
 }
 
 const buildInitial = (inputs: InputDef[]) =>
@@ -51,7 +53,7 @@ const buildInitial = (inputs: InputDef[]) =>
     if (input.type === 'checkbox') {
       acc[input.name] = input.value ?? false
     } else if (input.type === 'component') {
-      acc[input.name] = input.value // puede ser undefined y está OK
+      acc[input.name] = input.value
     } else {
       acc[input.name] = input.value ?? ''
     }
@@ -64,8 +66,9 @@ export default function DynamicForm({
   typeBtn = 'primary',
   titleBtn = 'Button',
   resetOn,
+  disableWhileSubmitting = true,
+  submittingText = 'Guardando...',
 }: DynamicFormProps) {
-  // 👇 Usamos modalStack para saber si hay modales abiertos
   const { openModal, closeModal, modalStack } = useModal()
   const openCount = modalStack.length
 
@@ -75,6 +78,7 @@ export default function DynamicForm({
   const [formValues, setFormValues] = useState<Record<string, any>>(() =>
     buildInitial(inputs)
   )
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Reset controlado desde el padre
   useEffect(() => {
@@ -105,7 +109,6 @@ export default function DynamicForm({
   const closeConfirmOpenRef = useRef(false)
   const pendingOpenCloseRef = useRef(false)
 
-  // Wrapper para resetear flag cuando nuestro modal se desmonte
   function CloseConfirmWrapper({ children }: { children: React.ReactNode }) {
     useEffect(() => {
       return () => { closeConfirmOpenRef.current = false }
@@ -126,7 +129,6 @@ export default function DynamicForm({
     )
   }
 
-  // Cuando se cierran otros modales y la pila queda vacía, accionamos
   useEffect(() => {
     if (pendingOpenCloseRef.current && openCount === 0) {
       pendingOpenCloseRef.current = false
@@ -134,33 +136,30 @@ export default function DynamicForm({
       else doClose()
     }
     if (openCount === 0 && !pendingOpenCloseRef.current) {
-      // aseguro flag en falso si no hay modales
       closeConfirmOpenRef.current = false
     }
   }, [openCount])
 
-  // ESC global con la secuencia pedida
+  // ESC global: si está enviando, ignoramos ESC
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
+      if (isSubmitting) return
       e.preventDefault()
       e.stopPropagation()
 
-      // Si nuestro modal de “Cerrar” está abierto, lo cierro y no hago más
       if (closeConfirmOpenRef.current) {
         closeConfirmOpenRef.current = false
         closeModal()
         return
       }
 
-      // Si hay cualquier otro modal abierto, lo cierro primero y encadeno
       if (openCount > 0) {
         pendingOpenCloseRef.current = true
         closeModal()
         return
       }
 
-      // Sin modales abiertos: confirmo cierre si hay cambios; si no, cierro directo
       if (isDirtyRef.current) {
         openCloseConfirm()
       } else {
@@ -170,31 +169,62 @@ export default function DynamicForm({
 
     document.addEventListener('keydown', handler, { capture: true })
     return () => document.removeEventListener('keydown', handler, { capture: true })
-  }, [openCount, closeModal, openModal])
+  }, [openCount, closeModal, openModal, isSubmitting])
 
   const handleChange = (name: string, value: any, type?: string) => {
     if (type === 'number') value = value === '' ? '' : parseFloat(value)
     setFormValues(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => { mountedRef.current = false }
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formValues)
+    if (isSubmitting) return
+    try {
+      setIsSubmitting(true)
+      await Promise.resolve(onSubmit(formValues))
+    } finally {
+      if (mountedRef.current) setIsSubmitting(false)
+    }
+  }
+
+  const disabledAll = disableWhileSubmitting && isSubmitting
+
+  // === Paraguas anti-Enter fantasma: ignora Enter durante ~150ms tras montar ===
+  const openedAtRef = useRef<number>(0)
+  useEffect(() => { openedAtRef.current = performance.now() }, [])
+  const swallowFirstEnter = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Enter') return
+    const dt = performance.now() - openedAtRef.current
+    if (dt < 150) { // 150–200ms suele ser suficiente
+      e.preventDefault()
+      e.stopPropagation()
+    }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 flex flex-col py-2">
+    <form
+      onSubmit={handleSubmit}
+      onKeyDownCapture={swallowFirstEnter} // ⬅️ bloquea Enter “que llega tarde”
+      className="space-y-4 flex flex-col py-2"
+    >
       {inputs.map((input, idx) => {
         const commonProps = {
           required: input.required,
-          value: formValues[input.name],
+          value: (formValues as any)[input.name],
           onChange: (e: any) => handleChange(input.name, e.target?.value ?? e, input.type),
           className:
-            'border rounded px-2 py-1 outline-none shadow-inner shadow-black border-black',
+            'border rounded px-2 py-1 outline-none shadow-inner shadow-black border-black disabled:opacity-60 disabled:cursor-not-allowed',
           ref:
             idx === 0 && !input.hidden && input.type !== 'component'
               ? firstInputRef
               : undefined,
+          disabled: disabledAll,
         } as any
 
         return (
@@ -205,9 +235,10 @@ export default function DynamicForm({
 
             {input.type === 'component' ? (
               <input.Component
-                value={formValues[input.name]}
+                value={(formValues as any)[input.name]}
                 onChange={val => handleChange(input.name, val, input.type)}
-                {...(input.componentProps || {})}  // 👈 inyectamos props extra
+                disabled={disabledAll}
+                {...(input.componentProps || {})}
               />
             ) : input.type === 'select' ? (
               <select {...commonProps}>
@@ -221,9 +252,10 @@ export default function DynamicForm({
               <input
                 required={input.required}
                 type="checkbox"
-                checked={!!formValues[input.name]}
+                checked={!!(formValues as any)[input.name]}
                 onChange={e => handleChange(input.name, e.target.checked, input.type)}
-                className="h-5 w-5 outline-none shadow-inner shadow-black border-black"
+                className="h-5 w-5 outline-none shadow-inner shadow-black border-black disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={disabledAll}
               />
             ) : input.type === 'textarea' ? (
               <textarea {...commonProps} />
@@ -234,11 +266,21 @@ export default function DynamicForm({
         )
       })}
 
+      {/* Botón submit (explícito) */}
       {typeBtn === 'primary' ? (
-        <PrimaryButton functionClick={null} title={titleBtn} />
+        <PrimaryButton
+          type="submit"                              // ⬅️ EXPLÍCITO
+          disabled={isSubmitting}                    // ⬅️ corregido el typo
+          functionClick={undefined}
+          title={isSubmitting ? submittingText : titleBtn}
+        />
       ) : (
-        <button type="submit" className="px-3 py-2 rounded bg-blue-600 text-white">
-          {titleBtn}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? submittingText : titleBtn}
         </button>
       )}
     </form>

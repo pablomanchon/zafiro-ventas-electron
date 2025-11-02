@@ -1,4 +1,3 @@
-// src/layout/TableAndSearch.tsx
 import Table from '../layout/Table';
 import { useSearch } from '../providers/SearchProvider';
 import Search from '../layout/Search';

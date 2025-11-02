@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import useUser from "./hooks/useUser";
 
 import MainLayout from "./layout/MainWithNav";
 import PageHome from "./pages/PageHome";
@@ -13,26 +12,14 @@ import PageResumen from "./entities/resumen/Page";
 import PageCaja from "./entities/caja/Page";
 import SaleDetail from "./entities/ventas/Detail";
 import PageVendedores from "./entities/sellers/Page";
+import useUser from "./hooks/useUser";
 import PageLicencia from "./pages/PageLicencia";
 
 export default function App() {
-  const { expired, loading } = useUser();
+  const { expired } = useUser();
+  
+  if (expired) return <PageLicencia />
 
-  // 🔹 mientras carga, bloquea toda la app
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
-        Verificando licencia...
-      </div>
-    );
-  }
-
-  // 🔹 si la licencia está vencida, mostrar pantalla dedicada
-  if (expired) {
-    return <PageLicencia />;
-  }
-
-  // 🔹 si está todo bien, renderizar normalmente
   return (
     <Routes>
       <Route path="/crud/:entity/:mode/:id?" element={<CrudFormPage />} />

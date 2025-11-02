@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Steel from '../../layout/Steel'
 import Title from '../../layout/Title'
 import { getMoves } from '../../api/db'
-import { formatCurrencyARS, formatDate } from '../../utils'
+import { formatCurrencyARS, formatDate } from '../../utils/utils'
 import Glass from '../../layout/Glass'
 
 type CajaMoveDetailDto = {

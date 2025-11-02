@@ -7,7 +7,7 @@ export default function Search() {
     const { setSearch } = useSearch();
 
     return (
-        <label className="flex w-full bg-gray-800 p-2 gap-2 items-center rounded">
+        <label onKeyDown={(e)=>{e.stopPropagation()}} className="flex w-full bg-gray-800 p-2 gap-2 items-center rounded">
             <SearchIcon />
             <input
                 onChange={e => setSearch(e.target.value)}

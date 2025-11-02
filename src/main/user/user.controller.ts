@@ -3,7 +3,7 @@ import { UserService } from './user.service'
 
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   // 🔹 Crear usuario (normalmente no se usa si viene de Supabase)
   @Post()
@@ -12,7 +12,7 @@ export class UserController {
   }
 
   // 🔹 Buscar por auth_id (el UUID de Supabase)
-  @Get(':authId')
+  @Get('byAuthId/:authId')
   async findByAuthId(@Param('authId') authId: string) {
     const user = await this.userService.findByAuthId(authId)
     if (!user) return { message: 'User not found' }
@@ -26,4 +26,12 @@ export class UserController {
     const user = await this.userService.findOrCreate(auth_id, name, email)
     return user
   }
+
+  @Get(':id')
+  async findById(@Param('id') id: string) {
+    const user = await this.userService.findById(id)
+    if (!user) return { message: 'User not found' }
+    return user;
+  }
+
 }

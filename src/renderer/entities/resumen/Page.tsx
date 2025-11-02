@@ -5,7 +5,7 @@ import useSales from '../../hooks/useSales'
 import TableAndSearch from '../../components/TableAndSearch'
 import ventasConfig from '../ventas/config'
 import { toast } from 'react-toastify'
-import { formatCurrencyARS } from '../../utils'
+import { formatCurrencyARS } from '../../utils/utils'
 
 export default function PageResumen() {
   const { ventas, filter, setFilter, shift, goToday, label, error, totalGeneral, totales } = useSales()

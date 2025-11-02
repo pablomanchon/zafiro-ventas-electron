@@ -1,5 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { formatCurrencyARS, looksLikeMoneyKey } from "../utils";
+import React, { useEffect, useRef, useState } from "react";
+import { formatCurrencyARS, looksLikeMoneyKey } from "../utils/utils";
+import { useModal } from "../providers/ModalProvider";
+
+function isEditableTarget(t) {
+  const el = t;
+  if (!el) return false;
+  if (el.closest?.('input, textarea, select, [contenteditable="true"], [role="textbox"]')) return true;
+  // @ts-ignore
+  if (el.isContentEditable) return true;
+  return false;
+}
 
 const Table = ({
   encabezados,
@@ -9,6 +19,10 @@ const Table = ({
   formatoFecha = "fecha-hora",
 }) => {
   const [filaSeleccionada, setFilaSeleccionada] = useState(null);
+  const { isModalOpen } = useModal();
+
+  // 👉 flag: si abrimos modal con Enter, tragamos el próximo keyup(Enter)
+  const swallowNextEnterUpRef = useRef(false);
 
   const shift = (delta) => {
     setFilaSeleccionada((prev) => {
@@ -31,16 +45,48 @@ const Table = ({
   };
 
   useEffect(() => {
-    const handler = (e) => {
-      if (e.key === "ArrowUp") shift(-1);
-      if (e.key === "ArrowDown") shift(1);
+    const onKeyDown = (e) => {
+      if (isModalOpen) return;                       // no hacer nada si hay modal
+      if (isEditableTarget(e.target)) return;        // no interferir con inputs
+
+      // navegación por flechas
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        shift(-1);
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        shift(1);
+        return;
+      }
+
       if (e.key === "Enter" && filaSeleccionada != null) {
+        // Abrimos modal con Enter desde la tabla
+        e.preventDefault();
+        e.stopPropagation();
+        swallowNextEnterUpRef.current = true;        // 👈 tragamos el próximo keyup(Enter)
         onDobleClickFila?.(datos[filaSeleccionada]?.id);
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [filaSeleccionada, datos, onDobleClickFila]);
+
+    // Capturamos el keyup ANTES que llegue al nuevo modal/form
+    const onKeyUpCapture = (e) => {
+      if (swallowNextEnterUpRef.current && e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        swallowNextEnterUpRef.current = false;       // sólo una vez
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keyup", onKeyUpCapture, true); // << captura
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keyup", onKeyUpCapture, true);
+    };
+  }, [filaSeleccionada, datos, onDobleClickFila, isModalOpen]);
 
   const manejarDobleClick = (index) => {
     onDobleClickFila?.(datos[index]?.id);
@@ -64,12 +110,8 @@ const Table = ({
   };
 
   const obtenerValor = (fila, encabezado) => {
-    const isObj =
-      typeof encabezado === "object" && encabezado !== null;
-    const claveOriginal = isObj
-      ? (encabezado.clave ?? encabezado.key ?? "")
-      : encabezado ?? "";
-
+    const isObj = typeof encabezado === "object" && encabezado !== null;
+    const claveOriginal = isObj ? (encabezado.clave ?? encabezado.key ?? "") : encabezado ?? "";
     if (!claveOriginal) return null;
 
     const keys = claveOriginal.split(".");
@@ -78,45 +120,34 @@ const Table = ({
     for (const key of keys) {
       if (valor == null) break;
       const lowerKey = key.toLowerCase();
-      const actualKey = Object.keys(valor).find(
-        (k) => k.toLowerCase() === lowerKey
-      );
+      const actualKey = Object.keys(valor).find((k) => k.toLowerCase() === lowerKey);
       valor = actualKey != null ? valor[actualKey] : undefined;
     }
 
     const lastKey = keys[keys.length - 1] ?? "";
 
-    // 👉 si es React element (inputs, botones, etc.), lo devolvemos tal cual
     if (React.isValidElement(valor)) return valor;
 
-    // 1) Fecha
     if (lastKey.toLowerCase().includes("fecha")) {
       return formatearFecha(valor);
     }
 
-    // 2) Dinero (explícito o por nombre de clave)
     const isMoneyColumn =
-      (isObj &&
-        (encabezado.tipo === "money" ||
-          encabezado.formato === "moneda")) ||
+      (isObj && (encabezado.tipo === "money" || encabezado.formato === "moneda")) ||
       looksLikeMoneyKey(lastKey);
 
     if (isMoneyColumn) {
-      // Solo auto-formateamos si es number o string numérica "pura"
       if (typeof valor === "number") return formatCurrencyARS(valor);
       if (typeof valor === "string") {
         const trimmed = valor.trim();
-        // 1234 | 1234.56 | 1234,56
         if (/^-?\d+(?:[.,]\d+)?$/.test(trimmed)) {
           return formatCurrencyARS(trimmed.replace(",", "."));
         }
-        // Si viene con símbolos ($, puntos separadores, texto), lo dejamos como está
         return valor;
       }
       return valor;
     }
 
-    // 3) Valor por defecto
     return valor;
   };
 

@@ -11,7 +11,7 @@ import Main from '../layout/Main'
 import { useModal } from '../providers/ModalProvider'
 import Confirmation from '../layout/Confirmation'
 import bgUrl from '../../../public/fondo-w.png'
-import { toSingular } from '../utils'
+import { toSingular } from '../utils/utils'
 
 export default function CrudFormPage<T extends { id: number }>() {
   const { entity, mode, id } = useParams<{

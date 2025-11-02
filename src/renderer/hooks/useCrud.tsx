@@ -5,6 +5,7 @@ import type { FormInput } from '../layout/DynamicForm'
 import { getAll, create, update, remove } from '../api/crud'
 import { useModal } from '../providers/ModalProvider'
 import Confirmation from '../layout/Confirmation'
+import { toast } from 'react-toastify'
 
 /**
  * Hook genérico para operaciones CRUD con modal de formulario.
@@ -21,7 +22,6 @@ export function useCrud<T extends { id: number }>(
   const fetchItems = async (): Promise<void> => {
     try {
       const data = await getAll<T>(entity)
-      console.log(data)
       setItems(data)
     } catch (err) {
       console.error(err)
@@ -66,7 +66,7 @@ export function useCrud<T extends { id: number }>(
     )
   }
 
-  const handleDelete = (): void => {
+  const handleDelete = (message = '¡Eliminado con éxito!'): void => {
     if (selected == null) return
     openModal(
       <Confirmation
@@ -75,10 +75,11 @@ export function useCrud<T extends { id: number }>(
           await remove(entity, selected)
           setSelected(null)
           fetchItems()
+          toast.success(message)
         }}
       />
     )
   }
 
-  return { items, selected, setSelected, showForm, handleDelete }
+  return { items, selected, setSelected, showForm, handleDelete, fetchItems }
 }

@@ -11,7 +11,7 @@ import TableAndSearch from '../../components/TableAndSearch'
 import { DateNavigator } from '../../hooks/useDate'
 import { useFocusBlocker } from '../../hooks/useFocusBlocker'
 import useSales from '../../hooks/useSales'
-import { formatCurrencyARS } from '../../utils'
+import { formatCurrencyARS } from '../../utils/utils'
 
 export default function SalesPage() {
   const config = crudConfigs['ventas'] as CrudConfig

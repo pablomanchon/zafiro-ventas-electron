@@ -2,7 +2,7 @@
 import { useRef } from 'react'
 import { useSaleItems, type SaleItem } from './useSaleItems'
 import Table from '../../layout/Table'
-import { formatCurrencyARS } from '../../utils'
+import { formatCurrencyARS } from '../../utils/utils'
 
 export default function ItemsVentaTable({
   value,

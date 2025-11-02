@@ -38,8 +38,9 @@ export default function VentasPorMetodoChart({
       (totals ?? [])
         .filter(t => Number.isFinite(t.total) && t.total > 0)
         .map(t => ({ name: t.tipo, value: t.total })),
+
     [totals]
-  );
+  );  
 
   return (
     <Steel className={`w-full ${className}`}>

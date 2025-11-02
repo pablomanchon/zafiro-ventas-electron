@@ -4,7 +4,7 @@ import { UserService } from '../user/user.service';
 
 const supabase = createClient(
     process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!, // ⚠️ debe ser la SERVICE KEY, no la anon
+    process.env.SUPABASE_SERVICE_KEY!,
 );
 
 @Injectable()

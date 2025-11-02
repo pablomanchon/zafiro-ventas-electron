@@ -11,6 +11,7 @@ export default function Modal() {
     if (!isModalOpen) return;
 
     const handleKeyDown = (e) => {
+      e.stopPropagation();
       if (e.key === 'Escape') {
         closeModal();
       }

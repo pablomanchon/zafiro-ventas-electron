@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getAll } from '../../api/crud'
 import Table from '../../layout/Table'
-import { cleanMoneyInput, toCents, centsToInput, formatCentsARS } from '../../utils' // 👈
+import { cleanMoneyInput, toCents, centsToInput, formatCentsARS } from '../../utils/utils' // 👈
 
 export interface PaymentItem {
   metodoId: string

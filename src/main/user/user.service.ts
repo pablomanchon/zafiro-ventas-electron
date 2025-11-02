@@ -26,4 +26,9 @@ export class UserService {
     }
     return user;
   }
+
+  async findById(id:string) {
+    const user = await this.repo.findOne({where:{id}})
+    return user;
+  }
 }
