@@ -58,9 +58,9 @@ export const getMoves = async () => {
     }
 }
 
-export const getSelledProductsByDate = async (granularity: 'day' | 'week' | 'month', from: string, to: string) => {
+export const getSelledProductsByDate = async (from: string, to: string) => {
     try {
-        const res = await axios.get(`${baseUrl}/ventas/reportes/productos-vendidos?granularity=${granularity}&from=${from}&to=${to}`)
+        const res = await axios.get(`${baseUrl}/ventas/reportes/productos-vendidos?from=${from}&to=${to}`)
         return res.data
     } catch (error) {
         console.log(error)

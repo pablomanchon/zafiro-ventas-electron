@@ -10,10 +10,10 @@ import {
   BarChart3,
   Wallet,
 } from 'lucide-react'
-import bgUrl from '../../../public/fondo-h.png'
+import bgUrl from '/fondo-h.png'
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import logo from '../../../public/zafiro_rounded.ico';
+import logo from '/zafiro_rounded.ico';
 
 
 const navItems = [

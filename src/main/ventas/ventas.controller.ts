@@ -7,7 +7,7 @@ import { FilterVentasDto } from './dto/filter-ventas.dto';
 
 @Controller('ventas')
 export class VentasController {
-  constructor(private readonly ventasService: VentasService) {}
+  constructor(private readonly ventasService: VentasService) { }
 
   @Post()
   create(@Body() createVentaDto: CreateVentaDto) {
@@ -30,13 +30,20 @@ export class VentasController {
     return this.ventasService.totalsByTipoPago(q);
   }
 
-  @Get('reportes/productos-vendidos')
-  productosVendidos(
-    @Query('granularity') granularity: 'day'|'week'|'month' = 'day',
+  @Get('reportes/productos-vendidos-periodo')
+  productosVendidosPeriodo(
+    @Query('granularity') granularity: 'day' | 'week' | 'month' = 'day',
     @Query('from') from?: string,
     @Query('to') to?: string,
   ) {
     return this.ventasService.productosVendidosPorPeriodo(granularity, from, to);
+  }
+  @Get('reportes/productos-vendidos')
+  productosVendidos(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.ventasService.productosVendidos(from, to);
   }
 
   // 👇 Paramétrica al final + ParseIntPipe

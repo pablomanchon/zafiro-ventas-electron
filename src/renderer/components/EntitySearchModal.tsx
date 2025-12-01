@@ -19,9 +19,14 @@ export default function EntitySearchModal<T extends { id: number }>({
 }: EntitySearchModalProps) {
     const [items, setItems] = useState<T[]>([]);
     const { closeModal } = useModal();
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        getAll<T>(entity).then(setItems).catch(console.error);
+        getAll<T>(entity).then((res) => {
+            setItems(res)
+            setLoading(false)
+        }
+        ).catch(console.error);
     }, [entity]);
 
     const handleSelect = (id: number) => {
@@ -31,14 +36,20 @@ export default function EntitySearchModal<T extends { id: number }>({
 
     return (
         <div className="p-4 bg-cyan-800 text-white rounded max-h-screen overflow-y-auto">
-            <h3 className="text-lg font-bold mb-2">Buscar {entity}</h3>
-            <TableAndSearch<T>
-                datos={items}
-                encabezados={columns}
-                searchFilters={searchFilters}
-                onDobleClickFila={handleSelect}
-                onFilaSeleccionada={() => { }}
-            />
+            {loading ?
+                <div className='w-80 h-40'>Cargando...</div>
+                :
+                <>
+                    <h3 className="text-lg font-bold mb-2">Buscar {entity}</h3>
+                    <TableAndSearch<T>
+                        datos={items}
+                        encabezados={columns}
+                        searchFilters={searchFilters}
+                        onDobleClickFila={handleSelect}
+                        onFilaSeleccionada={() => { }}
+                    />
+                </>
+            }
         </div>
     );
 }

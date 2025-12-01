@@ -97,7 +97,6 @@ export default function SalesPage() {
       ch.close()
     }
   }, [setFilter])
-
   return (
     <Main className="flex flex-col h-screen p-4 gap-4">
       <div
@@ -120,32 +119,31 @@ export default function SalesPage() {
             {error}
           </Steel>
         )}
-        {loading && (
-          <Steel className="p-3 opacity-80">Cargando…</Steel>
-        )}
+      
+          <>
+            <div className="flex-1 overflow-auto" ref={tableRef} tabIndex={-1}>
+              <TableAndSearch
+                datos={loading ? [] : ventas}
+                encabezados={columns}
+                searchFilters={searchFields}
+                onDobleClickFila={handleDobleClickFila}
+                onFilaSeleccionada={() => null}
+              />
+            </div>
 
-        <div className="flex-1 overflow-auto" ref={tableRef} tabIndex={-1}>
-          <TableAndSearch
-            datos={ventas}
-            encabezados={columns}
-            searchFilters={searchFields}
-            onDobleClickFila={handleDobleClickFila}
-            onFilaSeleccionada={() => null}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 items-stretch my-1">
-          {totales.map((p) => (
-            <Steel key={p.tipo} className="flex justify-between items-center max-w-96 min-w-60">
-              <p className="capitalize font-bold text-lg">{p.tipo}</p>
-              <p className="text-xl font-bold">{formatCurrencyARS(p.total)}</p>
-            </Steel>
-          ))}
-          <Steel className="flex justify-between items-center max-w-96 min-w-60">
-            <p className="uppercase font-bold text-lg">Total</p>
-            <p className="text-xl font-bold">{formatCurrencyARS(totalGeneral)}</p>
-          </Steel>
-        </div>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 items-stretch my-1">
+              {!loading && totales.map((p) => (
+                <Steel key={p.tipo} className="flex justify-between items-center max-w-96 min-w-60">
+                  <p className="capitalize font-bold text-lg">{p.tipo}</p>
+                  <p className="text-xl font-bold">{formatCurrencyARS(p.total)}</p>
+                </Steel>
+              ))}
+              <Steel className="flex justify-between items-center max-w-96 min-w-60">
+                <p className="uppercase font-bold text-lg">Total</p>
+                <p className="text-xl font-bold">{!loading && formatCurrencyARS(totalGeneral)}</p>
+              </Steel>
+            </div>
+          </>
 
         <Steel className="flex justify-end bg-gray-800 p-2">
           <PrimaryButton functionClick={handleOpenCreate} title="Crear" />

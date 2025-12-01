@@ -156,14 +156,13 @@ export default function ItemsVentaTable({
 
   return (
     <div ref={containerRef} className="space-y-2">
-      {loading && <p className="text-white">Cargando productos...</p>}
       {!!error && <p className="text-red-500">Error al cargar productos</p>}
 
       <Table
         encabezados={encabezados}
         datos={datosTabla}
-        onFilaSeleccionada={() => {}}
-        onDobleClickFila={() => {}}
+        onFilaSeleccionada={() => { }}
+        onDobleClickFila={() => { }}
       />
 
       <button

@@ -140,10 +140,10 @@ export class VentasService {
     const metodos = await this.metodoRepo.find({ where: { id: In(metodoIds) } });
     const metodosById = new Map(metodos.map(m => [m.id, m]));
     const totalEfectivo = validPagos
-      .filter(p => metodosById.get(p.metodoId)?.tipo === 'efectivo')
+      .filter(p => metodosById.get(p.metodoId)?.tipo.toLowerCase() === 'efectivo')
       .reduce((acc, p) => acc + Number(p.monto || 0), 0);
     const totalUsd = validPagos
-      .filter(p => metodosById.get(p.metodoId)?.tipo === 'usd')
+      .filter(p => metodosById.get(p.metodoId)?.tipo.toLowerCase() === 'usd')
       .reduce((acc, p) => acc + Number(p.monto || 0), 0);
 
     // 5) Mapear entidades
@@ -338,45 +338,79 @@ export class VentasService {
       total: Number(r.total),
     }));
   }
+
+  async productosVendidos(
+    from?: string,
+    to?: string,
+  ): Promise<Array<{ nombre: string; cantidad: number; importe: number }>> {
+    const conn = this.repo.manager.connection;
+    const dbType = conn.options.type as string;
+
+    const sumCant = sumCantidadExpr(dbType);   // ej: "SUM(det.cantidad)"
+    const sumImp = sumImporteExpr(dbType);    // ej: "SUM(det.importe)"
+    const { where, params } = normalizeRange(from, to); // asegura filtrar por v.fecha (o el campo que uses)
+
+    const qb = this.dataSource
+      .getRepository(VentaDetalle)
+      .createQueryBuilder('det')
+      .innerJoin('det.venta', 'v')
+      .innerJoin('det.item', 'it')
+      .select('it.nombre', 'nombre')
+      .addSelect(`${sumCant}`, 'cantidad')
+      .addSelect(`${sumImp}`, 'importe');
+
+    if (where) qb.where(where, params);
+
+    const rows = await qb
+      .groupBy('it.nombre')
+      .orderBy('cantidad', 'DESC')
+      .getRawMany<{ nombre: string; cantidad: string | number; importe: string | number }>();
+
+    return rows.map(r => ({
+      nombre: r.nombre,
+      cantidad: Number(r.cantidad) || 0,
+      importe: Number(r.importe) || 0,
+    }));
+  }
   /** Agrega cantidades/importe por nombre de ItemVenta, bucket: día/semana/mes */
-async productosVendidosPorPeriodo(
-  granularity: Granularity,
-  from?: string,
-  to?: string,
-): Promise<Array<{ periodo: string; nombre: string; cantidad: number; importe: number }>> {
-  const conn = this.repo.manager.connection;
-  const dbType = conn.options.type as string;
+  async productosVendidosPorPeriodo(
+    granularity: Granularity,
+    from?: string,
+    to?: string,
+  ): Promise<Array<{ periodo: string; nombre: string; cantidad: number; importe: number }>> {
+    const conn = this.repo.manager.connection;
+    const dbType = conn.options.type as string;
 
-  const bucket = timeBucketExpr(dbType, granularity);
-  const sumCant = sumCantidadExpr(dbType);
-  const sumImp  = sumImporteExpr(dbType);
-  const { where, params } = normalizeRange(from, to);
+    const bucket = timeBucketExpr(dbType, granularity);
+    const sumCant = sumCantidadExpr(dbType);
+    const sumImp = sumImporteExpr(dbType);
+    const { where, params } = normalizeRange(from, to);
 
-  // 👇 Empezamos desde VentaDetalle, y unimos explícito a Venta e ItemVenta
-  const qb = this.dataSource
-    .getRepository(VentaDetalle)
-    .createQueryBuilder('det')
-    .innerJoin('det.venta', 'v')
-    .innerJoin('det.item',  'it')
-    .select(`${bucket}`, 'periodo')
-    .addSelect('it.nombre', 'nombre')
-    .addSelect(`${sumCant}`, 'cantidad')
-    .addSelect(`${sumImp}`,  'importe');
+    // 👇 Empezamos desde VentaDetalle, y unimos explícito a Venta e ItemVenta
+    const qb = this.dataSource
+      .getRepository(VentaDetalle)
+      .createQueryBuilder('det')
+      .innerJoin('det.venta', 'v')
+      .innerJoin('det.item', 'it')
+      .select(`${bucket}`, 'periodo')
+      .addSelect('it.nombre', 'nombre')
+      .addSelect(`${sumCant}`, 'cantidad')
+      .addSelect(`${sumImp}`, 'importe');
 
-  if (where) qb.where(where, params);
+    if (where) qb.where(where, params);
 
-  const rows = await qb
-    .groupBy(bucket)
-    .addGroupBy('it.nombre')
-    .orderBy('periodo', 'ASC')
-    .addOrderBy('cantidad', 'DESC')
-    .getRawMany<{ periodo: string; nombre: string; cantidad: string | number; importe: string | number }>();
+    const rows = await qb
+      .groupBy(bucket)
+      .addGroupBy('it.nombre')
+      .orderBy('periodo', 'ASC')
+      .addOrderBy('cantidad', 'DESC')
+      .getRawMany<{ periodo: string; nombre: string; cantidad: string | number; importe: string | number }>();
 
-  return rows.map(r => ({
-    periodo: r.periodo,
-    nombre: r.nombre,
-    cantidad: Number(r.cantidad) || 0,
-    importe: Number(r.importe) || 0,
-  }));
-}
+    return rows.map(r => ({
+      periodo: r.periodo,
+      nombre: r.nombre,
+      cantidad: Number(r.cantidad) || 0,
+      importe: Number(r.importe) || 0,
+    }));
+  }
 }

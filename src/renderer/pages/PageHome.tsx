@@ -1,7 +1,7 @@
 // src/pages/PageHome.tsx
 import { useEffect, useMemo, useState } from "react";
 import Steel from "../layout/Steel";
-import { formatCurrencyARS, todayYMD } from "../utils/utils";
+import { formatCurrencyARS, monthAgo, todayYMD } from "../utils/utils";
 import { getSelledProductsByDate } from "../api/db";
 import {
   BarChart,
@@ -30,8 +30,9 @@ export default function PageHome() {
 
   // rango "hoy" usando utils.ts
   const { from, to } = useMemo(() => {
-    const today = todayYMD();
-    return { from: today, to: today };
+    const mAgo = monthAgo(new Date());
+    const today = todayYMD()
+    return { from: mAgo, to: today };
   }, []);
 
   useEffect(() => {
@@ -39,11 +40,10 @@ export default function PageHome() {
       setLoading(true);
       setErr(null);
       try {
-        const data = await getSelledProductsByDate("day", from, to);
+        const data = await getSelledProductsByDate(from, to);
         data.sort((a: Vendido, b: Vendido) => (b.cantidad || 0) - (a.cantidad || 0));
         setItems(data);
       } catch (e: any) {
-        console.error(e);
         setErr(e?.message ?? "Error al cargar vendidos de hoy");
       } finally {
         setLoading(false);
@@ -84,7 +84,7 @@ export default function PageHome() {
           </Glass>
 
           {/* ------- Gráfico ------- */}
-          <Glass className="h-96 shadow shadow-black">
+          <Glass className="h-96 shadow-inner shadow-black">
             {loading ? (
               <div className="text-sm opacity-70 p-2">Cargando gráfico…</div>
             ) : err ? (
@@ -93,11 +93,19 @@ export default function PageHome() {
               <div className="text-sm opacity-70 p-2">Sin ventas hoy.</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
+
                 <BarChart
                   data={chartData}
                   layout="vertical"
                   margin={{ top: 8, right: 16, bottom: 8, left: 5 }}
+                  barSize={25}
                 >
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#002" />
+                      <stop offset="100%" stopColor="#016" />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="5" opacity={0.2} />
                   <XAxis type="number" tick={{ fill: "#fff" }} allowDecimals={false} />
                   <YAxis
@@ -107,19 +115,25 @@ export default function PageHome() {
                     tick={{ fill: "#fff", fontSize: 12 }}
                   />
                   <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(0,0,0,0.2)",
+                      color: "#000",
+                    }}
                     formatter={(v: number) => [v, "Cantidad"]}
                     labelClassName="text-sm"
                   />
-                  <Bar dataKey="cantidad" radius={8} />
+                  <Bar dataKey="cantidad" radius={8} fill="url(#barGradient)" />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </Glass>
 
           {/* ------- Tabla ------- */}
-          <Glass className="overflow-auto max-h-[60vh] shadow-black shadow">
+          <Glass className="overflow-auto max-h-[60vh] shadow-black shadow relative p-0">
             <table className="w-full text-sm">
-              <thead className="bg-white/5">
+              <thead className="sticky top-0 bg-black/60 backdrop-blur-xl">
                 <tr>
                   <th className="text-left px-3 py-2">Producto</th>
                   <th className="text-right px-3 py-2">Cantidad</th>
@@ -137,7 +151,7 @@ export default function PageHome() {
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-white/5 border-t border-white/10">
+              <tfoot className="bg-black sticky bottom-0">
                 <tr>
                   <td className="px-3 py-2 font-semibold">Totales</td>
                   <td className="px-3 py-2 text-right font-semibold">
@@ -153,7 +167,7 @@ export default function PageHome() {
         </div>
       </Steel>
       <Steel>
-        <VentasPorMetodoChartSmart from={todayYMD()} to={todayYMD()} />
+        <VentasPorMetodoChartSmart from={monthAgo(new Date())} to={todayYMD()} />
       </Steel>
     </Main>
   );

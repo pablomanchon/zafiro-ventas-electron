@@ -22,11 +22,6 @@ export class FacturasController {
     return this.facturasService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFacturaDto: UpdateFacturaDto) {
-    return this.facturasService.update(+id, updateFacturaDto);
-  }
-
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.facturasService.remove(+id);

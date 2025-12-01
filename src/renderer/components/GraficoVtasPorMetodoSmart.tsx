@@ -29,7 +29,7 @@ export default function VentasPorMetodoChartSmart({
   className = "",
 }: Props) {
   // usamos TU hook
-  const { setFilter, totales = [], error } = useSales();
+  const { setFilter, totales = [], error } = useSales('month');
 
   // cuando cambian from/to, actualizamos el filtro del hook
   useEffect(() => {

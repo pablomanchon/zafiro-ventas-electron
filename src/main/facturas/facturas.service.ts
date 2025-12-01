@@ -16,10 +16,6 @@ export class FacturasService {
     return `This action returns a #${id} factura`;
   }
 
-  update(id: number, updateFacturaDto: UpdateFacturaDto) {
-    return `This action updates a #${id} factura`;
-  }
-
   remove(id: number) {
     return `This action removes a #${id} factura`;
   }
