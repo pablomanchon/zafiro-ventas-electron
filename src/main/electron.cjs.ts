@@ -1,5 +1,5 @@
 import 'reflect-metadata'
-import { app, BrowserWindow, Menu, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, Menu, shell, ipcMain, dialog } from 'electron'
 import path from 'path'
 import { URL, pathToFileURL } from 'url'
 import { bootstrap } from './bootstrap'
@@ -9,6 +9,7 @@ import { broadcast } from './broadcast/ipc-broadcast'
 // 🧩 🔹 Supabase + Keytar (agregado)
 import { createClient } from '@supabase/supabase-js'
 import keytar from 'keytar'
+import { validateLicense } from './license'
 
 // 🧩 Variables Supabase (leídas desde .env)
 const SUPABASE_URL = process.env.SUPABASE_URL!
@@ -62,6 +63,26 @@ function buildChildWindowOptions(): Electron.BrowserWindowConstructorOptions {
 }
 
 async function createWindow() {
+  try {
+    validateLicense();
+    console.log('🔐 Licencia válida, iniciando app...');
+  } catch (e: any) {
+    console.error('❌ ERROR DE LICENCIA:', e.message);
+
+    // Cartel para el usuario
+    dialog.showMessageBoxSync({
+      type: 'error',
+      title: 'Licencia expirada',
+      message:
+        e.code === 'LICENSE_EXPIRED'
+          ? 'Tu licencia ha expirado.\nPor favor, contacta al desarrollador.'
+          : 'No se pudo validar la licencia.\nPor favor, contacta al desarrollador.',
+      buttons: ['Aceptar'],
+    });
+
+    app.quit();
+    return; // 👈 MUY IMPORTANTE: no sigas creando la ventana
+  }
   await bootstrap()
 
   mainWindow = new BrowserWindow({
@@ -116,7 +137,7 @@ async function createWindow() {
     child.once('ready-to-show', () => {
       child.show()
       child.focus()
-      try { child.moveTop() } catch {}
+      try { child.moveTop() } catch { }
     })
   })
 
@@ -149,7 +170,7 @@ ipcMain.handle('open-child', async (event, options: { route: string; payload?: u
       child.show()
       child.focus()
       child.moveTop()
-    } catch {}
+    } catch { }
   })
 
   child.webContents.once('did-finish-load', () => {

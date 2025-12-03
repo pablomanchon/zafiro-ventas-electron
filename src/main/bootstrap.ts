@@ -2,16 +2,21 @@
 import { webcrypto } from 'crypto';
 (globalThis as any).crypto = webcrypto;
 
-// 🔹 2) Cargar variables de entorno (.env)
+// 🔹 2) Variables de entorno
 import { config } from 'dotenv';
 import { join } from 'path';
 config({ path: join(process.cwd(), '.env') });
 
-// 🔹 3) Importar NestJS y AppModule
+// 🔹 3) Import NestJS
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
+// 🔹 4) Importar licencia
+import { validateLicense } from './license';   // 👈 AÑADIR ESTO
+
 export async function bootstrap() {
+    validateLicense();
+
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');

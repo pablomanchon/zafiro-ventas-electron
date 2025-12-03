@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import Steel from "../layout/Steel";
 import Pie2DChart, { type PieDatum } from "./Grafico";
 
 export type MetodoTotal = { tipo: string; total: number };
@@ -43,7 +42,7 @@ export default function VentasPorMetodoChart({
   );  
 
   return (
-    <Steel className={`w-full ${className}`}>
+    <div className={`w-full shadow-inner shadow-black rounded ${className}`}>
       <Pie2DChart
         title={title}
         data={data}
@@ -55,6 +54,6 @@ export default function VentasPorMetodoChart({
         valueFormatter={valueFormatter}
         onSliceClick={onSliceClick}
       />
-    </Steel>
+    </div>
   );
 }

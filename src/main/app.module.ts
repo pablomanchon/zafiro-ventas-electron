@@ -21,13 +21,20 @@ import { SupabaseAuthGuard } from './guards/supabase-guard.auth';
   imports: [
     TypeOrmModule.forRootAsync({
       useFactory: () => ({
-        type: 'postgres',
-        url: process.env.DATABASE_URL,            // <- usa SOLO url
-        ssl: { rejectUnauthorized: false },
+        type: 'mssql',
+        host: 'localhost',
+        port: 1433,
+        username: process.env.MSUSER ?? 'zafiro_user',
+        password: process.env.MSPASSWORD ?? '1234',
+        database: process.env.MSDB ?? 'ZafiroDB',
         autoLoadEntities: true,
         synchronize: true,
         logging: ['error', 'warn'],
         extra: { max: 5, idleTimeoutMillis: 30000 },
+        options: {
+          encrypt: false,
+          trustServerCertificate: true,
+        },
       }),
     }),
     ProductosModule,

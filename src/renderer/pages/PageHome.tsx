@@ -75,7 +75,7 @@ export default function PageHome() {
     <Main className="flex flex-col items-center">
       <Steel>
         <div className="p-2 space-y-3">
-          <Glass className="flex items-center justify-between">
+          <Glass className="flex items-center justify-between shadow inner shadow-blue-600">
             <h2 className="text-lg font-semibold">Vendidos hoy ({from})</h2>
             <div className="text-sm opacity-80">
               <span className="mr-4">Total items: <b>{totalCant}</b></span>
@@ -131,7 +131,7 @@ export default function PageHome() {
           </Glass>
 
           {/* ------- Tabla ------- */}
-          <Glass className="overflow-auto max-h-[60vh] shadow-black shadow relative p-0">
+          <Glass className="overflow-auto max-h-[60vh] relative p-0 shadow-inner shadow-black">
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-black/60 backdrop-blur-xl">
                 <tr>
@@ -165,8 +165,6 @@ export default function PageHome() {
             </table>
           </Glass>
         </div>
-      </Steel>
-      <Steel>
         <VentasPorMetodoChartSmart from={monthAgo(new Date())} to={todayYMD()} />
       </Steel>
     </Main>

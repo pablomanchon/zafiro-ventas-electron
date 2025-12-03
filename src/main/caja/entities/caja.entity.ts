@@ -11,7 +11,7 @@ import { CajaMoveDto } from '../dto/caja-move.dto';
 
 @Entity({ name: 'caja' })
 export class Caja {
-  @PrimaryColumn({ type: 'text' })
+  @PrimaryColumn()
   id: string = 'main';
 
   // Saldo en pesos argentinos
