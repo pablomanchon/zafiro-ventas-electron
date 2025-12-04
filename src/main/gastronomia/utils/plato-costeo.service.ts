@@ -2,7 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { Plato } from '../entities/plato.entity';
 import { PlatoIngrediente } from '../entities/plato-ingrediente.entity';
-import { UnidadMedida } from '../entities/ingrediente.entity';
+import { UnidadMedidaIngrediente } from '../entities/ingrediente.entity';
 
 @Injectable()
 export class PlatosCosteoService {
@@ -13,13 +13,20 @@ export class PlatosCosteoService {
     for (const pi of plato.ingredientes as PlatoIngrediente[]) {
       const ing = pi.ingrediente;
 
-      // Validación simple: U con U (para tu caso)
-      if (pi.unidad !== UnidadMedida.U || ing.unidadCompra !== UnidadMedida.U) {
-        throw new Error(`Unidades no compatibles para ${ing.nombre}: ${pi.unidad} vs ${ing.unidadCompra}`);
+      if (ing.unidadBase !== UnidadMedidaIngrediente.UNIDAD &&
+          ing.unidadBase !== UnidadMedidaIngrediente.GRAMOS &&
+          ing.unidadBase !== UnidadMedidaIngrediente.MILILITROS) {
+        throw new Error(`Unidad de medida inválida para ${ing.nombre}: ${ing.unidadBase}`);
       }
 
-      const costoUnitario = Number(ing.precioPaquete) / Number(ing.cantidadPorPaquete); // $ por unidad
-      total += Number(pi.cantidad) * costoUnitario;
+      const cantidadBase = Number(ing.cantidadBase);
+      if (!cantidadBase) {
+        throw new Error(`Cantidad base inválida para ${ing.nombre}: ${ing.cantidadBase}`);
+      }
+
+      const proporcionUsada = Number(pi.cantidadUsada) / cantidadBase;
+      const costoIngrediente = Number(ing.precioCostoBase) * proporcionUsada;
+      total += costoIngrediente;
     }
     return Math.round(total * 100) / 100; // 2 decimales
   }
