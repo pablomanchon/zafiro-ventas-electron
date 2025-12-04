@@ -28,8 +28,6 @@ export class PlatosService {
   }
 
   async update(id: string, dto: UpdatePlatoDto) {
-    const existing = await this.platoRepo.findOne({ where: { id } });
-    if (!existing) throw new NotFoundException('Plato no encontrado');
     return this.dataSource.transaction(manager => this.upsertPlato({ ...dto, id }, manager));
   }
 
@@ -49,11 +47,17 @@ export class PlatosService {
     return { deleted: true };
   }
 
-  private async upsertPlato(dto: CreatePlatoDto, manager: EntityManager) {
+  private async upsertPlato(dto: CreatePlatoDto | UpdatePlatoDto, manager: EntityManager) {
     const platoRepo = manager.getRepository(Plato);
     const ingredienteRepo = manager.getRepository(Ingrediente);
     const piRepo = manager.getRepository(PlatoIngrediente);
     const psRepo = manager.getRepository(PlatoSubplato);
+
+    let existing: Plato | null = null;
+    if (dto.id) {
+      existing = await platoRepo.findOne({ where: { id: dto.id } });
+      if (!existing) throw new NotFoundException('Plato no encontrado');
+    }
 
     if (dto.id && dto.id.trim() === '') {
       throw new BadRequestException('El id del plato no puede ser vacío');
@@ -84,12 +88,16 @@ export class PlatosService {
       }),
     );
 
+    const nombre = dto.nombre ?? existing?.nombre;
+    const precio = dto.precio ?? existing?.precio;
+    const stock = dto.stock ?? existing?.stock;
+
     const baseDatos: Partial<Plato> = {
       id: dto.id,
-      nombre: dto.nombre,
-      descripcion: dto.descripcion,
-      precio: Number(dto.precio),
-      stock: Number(dto.stock),
+      nombre,
+      descripcion: dto.descripcion ?? existing?.descripcion,
+      precio: precio != null ? Number(precio) : undefined,
+      stock: stock != null ? Number(stock) : undefined,
     };
 
     // Se apoya en la herencia de TypeORM (ChildEntity) para guardar en la misma tabla Producto
