@@ -7,12 +7,13 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   Between,
+  DataSource,
   DeepPartial,
+  EntityManager,
   In,
   LessThan,
   MoreThanOrEqual,
   Repository,
-  DataSource,
 } from 'typeorm';
 import { Venta } from './entities/venta.entity';
 import { CreateVentaDto } from './dto/create-venta.dto';
@@ -412,5 +413,44 @@ export class VentasService {
       cantidad: Number(r.cantidad) || 0,
       importe: Number(r.importe) || 0,
     }));
+  }
+
+  /**
+   * Crea un snapshot de ItemVenta a partir de un Producto (o Plato, porque hereda),
+   * y descuenta stock en la misma transacción que se le pase. Esto permite reutilizar
+   * la lógica actual de VentaDetalle con productos y platos sin cambiar ItemVenta.
+   */
+  async crearDetalleDesdeProducto(
+    producto: Producto | string,
+    cantidad: number,
+    manager?: EntityManager,
+  ): Promise<DeepPartial<VentaDetalle>> {
+    const repo = manager ? manager.getRepository(Producto) : this.dataSource.getRepository(Producto);
+    const entidad =
+      typeof producto === 'string'
+        ? await repo.findOne({ where: { id: producto } })
+        : producto;
+
+    if (!entidad) throw new NotFoundException('Producto no encontrado');
+
+    const stockActual = Number(entidad.stock ?? 0);
+    const cant = Number(cantidad);
+    if (stockActual < cant) {
+      throw new BadRequestException(
+        `Stock insuficiente para "${entidad.nombre}" (stock: ${stockActual}, solicitado: ${cant})`,
+      );
+    }
+
+    entidad.stock = stockActual - cant;
+    await repo.save(entidad);
+
+    return {
+      item: {
+        nombre: entidad.nombre,
+        descripcion: entidad.descripcion ?? undefined,
+        precio: Number(entidad.precio),
+        cantidad: cant,
+      } as DeepPartial<ItemVenta>,
+    };
   }
 }

@@ -1,6 +1,6 @@
 // platos/entities/plato-ingrediente.entity.ts
-import { Entity, PrimaryGeneratedColumn, ManyToOne, Column, Unique } from 'typeorm';
-import { Ingrediente, UnidadMedida } from './ingrediente.entity';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Ingrediente } from './ingrediente.entity';
 import { Plato } from './plato.entity';
 
 @Entity('platos_ingredientes')
@@ -15,9 +15,7 @@ export class PlatoIngrediente {
   @ManyToOne(() => Ingrediente, { eager: true, onDelete: 'RESTRICT' })
   ingrediente!: Ingrediente;
 
+  // cantidad usada en la misma unidadBase del Ingrediente
   @Column('decimal', { precision: 12, scale: 3 })
-  cantidad!: number;                
-
-  @Column({ type: 'varchar' })
-  unidad!: UnidadMedida;               
+  cantidadUsada!: number;
 }
