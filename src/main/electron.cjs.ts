@@ -83,7 +83,20 @@ async function createWindow() {
     app.quit();
     return; // 👈 MUY IMPORTANTE: no sigas creando la ventana
   }
-  await bootstrap()
+
+  try {
+    await bootstrap();
+  } catch (e : any) {
+    dialog.showMessageBoxSync({
+      type: "error",
+      title: "Error al iniciar",
+      message: "No se pudo iniciar la base de datos o servidor interno.\n" + e.message,
+      buttons: ["Aceptar"]
+    });
+
+    app.quit();
+    return;
+  }
 
   mainWindow = new BrowserWindow({
     width: 1000,
