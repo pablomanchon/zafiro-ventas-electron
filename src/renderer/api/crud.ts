@@ -33,7 +33,7 @@ export async function getById<T = any>(entity: string, id: number | string): Pro
   return data;
 }
 
-export async function remove<T = any>(entity: string, id: number): Promise<T> {
+export async function remove<T = any>(entity: string, id: number | string): Promise<T> {
   const { data } = await axios.delete<T>(`${BASE_URL}/${entity}/${id}`);
   return data;
 }

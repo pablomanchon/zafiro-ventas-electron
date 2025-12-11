@@ -4,13 +4,13 @@ import Search from '../layout/Search';
 
 interface TableAndSearchProps<T> {
   datos: T[];
-  encabezados: string[];
-  onDobleClickFila: (id: number) => void;
-  onFilaSeleccionada: (id: number | null) => void;
+  encabezados: any[];
+  onDobleClickFila: (id: number | string) => void;
+  onFilaSeleccionada: (id: number | string | null) => void;
   searchFilters: string[];
 }
 
-export default function TableAndSearch<T extends { id: number }>({
+export default function TableAndSearch<T extends { id: number | string }>({
   datos,
   encabezados,
   onDobleClickFila,

@@ -17,6 +17,8 @@ import PageLicencia from "./pages/PageLicencia";
 import PageMoveStock from './entities/movimiento-stock/Page'
 import MovimientoStockCreate from "./entities/movimiento-stock/movimientoStockCreate";
 import MovimientoStockView from "./entities/movimiento-stock/movimientoStockView";
+import PageIngredientes from "./entities/ingredientes/Page";
+import PagePlatos from "./entities/platos/Page";
 
 export default function App() {
   const { expired } = useUser();
@@ -42,6 +44,8 @@ export default function App() {
         <Route path="/caja" element={<PageCaja />} />
         <Route path="/vendedores" element={<PageVendedores />} />
         <Route path="/movimientos-stock" element={<PageMoveStock />} />
+        <Route path="/ingredientes" element={<PageIngredientes />} />
+        <Route path="/platos" element={<PagePlatos />} />
       </Route>
       {/* fallback */}
       <Route path="*" element={<Navigate to="/" />} />
