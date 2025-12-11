@@ -1,8 +1,12 @@
 // src/components/EntitySearchModal.tsx
 import { useState, useEffect } from 'react';
-import { getAll } from '../api/crud';                   // list API :contentReference[oaicite:1]{index=1}
-import { useModal } from '../providers/ModalProvider';  // manejar modal :contentReference[oaicite:2]{index=2}
+import { getAll } from '../api/crud';
+import { useModal } from '../providers/ModalProvider';
 import TableAndSearch from './TableAndSearch';
+import PrimaryButton from './PrimaryButton';
+import Glass from '../layout/Glass';
+import { toast } from 'react-toastify';
+import { toSingular } from '../utils/utils';
 
 interface EntitySearchModalProps {
     entity: string;
@@ -18,38 +22,54 @@ export default function EntitySearchModal<T extends { id: number }>({
     onSelect,
 }: EntitySearchModalProps) {
     const [items, setItems] = useState<T[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedId, setSelectedId] = useState<number | null>(null); // 👈 NUEVO
     const { closeModal } = useModal();
-    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        getAll<T>(entity).then((res) => {
-            setItems(res)
-            setLoading(false)
-        }
-        ).catch(console.error);
+        getAll<T>(entity)
+            .then((res) => {
+                setItems(res);
+                setLoading(false);
+            })
+            .catch(console.error);
     }, [entity]);
 
-    const handleSelect = (id: number) => {
-        onSelect(id);
+    // 👇 ahora puede venir un id directo (doble click) o usamos el seleccionado
+    const handleSelect = (idFromEvent?: number | null) => {
+        const finalId = typeof idFromEvent === 'number' ? idFromEvent : selectedId;
+
+        if (!finalId) {
+            toast.error('Debe seleccionar un ' + toSingular(entity));
+            return;
+        }
+
+        onSelect(finalId);
         closeModal();
     };
 
     return (
         <div className="p-4 bg-cyan-800 text-white rounded max-h-screen overflow-y-auto">
-            {loading ?
-                <div className='w-80 h-40'>Cargando...</div>
-                :
+            {loading ? (
+                <div className="w-80 h-40">Cargando...</div>
+            ) : (
                 <>
                     <h3 className="text-lg font-bold mb-2">Buscar {entity}</h3>
                     <TableAndSearch<T>
                         datos={items}
                         encabezados={columns}
                         searchFilters={searchFilters}
-                        onDobleClickFila={handleSelect}
-                        onFilaSeleccionada={() => { }}
+                        onDobleClickFila={handleSelect}          // 👈 pasa id y cierra
+                        onFilaSeleccionada={setSelectedId}       // 👈 guardamos el id seleccionado
                     />
+                    <Glass className="mt-2 shadow-inner shadow-black flex justify-center">
+                        <PrimaryButton
+                            title={'Seleccionar'}
+                            functionClick={() => handleSelect()}  // 👈 usa el selectedId
+                        />
+                    </Glass>
                 </>
-            }
+            )}
         </div>
     );
 }

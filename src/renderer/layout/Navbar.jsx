@@ -9,6 +9,9 @@ import {
   X,
   BarChart3,
   Wallet,
+  Boxes,
+  Warehouse,
+  ArrowUpDown
 } from 'lucide-react'
 import bgUrl from '/fondo-h.png'
 import React, { useState } from 'react'
@@ -25,6 +28,7 @@ const navItems = [
   { name: "Clientes", href: "/clientes", icon: <Users size={20} /> },
   { name: "Vendedores", href: "/vendedores", icon: <Users size={20} /> },
   { name: "Métodos de pago", href: "/metodos-pago", icon: <CreditCard size={20} /> },
+  { name: "Stock", href: "/movimientos-stock", icon: <ArrowUpDown size={20} /> },
 ]
 
 export default function Navbar() {
@@ -84,7 +88,7 @@ export default function Navbar() {
                   : 'bg-gay-900 hover:bg-sky-600 hover:bg-opacity-80 bg-opacity-70'}`}
             >
               {item.icon}
-              <span className='w-full font-bold'>{item.name}</span>
+              <span className='font-bold'>{item.name}</span>
             </Link>
           ))}
         </ul>

@@ -23,13 +23,11 @@ export class MovimientoStockService {
       const prodRepo = manager.getRepository(Producto);
       const movRepo = manager.getRepository(MovimientoStock);
 
-      // Traer todos los productos en una sola query
-      const ids = products.map(p => Number(p.idProduct));
+      const ids = products.map(p => p.idProduct);
       const productos = await prodRepo.find({ where: { id: In(ids) } });
 
       const byId = new Map(productos.map(p => [p.id, p]));
 
-      // Validaciones previas
       for (const item of products) {
         const pid = item.idProduct;
         const prod = byId.get(pid);
@@ -39,28 +37,30 @@ export class MovimientoStockService {
         }
         if (moveType === 'out' && prod.stock < item.quantity) {
           throw new BadRequestException(
-            `Stock insuficiente en producto ${pid} (tiene ${prod.stock}, necesita ${item.quantity})`
+            `Stock insuficiente en producto ${pid} (tiene ${prod.stock}, necesita ${item.quantity})`,
           );
         }
       }
 
-      // Aplicar cambios de stock
       for (const item of products) {
         const pid = item.idProduct;
         const prod = byId.get(pid)!;
 
-        prod.stock = moveType === 'in'
-          ? prod.stock + item.quantity
-          : prod.stock - item.quantity;
+        prod.stock =
+          moveType === 'in'
+            ? prod.stock + item.quantity
+            : prod.stock - item.quantity;
 
         await prodRepo.save(prod);
       }
 
-      // Guardar UN movimiento (cabecera) con el array snapshot
+      // 👇 ACÁ EL CAMBIO CLAVE
       const movimiento = movRepo.create({
-        productsMoveStock: products, // snapshot tal cual el DTO
-        // fecha se setea sola por @CreateDateColumn
+        moveType,              // ✅ ahora sí
+        productsMoveStock: products, // snapshot
+        // fecha la setea @CreateDateColumn
       });
+
       await movRepo.save(movimiento);
 
       return {
@@ -69,10 +69,11 @@ export class MovimientoStockService {
         totalProductos: products.length,
       };
     });
+
   }
 
   async findAll() {
-    this.movimientoRepo.find({
+    return await this.movimientoRepo.find({
       order: { fecha: 'DESC' },
     });
   }

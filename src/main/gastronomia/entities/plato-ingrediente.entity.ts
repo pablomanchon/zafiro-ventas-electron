@@ -12,7 +12,7 @@ export class PlatoIngrediente {
   @ManyToOne(() => Plato, p => p.ingredientes, { onDelete: 'CASCADE' })
   plato!: Plato;
 
-  @ManyToOne(() => Ingrediente, { eager: true, onDelete: 'RESTRICT' })
+  @ManyToOne(() => Ingrediente, { eager: true, onDelete: 'NO ACTION' })
   ingrediente!: Ingrediente;
 
   // cantidad usada en la misma unidadBase del Ingrediente

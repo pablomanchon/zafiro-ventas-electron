@@ -10,7 +10,7 @@ export class PlatoSubplato {
   @ManyToOne(() => Plato, p => p.subplatos, { onDelete: 'CASCADE' })
   platoPadre!: Plato;
 
-  @ManyToOne(() => Plato, p => p.usadoEn, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Plato, p => p.usadoEn, { onDelete: 'NO ACTION' })
   platoHijo!: Plato;
 
   // cantidad de subplatos usados

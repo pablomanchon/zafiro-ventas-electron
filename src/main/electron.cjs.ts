@@ -44,7 +44,7 @@ function buildSplashHtml(): string {
         .logo-circle { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #22d3ee, #0ea5e9); display: grid; place-items: center; color: #0b1120; font-weight: 800; box-shadow: 0 10px 30px rgba(34, 211, 238, 0.35); }
         .title { font-size: 1rem; opacity: 0.9; margin-bottom: 16px; }
         .status { margin-top: 18px; color: #cbd5e1; font-size: 0.95rem; letter-spacing: 0.01em; }
-        .spinner { width: 58px; height: 58px; border-radius: 50%; border: 6px solid rgba(255, 255, 255, 0.08); border-top-color: #22d3ee; margin: 12px auto; animation: spin 1s linear infinite; box-shadow: 0 8px 24px rgba(14, 165, 233, 0.35); }
+        .spinner { width: 58px; height: 58px; border-radius: 50%; border: 6px solid rgba(255, 255, 255, 0.08); border-top-color: #22d3ee; margin: 12px auto; animation: spin 1s linear infinite; box-shadow: 0 0px 24px rgba(14, 165, 233, 0.35); }
         @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
       </style>
     </head>

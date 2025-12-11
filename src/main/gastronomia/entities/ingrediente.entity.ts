@@ -16,7 +16,7 @@ export class Ingrediente {
   @Column({ type: 'varchar', length: 150 })
   nombre!: string;
 
-  @Column({ type: 'enum', enum: UnidadMedidaIngrediente })
+  @Column({ type: 'varchar' })
   unidadBase!: UnidadMedidaIngrediente;
 
   // Cantidad estándar a la que se refiere el precio de costo (p.ej. 1 unidad, 1000 gr, 1000 ml)
