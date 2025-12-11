@@ -11,7 +11,9 @@ import {
   Wallet,
   Boxes,
   Warehouse,
-  ArrowUpDown
+  ArrowUpDown,
+  ChefHat,
+  Salad
 } from 'lucide-react'
 import bgUrl from '/fondo-h.png'
 import React, { useState } from 'react'
@@ -29,6 +31,8 @@ const navItems = [
   { name: "Vendedores", href: "/vendedores", icon: <Users size={20} /> },
   { name: "Métodos de pago", href: "/metodos-pago", icon: <CreditCard size={20} /> },
   { name: "Stock", href: "/movimientos-stock", icon: <ArrowUpDown size={20} /> },
+  { name: "Ingredientes", href: "/ingredientes", icon: <Salad size={20} /> },
+  { name: "Platos", href: "/platos", icon: <ChefHat size={20} /> },
 ]
 
 export default function Navbar() {

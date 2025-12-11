@@ -25,7 +25,7 @@ function isEditableTarget(el: EventTarget | null) {
   return false
 }
 
-export default function CrudPage<T extends { id: number }>({
+export default function CrudPage<T extends { id: number | string }>({
   config,
   color
 }: {
@@ -115,7 +115,7 @@ export default function CrudPage<T extends { id: number }>({
     )
   }
 
-  const openEditModal = (rowId: number) => {
+  const openEditModal = (rowId: number | string) => {
     const current = items.find(i => i.id === rowId)
     if (!current) return
 

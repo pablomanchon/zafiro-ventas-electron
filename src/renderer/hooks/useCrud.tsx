@@ -10,12 +10,12 @@ import { toast } from 'react-toastify'
 /**
  * Hook genérico para operaciones CRUD con modal de formulario.
  */
-export function useCrud<T extends { id: number }>(
+export function useCrud<T extends { id: number | string }>(
   entity: string,
   formInputs: FormInput[]
 ) {
   const [items, setItems] = useState<T[]>([])
-  const [selected, setSelected] = useState<number | null>(null)
+  const [selected, setSelected] = useState<number | string | null>(null)
   const [editing, setEditing] = useState<T | null>(null)
   const { openModal, closeModal } = useModal()
 
