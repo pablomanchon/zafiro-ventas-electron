@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getAll } from '../../../api/crud';
 import Steel from '../../../layout/Steel';
+import { formatARS } from '../../../utils/utils';
 
 interface IngredienteOption {
   id: string;
@@ -12,7 +13,7 @@ interface IngredienteOption {
 
 interface IngredienteRow {
   ingredienteId: string;
-  cantidadUsada: number;
+  cantidadUsada: number | '';
 }
 
 const normalizeValue = (value: any): IngredienteRow[] => {
@@ -21,10 +22,14 @@ const normalizeValue = (value: any): IngredienteRow[] => {
     const ingrediente = (item as any)?.ingrediente;
     const ingredienteId =
       (item as any)?.ingredienteId ?? ingrediente?.id ?? (item as any)?.id ?? '';
-    const cantidad = Number((item as any)?.cantidadUsada ?? 0);
+
+    const raw = (item as any)?.cantidadUsada;
+    const cantidadUsada =
+      raw === undefined || raw === null || raw === '' ? '' : Number(raw);
+
     return {
       ingredienteId,
-      cantidadUsada: isNaN(cantidad) ? 0 : cantidad,
+      cantidadUsada: Number.isFinite(cantidadUsada as number) ? cantidadUsada : '',
     };
   });
 };
@@ -67,11 +72,15 @@ export default function IngredientesListInput({
   const updateRows = (updater: (prev: IngredienteRow[]) => IngredienteRow[]) => {
     setRows(prev => {
       const next = updater(prev);
-      const filtered = next.filter((r) => r.ingredienteId);
-      onChange(filtered);
+
+      // ✅ mandamos al padre lo que el usuario realmente tiene (con ingredienteId)
+      const withId = next.filter(r => r.ingredienteId);
+
+      onChange(withId as any);
       return next;
     });
   };
+
 
   const handleAddRow = () => {
     const defaultId = options[0]?.id ?? '';
@@ -113,7 +122,9 @@ export default function IngredientesListInput({
                         {opt.nombre}
                       </option>
                     ))}
-                  </select>
+                  </select> {unidad && (
+                    <span className="text-[11px] text-gray-300 mt-1">{unidad}</span>
+                  )}
                 </div>
 
                 <div className="col-span-4 flex flex-col">
@@ -124,12 +135,12 @@ export default function IngredientesListInput({
                     min={0}
                     className="mt-1 rounded bg-white/80 text-black px-2 py-1"
                     value={row.cantidadUsada}
-                    onChange={(e) => handleRowChange(index, { cantidadUsada: Number(e.target.value) })}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      handleRowChange(index, { cantidadUsada: v === '' ? '' : Number(v) })
+                    }}
                     disabled={disabled}
                   />
-                  {unidad && (
-                    <span className="text-[11px] text-gray-300 mt-1">{unidad}</span>
-                  )}
                 </div>
 
                 <div className="col-span-1 flex justify-center">
@@ -164,5 +175,5 @@ export default function IngredientesListInput({
 function opcionesUnidad(options: IngredienteOption[], id: string) {
   const ing = options.find((opt) => opt.id === id);
   if (!ing) return '';
-  return `${ing.cantidadBase} ${ing.unidadBase} (costo ${ing.precioCostoBase})`;
+  return `${ing.cantidadBase} ${ing.unidadBase} (costo ${formatARS(ing.precioCostoBase)})`;
 }

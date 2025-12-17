@@ -6,6 +6,10 @@ export enum UnidadMedidaIngrediente {
   MILILITROS = 'MILILITROS',
 }
 
+export const isGoodMedida = (uMedida: string) => {
+  return uMedida === UnidadMedidaIngrediente.GRAMOS ||uMedida ===  UnidadMedidaIngrediente.MILILITROS ||uMedida ===  UnidadMedidaIngrediente.UNIDAD
+}
+
 // Se opta por UUID para evitar colisiones al compartir catálogos entre locales y porque no
 // se espera que Ingrediente participe en cálculos de stock (solo en recetas y costos).
 @Entity('ingredientes')

@@ -66,7 +66,7 @@ export default function Navbar() {
     border-cyan-700
     fixed top-0 left-0 h-full w-60 flex flex-col 
     ${isOpen ? '' : 'hidden'}
-    md:block md:relative md:min-w-52 md:hover:border-r-cyan-600 md:hover:shadow-cyan-500 md:hover:shadow-md md:hover:transition-shadow transition-shadow`}
+    md:block md:relative md:min-w-52 md:hover:border-r-cyan-600 md:hover:shadow-cyan-500 md:hover:shadow-md md:hover:transition-shadow transition-shadow overflow-y-auto`}
       >
         {/* Encabezado móvil con logo y botón de cerrar */}
         <div className="flex items-center justify-between p-4 md:hidden">

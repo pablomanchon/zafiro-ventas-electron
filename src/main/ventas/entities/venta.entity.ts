@@ -4,10 +4,7 @@ import {
   Column,
   ManyToOne,
   OneToMany,
-  CreateDateColumn,
   AfterLoad,
-  OneToOne,
-  JoinColumn,
 } from 'typeorm';
 import { Cliente } from '../../clientes/entities/cliente.entity';
 import { VentaDetalle } from '../../venta-detalle/entities/venta-detalle.entity';

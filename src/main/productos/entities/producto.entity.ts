@@ -7,6 +7,9 @@ export class Producto {
   @PrimaryColumn()
   id: string;
 
+  @Column({ type: 'nvarchar', length: 100, unique: true })
+  codigo: string;
+
   @Column()
   nombre: string;
 

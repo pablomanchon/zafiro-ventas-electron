@@ -2,14 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Quita las flechas en Chrome / Edge / Opera / Electron */
-.no-spin::-webkit-inner-spin-button,
-.no-spin::-webkit-outer-spin-button {
+
+/* Chrome, Edge, Safari */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Quita las flechas en Firefox */
-.no-spin {
+/* Firefox */
+input[type='number'] {
   -moz-appearance: textfield;
 }

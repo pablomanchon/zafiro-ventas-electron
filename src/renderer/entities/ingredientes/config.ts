@@ -4,7 +4,6 @@ const ingredientesConfig: CrudConfig = {
   entity: 'ingredientes',
   title: 'Ingredientes',
   columns: [
-    { titulo: 'ID', clave: 'id' },
     { titulo: 'Nombre', clave: 'nombre' },
     { titulo: 'Unidad base', clave: 'unidadBase' },
     { titulo: 'Cantidad base', clave: 'cantidadBase' },
@@ -19,6 +18,7 @@ const ingredientesConfig: CrudConfig = {
       type: 'select',
       required: true,
       options: [
+        { label: '-', value: '-' },
         { label: 'Unidad', value: 'UNIDAD' },
         { label: 'Gramos', value: 'GRAMOS' },
         { label: 'Mililitros', value: 'MILILITROS' },

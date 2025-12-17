@@ -26,6 +26,7 @@ const platosConfig: CrudConfig = {
       label: 'Ingredientes',
       type: 'component',
       Component: IngredientesListInput,
+      required:true,
       value: [],
     },
     {

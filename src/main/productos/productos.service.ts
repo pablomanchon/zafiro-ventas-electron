@@ -1,5 +1,5 @@
 // src/productos/productos.service.ts
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
 import { UpdateProductoDto } from './dto/update-producto.dto';
@@ -21,7 +21,10 @@ export class ProductosService {
   }
 
   async create(createDto: ProductoDto, manager?: EntityManager) {
+    createDto.codigo = createDto.id;
     const repo = manager ? manager.getRepository(Producto) : this.repo;
+    const data = await repo.findOne({ where: { id: createDto.id } });
+    if (data) throw new BadRequestException("Ya existe un producto con esa id")
     const entity = repo.create(createDto);
     const saved = await repo.save(entity);
     // 🔔 notificar alta

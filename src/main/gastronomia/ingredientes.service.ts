@@ -1,18 +1,35 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateIngredienteDto } from './dto/create-ingrediente.dto';
 import { UpdateIngredienteDto } from './dto/update-ingrediente.dto';
-import { Ingrediente } from './entities/ingrediente.entity';
+import { Ingrediente, isGoodMedida } from './entities/ingrediente.entity';
 
 @Injectable()
 export class IngredientesService {
   constructor(
     @InjectRepository(Ingrediente)
     private readonly ingredienteRepo: Repository<Ingrediente>,
-  ) { }
+  ) {}
 
-  create(dto: CreateIngredienteDto) {
+  async create(dto: CreateIngredienteDto) {
+    const existente = await this.ingredienteRepo.findOne({
+      where: { nombre: dto.nombre },
+    });
+
+    if (!isGoodMedida(dto.unidadBase)) {
+      throw new BadRequestException('La unidad de medida no es la correcta');
+    }
+
+    if (existente) {
+      throw new ConflictException('La entidad ya existe');
+    }
+
     const entity = this.ingredienteRepo.create(dto);
     return this.ingredienteRepo.save(entity);
   }

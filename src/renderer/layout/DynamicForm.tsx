@@ -10,6 +10,7 @@ interface InputDefBase {
   required?: boolean
   value?: any
   hidden?: boolean
+  colSpan?: number
 }
 
 type InputDef =
@@ -27,10 +28,9 @@ type InputDef =
     })
   | (InputDefBase & {
       type: 'component'
-      Component: React.ComponentType<{
-        value: any
-        onChange: (value: any) => void
-      } & Record<string, any>>
+      Component: React.ComponentType<
+        { value: any; onChange: (value: any) => void } & Record<string, any>
+      >
       componentProps?: Record<string, any>
     })
 
@@ -42,18 +42,27 @@ interface DynamicFormProps {
   typeBtn?: 'primary' | 'secondary' | 'danger'
   titleBtn: string
   resetOn?: any
-  /** Deshabilitar inputs mientras envía (default: true) */
   disableWhileSubmitting?: boolean
-  /** Texto del botón durante el envío (default: "Guardando...") */
   submittingText?: string
+  columns?: 1 | 2 | 3 | 4
+  compact?: boolean
 }
 
+/* =======================
+   Build initial values
+   Numbers se guardan como STRING
+======================= */
 const buildInitial = (inputs: InputDef[]) =>
   inputs.reduce((acc, input) => {
     if (input.type === 'checkbox') {
       acc[input.name] = input.value ?? false
     } else if (input.type === 'component') {
       acc[input.name] = input.value
+    } else if (input.type === 'number') {
+      acc[input.name] =
+        input.value === undefined || input.value === null
+          ? ''
+          : String(input.value)
     } else {
       acc[input.name] = input.value ?? ''
     }
@@ -63,24 +72,23 @@ const buildInitial = (inputs: InputDef[]) =>
 export default function DynamicForm({
   inputs,
   onSubmit,
-  typeBtn = 'primary',
   titleBtn = 'Button',
   resetOn,
   disableWhileSubmitting = true,
   submittingText = 'Guardando...',
+  columns,
+  compact = false,
 }: DynamicFormProps) {
   const { openModal, closeModal, modalStack } = useModal()
   const openCount = modalStack.length
 
-  const [initialValues, setInitialValues] = useState<Record<string, any>>(() =>
-    buildInitial(inputs)
-  )
-  const [formValues, setFormValues] = useState<Record<string, any>>(() =>
-    buildInitial(inputs)
-  )
+  const [initialValues, setInitialValues] = useState(() => buildInitial(inputs))
+  const [formValues, setFormValues] = useState(() => buildInitial(inputs))
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Reset controlado desde el padre
+  /* =======================
+     Reset externo
+  ======================= */
   useEffect(() => {
     if (resetOn === undefined) return
     const initial = buildInitial(inputs)
@@ -88,31 +96,38 @@ export default function DynamicForm({
     setFormValues(initial)
   }, [resetOn, inputs])
 
-  // Focus al primer input visible
+  /* =======================
+     Focus primer input
+  ======================= */
   const firstInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
   useEffect(() => {
     firstInputRef.current?.focus()
   }, [inputs])
 
-  // Dirty check
+  /* =======================
+     Dirty check
+  ======================= */
   const isDirty = useMemo(() => {
     const keys = Object.keys({ ...initialValues, ...formValues })
-    return keys.some(k => JSON.stringify(formValues[k]) !== JSON.stringify(initialValues[k]))
+    return keys.some(
+      k => JSON.stringify(formValues[k]) !== JSON.stringify(initialValues[k])
+    )
   }, [formValues, initialValues])
 
   const isDirtyRef = useRef(false)
-  useEffect(() => { isDirtyRef.current = isDirty }, [isDirty])
+  useEffect(() => {
+    isDirtyRef.current = isDirty
+  }, [isDirty])
 
+  /* =======================
+     Close confirm modal
+  ======================= */
   const doClose = () => window.close()
-
-  // ====== Control del modal de “Cerrar” + encadenado con otros modales ======
   const closeConfirmOpenRef = useRef(false)
   const pendingOpenCloseRef = useRef(false)
 
   function CloseConfirmWrapper({ children }: { children: React.ReactNode }) {
-    useEffect(() => {
-      return () => { closeConfirmOpenRef.current = false }
-    }, [])
+    useEffect(() => () => { closeConfirmOpenRef.current = false }, [])
     return <>{children}</>
   }
 
@@ -132,19 +147,19 @@ export default function DynamicForm({
   useEffect(() => {
     if (pendingOpenCloseRef.current && openCount === 0) {
       pendingOpenCloseRef.current = false
-      if (isDirtyRef.current) openCloseConfirm()
-      else doClose()
+      isDirtyRef.current ? openCloseConfirm() : doClose()
     }
     if (openCount === 0 && !pendingOpenCloseRef.current) {
       closeConfirmOpenRef.current = false
     }
   }, [openCount])
 
-  // ESC global: si está enviando, ignoramos ESC
+  /* =======================
+     ESC global
+  ======================= */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      if (isSubmitting) return
+      if (e.key !== 'Escape' || isSubmitting) return
       e.preventDefault()
       e.stopPropagation()
 
@@ -160,129 +175,175 @@ export default function DynamicForm({
         return
       }
 
-      if (isDirtyRef.current) {
-        openCloseConfirm()
-      } else {
-        doClose()
-      }
+      isDirtyRef.current ? openCloseConfirm() : doClose()
     }
 
     document.addEventListener('keydown', handler, { capture: true })
     return () => document.removeEventListener('keydown', handler, { capture: true })
-  }, [openCount, closeModal, openModal, isSubmitting])
+  }, [openCount, closeModal, isSubmitting])
 
+  /* =======================
+     Change handler
+     Numbers → string
+  ======================= */
   const handleChange = (name: string, value: any, type?: string) => {
-    if (type === 'number') value = value === '' ? '' : parseFloat(value)
+    if (type === 'number') {
+      const str = String(value ?? '')
+      if (str === '' || /^[0-9]*([.,][0-9]*)?$/.test(str)) {
+        setFormValues(prev => ({ ...prev, [name]: str }))
+      }
+      return
+    }
     setFormValues(prev => ({ ...prev, [name]: value }))
   }
 
-  const mountedRef = useRef(true)
-  useEffect(() => {
-    mountedRef.current = true
-    return () => { mountedRef.current = false }
-  }, [])
-
+  /* =======================
+     Submit
+     Numbers → number | null
+  ======================= */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isSubmitting) return
+
     try {
       setIsSubmitting(true)
-      await Promise.resolve(onSubmit(formValues))
+
+      const payload: Record<string, any> = { ...formValues }
+
+      for (const input of inputs) {
+        if (input.type === 'number') {
+          const raw = String(payload[input.name] ?? '').trim()
+          if (raw === '') {
+            payload[input.name] = null
+          } else {
+            const num = Number(raw.replace(',', '.'))
+            payload[input.name] = Number.isFinite(num) ? num : null
+          }
+        }
+      }
+
+      await Promise.resolve(onSubmit(payload))
     } finally {
-      if (mountedRef.current) setIsSubmitting(false)
+      setIsSubmitting(false)
     }
   }
 
   const disabledAll = disableWhileSubmitting && isSubmitting
 
-  // === Paraguas anti-Enter fantasma: ignora Enter durante ~150ms tras montar ===
-  const openedAtRef = useRef<number>(0)
-  useEffect(() => { openedAtRef.current = performance.now() }, [])
-  const swallowFirstEnter = (e: React.KeyboardEvent) => {
-    if (e.key !== 'Enter') return
-    const dt = performance.now() - openedAtRef.current
-    if (dt < 150) { // 150–200ms suele ser suficiente
-      e.preventDefault()
-      e.stopPropagation()
-    }
-  }
+  /* =======================
+     Grid
+  ======================= */
+  const cols = columns ?? 1
+  const gridColsClass =
+    cols === 1 ? 'grid-cols-1'
+    : cols === 2 ? 'grid-cols-2'
+    : cols === 3 ? 'grid-cols-3'
+    : 'grid-cols-4'
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      onKeyDownCapture={swallowFirstEnter} // ⬅️ bloquea Enter “que llega tarde”
-      className="space-y-4 flex flex-col py-2"
-    >
-      {inputs.map((input, idx) => {
-        const commonProps = {
-          required: input.required,
-          value: (formValues as any)[input.name],
-          onChange: (e: any) => handleChange(input.name, e.target?.value ?? e, input.type),
-          className:
-            'border rounded px-2 py-1 outline-none shadow-inner shadow-black border-black disabled:opacity-60 disabled:cursor-not-allowed',
-          ref:
-            idx === 0 && !input.hidden && input.type !== 'component'
-              ? firstInputRef
-              : undefined,
-          disabled: disabledAll,
-        } as any
+    <form onSubmit={handleSubmit} className="flex flex-col py-2">
+      <div className={`grid ${gridColsClass} ${compact ? 'gap-2' : 'gap-3'}`}>
+        {inputs.map((input, idx) => {
+          const span = Math.min(input.colSpan ?? 1, cols)
+          const spanClass =
+            span === 1 ? 'col-span-1'
+            : span === 2 ? 'col-span-2'
+            : span === 3 ? 'col-span-3'
+            : 'col-span-4'
 
-        return (
-          <div key={input.name} className={`flex flex-col text-black ${input.hidden && 'hidden'}`}>
-            {input.label && (
-              <label className="text-sm font-semibold mb-1 text-white">{input.label}</label>
-            )}
+          const commonProps = {
+            required: input.required,
+            disabled: disabledAll,
+            ref:
+              idx === 0 && !input.hidden && input.type !== 'component'
+                ? firstInputRef
+                : undefined,
+            className:
+              'border rounded px-2 py-1 outline-none shadow-inner shadow-black border-black ' +
+              'disabled:opacity-60 disabled:cursor-not-allowed',
+          } as any
 
-            {input.type === 'component' ? (
-              <input.Component
-                value={(formValues as any)[input.name]}
-                onChange={val => handleChange(input.name, val, input.type)}
-                disabled={disabledAll}
-                {...(input.componentProps || {})}
-              />
-            ) : input.type === 'select' ? (
-              <select {...commonProps}>
-                {input.options?.map(opt => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            ) : input.type === 'checkbox' ? (
-              <input
-                required={input.required}
-                type="checkbox"
-                checked={!!(formValues as any)[input.name]}
-                onChange={e => handleChange(input.name, e.target.checked, input.type)}
-                className="h-5 w-5 outline-none shadow-inner shadow-black border-black disabled:opacity-60 disabled:cursor-not-allowed"
-                disabled={disabledAll}
-              />
-            ) : input.type === 'textarea' ? (
-              <textarea {...commonProps} />
-            ) : (
-              <input {...commonProps} type={input.type} />
-            )}
-          </div>
-        )
-      })}
+          return (
+            <div
+              key={input.name}
+              className={`flex flex-col text-black ${input.hidden ? 'hidden' : ''} ${spanClass}`}
+            >
+              {input.label && (
+                <label className="text-sm font-semibold mb-1 text-white">
+                  {input.label}
+                </label>
+              )}
 
-      {/* Botón submit (explícito) */}
-      {typeBtn === 'primary' ? (
+              {input.type === 'component' ? (
+                <input.Component
+                  value={formValues[input.name]}
+                  onChange={val => handleChange(input.name, val, input.type)}
+                  disabled={disabledAll}
+                  {...(input.componentProps || {})}
+                />
+              ) : input.type === 'select' ? (
+                <select
+                  {...commonProps}
+                  value={formValues[input.name]}
+                  onChange={e =>
+                    handleChange(input.name, e.target.value, input.type)
+                  }
+                >
+                  {input.options?.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              ) : input.type === 'checkbox' ? (
+                <input
+                  type="checkbox"
+                  checked={!!formValues[input.name]}
+                  onChange={e =>
+                    handleChange(input.name, e.target.checked, input.type)
+                  }
+                />
+              ) : input.type === 'textarea' ? (
+                <textarea
+                  {...commonProps}
+                  value={formValues[input.name]}
+                  onChange={e =>
+                    handleChange(input.name, e.target.value, input.type)
+                  }
+                />
+              ) : input.type === 'number' ? (
+                <input
+                  {...commonProps}
+                  type="text"
+                  inputMode="decimal"
+                  value={formValues[input.name]}
+                  onChange={e =>
+                    handleChange(input.name, e.target.value, input.type)
+                  }
+                />
+              ) : (
+                <input
+                  {...commonProps}
+                  type={input.type}
+                  value={formValues[input.name]}
+                  onChange={e =>
+                    handleChange(input.name, e.target.value, input.type)
+                  }
+                />
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="mt-4">
         <PrimaryButton
-          type="submit"                              // ⬅️ EXPLÍCITO
-          disabled={isSubmitting}                    // ⬅️ corregido el typo
+          type="submit"
+          disabled={isSubmitting}
           functionClick={undefined}
           title={isSubmitting ? submittingText : titleBtn}
         />
-      ) : (
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {isSubmitting ? submittingText : titleBtn}
-        </button>
-      )}
+      </div>
     </form>
   )
 }

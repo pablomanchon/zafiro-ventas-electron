@@ -71,8 +71,8 @@ export default function SalesPage() {
     openChildWithPayload(`#/ventas/${id}`, payload)
   }, [ventas, openChildWithPayload])
 
-  const handleDobleClickFila = useCallback((id: number) => {
-    openVenta(id)
+  const handleDobleClickFila = useCallback((id: number | string) => {
+    openVenta(Number(id))
   }, [openVenta])
 
   const handleOpenCreate = useCallback(() => {

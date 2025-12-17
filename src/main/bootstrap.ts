@@ -15,9 +15,9 @@ import { AppModule } from './app.module';
 import { validateLicense } from './license';   // 👈 AÑADIR ESTO
 
 export async function bootstrap() {
-    validateLicense();
+  validateLicense();
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { logger: ['log', 'error', 'warn', 'debug', 'verbose'], });
 
   app.setGlobalPrefix('api');
 

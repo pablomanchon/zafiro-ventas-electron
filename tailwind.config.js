@@ -4,6 +4,13 @@ module.exports = {
   ],
   theme: {
     extend: {
+      spacing: {
+        100: '550px',
+        102: '560px',
+        104: '580px',
+        106: '590px',
+        108: '200px',
+      },
       animation: {
         'pulse': 'pulse-animation 3s ease-in-out infinite alternate', // Añades la animación con duración de 3s en bucle
       },

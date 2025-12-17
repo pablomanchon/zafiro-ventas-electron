@@ -27,10 +27,12 @@ function isEditableTarget(el: EventTarget | null) {
 
 export default function CrudPage<T extends { id: number | string }>({
   config,
-  color
+  color,
+  cols = 1
 }: {
   config: CrudConfig
   color?: string
+  cols?: 1 | 2 | 3 | 4 | undefined
 }) {
   const { entity, title, columns, formInputs, searchFields } = config
   const { items, selected, setSelected, handleDelete, fetchItems } = useCrud<T>(entity, formInputs)
@@ -93,10 +95,11 @@ export default function CrudPage<T extends { id: number | string }>({
   const openCreateModal = () => {
     openModal(
       <div tabIndex={-1} onKeyDown={(e) => e.stopPropagation()} onKeyUp={(e) => e.stopPropagation()}>
-        <Steel className='text-white w-96'>
+        <Steel className='text-white max-h-svh overflow-y-auto'>
           <Title>Crear {toSingular(config.title)}</Title>
           <DynamicForm
             inputs={config.formInputs}
+            columns={cols}
             onSubmit={async (values) => {
               try {
                 await create(config.entity, values)
@@ -126,10 +129,11 @@ export default function CrudPage<T extends { id: number | string }>({
 
     openModal(
       <div tabIndex={-1} onKeyDown={(e) => e.stopPropagation()} onKeyUp={(e) => e.stopPropagation()}>
-        <Steel className='text-white w-96'>
+        <Steel className='text-white'>
           <Title>Editar {toSingular(config.title)}</Title>
           <DynamicForm
             inputs={inputsWithValues}
+            columns={cols}
             onSubmit={async (values) => {
               try {
                 await update(config.entity, rowId, values)
@@ -189,7 +193,7 @@ export default function CrudPage<T extends { id: number | string }>({
               </span>
 
               <span tabIndex={-1} onMouseDown={(e) => e.preventDefault()}>
-                <DangerButton title="Eliminar" functionClick={()=>{handleDelete(`${toSingular(config.title)} eliminado con éxito!`)}} />
+                <DangerButton title="Eliminar" functionClick={() => { handleDelete(`${toSingular(config.title)} eliminado con éxito!`) }} />
               </span>
             </>
           )}

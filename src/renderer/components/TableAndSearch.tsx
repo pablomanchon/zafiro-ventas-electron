@@ -2,11 +2,11 @@ import Table from '../layout/Table';
 import { useSearch } from '../providers/SearchProvider';
 import Search from '../layout/Search';
 
-interface TableAndSearchProps<T> {
+interface TableAndSearchProps<T extends { id: number | string }> {
   datos: T[];
   encabezados: any[];
-  onDobleClickFila: (id: number | string) => void;
-  onFilaSeleccionada: (id: number | string | null) => void;
+  onDobleClickFila: (id: T['id']) => void;
+  onFilaSeleccionada: (id: T['id'] | null) => void;
   searchFilters: string[];
 }
 
