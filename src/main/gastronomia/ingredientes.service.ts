@@ -38,18 +38,18 @@ export class IngredientesService {
     return this.ingredienteRepo.find();
   }
 
-  async findOne(id: string) {
+  async findOne(id: number) {
     const ingrediente = await this.ingredienteRepo.findOne({ where: { id } });
     if (!ingrediente) throw new NotFoundException('Ingrediente no encontrado');
     return ingrediente;
   }
 
-  async update(id: string, dto: UpdateIngredienteDto) {
+  async update(id: number, dto: UpdateIngredienteDto) {
     await this.ingredienteRepo.update(id, dto);
     return this.findOne(id);
   }
 
-  async remove(id: string) {
+  async remove(id: number) {
     const ingrediente = await this.findOne(id);
     await this.ingredienteRepo.remove(ingrediente);
     return { deleted: true };

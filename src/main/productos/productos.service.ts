@@ -21,7 +21,6 @@ export class ProductosService {
   }
 
   async create(createDto: ProductoDto, manager?: EntityManager) {
-    createDto.codigo = createDto.id;
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     const data = await repo.findOne({ where: { id: createDto.id } });
     if (data) throw new BadRequestException("Ya existe un producto con esa id")
@@ -32,12 +31,12 @@ export class ProductosService {
     return saved;
   }
 
-  async findOne(id: string, manager?: EntityManager) {
+  async findOne(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     return repo.findOne({ where: { id } });
   }
 
-  async update(id: string, updateDto: UpdateProductoDto, manager?: EntityManager) {
+  async update(id: number, updateDto: UpdateProductoDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     await repo.update(id, updateDto);
     const updated = await repo.findOne({ where: { id } });
@@ -45,7 +44,7 @@ export class ProductosService {
     return updated;
   }
 
-  async remove(id: string, manager?: EntityManager) {
+  async remove(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     await repo.delete(id);
     // 🔔 notificar baja
@@ -53,7 +52,7 @@ export class ProductosService {
     return { deleted: true };
   }
 
-  async decrementStock(productoId: string, cantidad: number, manager?: EntityManager) {
+  async decrementStock(productoId: number, cantidad: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     const producto = await repo.findOne({ where: { id: productoId } });
     if (!producto) throw new Error('Producto no encontrado');

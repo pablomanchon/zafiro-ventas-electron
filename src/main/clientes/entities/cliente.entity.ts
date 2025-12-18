@@ -24,4 +24,7 @@ export class Cliente {
 
   @OneToMany(() => Venta, venta => venta.cliente)
   ventas: Venta[];
+  
+  @Column()
+  deleted: boolean = false
 }

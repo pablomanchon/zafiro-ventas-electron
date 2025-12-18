@@ -15,8 +15,6 @@ import PaymentMethodsTable from '../metodo-pago/PaymentMethodsTable'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { fetchSaleById, makeSelectVentaById, needsRefresh } from '../../store/salesReduce'
 import bgUrl from '../../assets/fondo-w.png'
-
-// 👇 helpers de dinero: usamos centavos para evitar problemas con coma/decimales
 import { toCents, formatCentsARS } from '../../utils/utils'
 
 type VentaInitPayload = {
@@ -46,8 +44,12 @@ const normalizeSaleItems = (raw?: unknown): SaleItem[] | undefined => {
         ? Number(precioFinalRaw)
         : Number((precio * cantidad * (1 - descuento / 100)).toFixed(2))
 
+      // ✅ ahora guardamos CODIGO en productId
+      const codigo =
+        String(item.codigo ?? entry?.codigo ?? entry?.productoCodigo ?? entry?.productId ?? '')
+
       return {
-        productId: coerceId(entry?.productoId ?? entry?.productId ?? item.productId) ?? '',
+        productId: codigo,
         nombre: item.nombre ?? entry?.nombre ?? '',
         precio,
         cantidad,
@@ -63,7 +65,6 @@ const normalizePayments = (raw?: unknown): PaymentItem[] | undefined => {
   return raw.map((entry: any) => ({
     metodoId: coerceId(entry?.metodoId ?? entry?.metodo?.id ?? entry?.id) ?? '',
     nombre: entry?.metodo?.nombre ?? entry?.nombre ?? '',
-    // dejamos el monto como string (puede venir con coma) — se parsea a centavos al validar
     monto: String(entry?.monto ?? ''),
     cuotas: entry?.cuotas !== undefined && entry?.cuotas !== null ? String(entry.cuotas) : '',
   }))
@@ -111,7 +112,7 @@ export default function VentaCreate() {
 
     try {
       window.opener?.postMessage({ type: 'READY' }, origin)
-    } catch {}
+    } catch { }
 
     const unsubscribe = (window as any).windowApi?.onInitData?.((payload: any) => {
       setInitPayload(payload as VentaInitPayload ?? null)
@@ -163,7 +164,6 @@ export default function VentaCreate() {
     setFormKey(k => k + 1)
   }, [params.idVenta, hasInitData, ventaDesdeStore])
 
-  // Proxy que intercepta onChange de ItemsVentaTable y actualiza el espejo
   const ItemsProxy = useCallback((
     { value, onChange }: { value?: SaleItem[]; onChange?: (v: SaleItem[]) => void }
   ) => (
@@ -178,12 +178,15 @@ export default function VentaCreate() {
 
   const calcTotalConDescuento = (items: SaleItem[]): number => {
     return (items ?? []).reduce((acc, it: any) => {
-      const prod = products.find(p => p.id === it.productId)
+      // ✅ buscar por codigo
+      const prod = products.find(p => String((p as any).codigo) === String(it.productId))
       const base = Number(prod?.precio ?? it?.precio ?? 0)
+
       const desc = Number(it?.descuento ?? 0)
       const unit = typeof it?.precioFinal === 'number'
         ? it.precioFinal
         : base * (1 - (isNaN(desc) ? 0 : desc) / 100)
+
       const cant = Number(it?.cantidad || 0)
       return acc + unit * cant
     }, 0)
@@ -230,14 +233,21 @@ export default function VentaCreate() {
     try {
       setSubmitting(true)
 
-      const items: SaleItem[] = values.items || []
+      const itemsRaw: SaleItem[] = values.items || []
+      const items = itemsRaw.filter(it => String(it.productId ?? '').trim() !== '')
+
       const pagos: PaymentItem[] = values.pagos || []
 
-      // ==== VALIDACIÓN EN CENTAVOS ====
+      if (!items.length) {
+        toast.error('Debe incluir al menos un producto (código)')
+        setSubmitting(false)
+        return
+      }
+
       const totalCDCents = Math.round((totalConDescuento ?? 0) * 100)
 
       const sumaPagosCents = (pagos ?? [])
-        .filter(p => p?.metodoId) // ignorar filas vacías
+        .filter(p => p?.metodoId)
         .reduce((acc, p) => acc + toCents((p as any).monto), 0)
 
       if (sumaPagosCents !== totalCDCents) {
@@ -249,9 +259,13 @@ export default function VentaCreate() {
         return
       }
 
-      // ==== DETALLES ====
+      // ✅ DETALLES: productId = codigo, backend necesita productoId = number
       const detalles = items.map((item: any) => {
-        const prod = products.find(p => p.id === item.productId)
+        const codigo = String(item.productId ?? '').trim()
+        const prod = products.find(p => String((p as any).codigo) === codigo)
+
+        if (!prod) throw new Error(`Producto código "${codigo}" no encontrado`)
+
         const base = Number(prod?.precio ?? item?.precio ?? 0)
         const descPct = Number(item?.descuento ?? 0)
         const precioFinalUnit = typeof item?.precioFinal === 'number'
@@ -259,8 +273,9 @@ export default function VentaCreate() {
           : Number((base * (1 - (isNaN(descPct) ? 0 : descPct) / 100)).toFixed(2))
 
         return {
-          productoId: item.productId,
+          productoId: Number((prod as any).id), // ✅ ID numérico real
           item: {
+            codigo: String((prod as any).codigo ?? ''), // ✅ snapshot con codigo
             nombre: prod?.nombre ?? item?.nombre ?? '',
             descripcion: (prod as any)?.descripcion ?? '',
             precio: precioFinalUnit,
@@ -270,15 +285,13 @@ export default function VentaCreate() {
         }
       })
 
-      // ==== PAGOS (payload en pesos como number; si tu backend usa centavos INTEGER, cambia a montoCentavos) ====
       const pagosPayload = (pagos ?? [])
         .filter(p => p?.metodoId)
         .map(p => {
           const cents = toCents((p as any).monto)
           const dto: Record<string, any> = {
             metodoId: p.metodoId,
-            monto: cents / 100,           // PESOS con decimales correctos
-            // montoCentavos: cents,       // <- usa este si la DB guarda INTEGER (centavos)
+            monto: cents / 100,
           }
           if ((p as any).cuotas != null && (p as any).cuotas !== '') {
             dto.cuotas = Number((p as any).cuotas) || 0

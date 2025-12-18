@@ -14,4 +14,7 @@ export class User {
     paymenthDate: Date
 @Column({ default: () => 'CURRENT_TIMESTAMP' })
     vencDate: Date
+
+    @Column()
+    deleted: boolean = false
 }

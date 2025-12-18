@@ -5,7 +5,8 @@ import Table from '../../layout/Table'
 import { useProducts } from '../../hooks/useProducts'
 
 type Product = {
-  id: string | number
+  id: number
+  codigo:string
   nombre: string
   [key: string]: unknown
 }
@@ -88,7 +89,7 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
       return
     }
 
-    const prod = (products as Product[]).find((p) => String(p.id) === id)
+    const prod = (products as Product[]).find((p) => p.codigo === id)
 
     if (!prod) {
       toast.error(`No se encontró producto con ID ${id}`)

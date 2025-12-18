@@ -19,7 +19,7 @@ export class ProductosController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.productosService.findOne(id);
   }
 
@@ -31,12 +31,12 @@ export class ProductosController {
 
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductoDto: UpdateProductoDto) {
+  update(@Param('id') id: number, @Body() updateProductoDto: UpdateProductoDto) {
     return this.productosService.update(id, updateProductoDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: number) {
     return this.productosService.remove(id);
   }
 }

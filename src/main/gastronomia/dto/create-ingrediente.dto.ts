@@ -5,4 +5,5 @@ export class CreateIngredienteDto {
   unidadBase!: UnidadMedidaIngrediente;
   cantidadBase!: number;
   precioCostoBase!: number;
+  codigo: string;
 }

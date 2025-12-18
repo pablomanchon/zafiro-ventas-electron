@@ -8,8 +8,9 @@ const ingredientesConfig: CrudConfig = {
     { titulo: 'Unidad base', clave: 'unidadBase' },
     { titulo: 'Cantidad base', clave: 'cantidadBase' },
     { titulo: 'Costo base', clave: 'precioCostoBase', tipo: 'money' },
+    { titulo: 'Codigo', clave: 'codigo' },
   ],
-  searchFields: ['id', 'nombre', 'unidadBase'],
+  searchFields: ['codigo', 'nombre', 'unidadBase'],
   formInputs: [
     { name: 'nombre', label: 'Nombre', type: 'text', required: true },
     {
@@ -26,6 +27,7 @@ const ingredientesConfig: CrudConfig = {
     },
     { name: 'cantidadBase', label: 'Cantidad base', type: 'number', required: true },
     { name: 'precioCostoBase', label: 'Costo base', type: 'number', required: true },
+    { name: 'codigo', label: 'Codigo', type: 'text', required: true }
   ],
 };
 

@@ -1,6 +1,6 @@
 // src/productos/dto/create-producto.dto.ts
 export class ProductoDto {
-  id?: string;
+  id?: number;
   nombre: string;
   descripcion?: string;
   codigo?:string;

@@ -21,6 +21,7 @@ export interface PlatoDto extends CreatePlatoDto{
 }
 
 export interface CreatePlatoDto {
+    codigo: string;
     id: string;
     nombre: string;
     descripcion?: string;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
-import { create, getAll, getById, remove, update } from '../../api/crud' // <-- getById
+import { create, getAll, getById, remove, update } from '../../api/crud'
 import type { CreatePlatoDto } from './types'
 import Wood from '../../layout/Steel'
 import Title from '../../layout/Title'
@@ -35,23 +35,42 @@ export default function usePlato() {
     fetchData()
   }, [])
 
+  // ✅ build inputs y opcionalmente ocultar "id" en create
   const buildInputsWithValues = (item: any | null): FormInput[] => {
-    return config.formInputs.map(def => {
-      const val = item ? item[def.name] : undefined
+    return config.formInputs
+      .map((def: any) => {
+        const val = item ? item[def.name] : undefined
 
-      if (def.type === 'component') {
-        // para componentes, si no viene valor usá el default del config (ej: [])
+        // ✅ si es CREATE, ocultamos id (si existe en config)
+        if (!item && def.name === 'id') {
+          return { ...def, hidden: true } // tu DynamicForm ya soporta "hidden"
+        }
+
+        if (def.type === 'component') {
+          return {
+            ...def,
+            value: item ? (val ?? def.value ?? []) : (def.value ?? []),
+          }
+        }
+
         return {
           ...def,
-          value: item ? (val ?? def.value ?? []) : (def.value ?? []),
+          value: item ? (val ?? '') : undefined,
         }
-      }
+      })
+  }
 
-      return {
-        ...def,
-        value: item ? (val ?? '') : undefined,
-      }
-    })
+  // ✅ helper: limpiar payload antes de mandar
+  const sanitizePayload = (values: Record<string, any>) => {
+    const payload = { ...values }
+
+    // ✅ nunca mandar id en create (igual lo sacamos por seguridad)
+    delete (payload as any).id
+
+    // ✅ codigo obligatorio y sin espacios (ajustá si querés permitir espacios)
+    if (payload.codigo != null) payload.codigo = String(payload.codigo).trim()
+
+    return payload
   }
 
   const createPlato = () => {
@@ -60,9 +79,16 @@ export default function usePlato() {
         <Title>Crear Plato</Title>
         <DynamicForm
           inputs={buildInputsWithValues(null)}
-          onSubmit={async values => {
+          onSubmit={async (values) => {
             try {
-              await create('platos', values)
+              const payload = sanitizePayload(values)
+
+              if (!payload.codigo) {
+                toast.error('El código es obligatorio')
+                return
+              }
+
+              await create('platos', payload)
               closeModal()
               toast.success('¡Plato creado con éxito!')
               fetchData()
@@ -78,7 +104,6 @@ export default function usePlato() {
 
   const modifyPlato = async (id: string) => {
     try {
-      // ✅ Traer el plato completo con relaciones
       const full = await getById<any>('platos', id)
 
       openModal(
@@ -87,9 +112,15 @@ export default function usePlato() {
           <DynamicForm
             inputs={buildInputsWithValues(full)}
             columns={config.columns}
-            onSubmit={async values => {
+            onSubmit={async (values) => {
               try {
-                await update(config.entity, id, values)
+                // ✅ en update NO usamos values.id; usamos el id del registro
+                const payload = { ...values }
+                if (payload.codigo != null) payload.codigo = String(payload.codigo).trim()
+                delete (payload as any).id
+
+                await update(config.entity, id, payload)
+
                 toast.success(`${toSingular(config.title)} actualizado con éxito`)
                 closeModal()
                 fetchData()

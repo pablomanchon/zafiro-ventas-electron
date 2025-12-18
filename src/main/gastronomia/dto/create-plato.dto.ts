@@ -1,12 +1,12 @@
 import { ProductoDto } from '../../productos/dto/create-producto.dto';
 
 export class PlatoIngredienteInput {
-  ingredienteId!: string;
+  ingredienteId!: number;
   cantidadUsada!: number;
 }
 
 export class PlatoSubplatoInput {
-  platoHijoId!: string;
+  platoHijoId!: number;
   cantidadUsada!: number;
 }
 

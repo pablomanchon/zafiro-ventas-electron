@@ -1,11 +1,11 @@
 // src/productos/entities/producto.entity.ts
-import { Entity, PrimaryColumn, Column, TableInheritance } from 'typeorm';
+import { Entity, PrimaryColumn, Column, TableInheritance, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 @TableInheritance({ column: { type: 'varchar', name: 'tipo' } }) // discriminador
 export class Producto {
-  @PrimaryColumn()
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ type: 'nvarchar', length: 100, unique: true })
   codigo: string;
@@ -21,5 +21,7 @@ export class Producto {
 
   @Column('int')
   stock: number;
-
+  
+  @Column()
+  deleted: boolean = false
 }

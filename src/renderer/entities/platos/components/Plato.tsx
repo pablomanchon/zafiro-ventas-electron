@@ -11,7 +11,7 @@ export default function Plato({ p, onModify, onDelete }: { p: CreatePlatoDto, on
     return (
         <Wood className="rounded-full">
             <div className="bg-black/60 p-10 rounded-full">
-                <Title>{p.id}</Title>
+                <Title>{p.codigo}</Title>
                 <label className="flex gap-2">
                     <h3 className="font-bold">Nombre:</h3>
                     <p>{p.nombre}</p>

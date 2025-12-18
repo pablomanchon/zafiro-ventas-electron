@@ -6,7 +6,7 @@ const platosConfig: CrudConfig = {
   entity: 'platos',
   title: 'Platos',
   columns: [
-    { titulo: 'ID', clave: 'id' },
+    { titulo: 'Código', clave: 'codigo' },
     { titulo: 'Nombre', clave: 'nombre' },
     { titulo: 'Precio venta', clave: 'precio', tipo: 'money' },
     { titulo: 'Costo', clave: 'precioCosto', tipo: 'money' },
@@ -16,7 +16,7 @@ const platosConfig: CrudConfig = {
   ],
   searchFields: ['id', 'nombre', 'descripcion'],
   formInputs: [
-    { name: 'id', label: 'ID', type: 'text', required: true },
+    { name: 'codigo', label: 'Código', type: 'text', required: true },
     { name: 'nombre', label: 'Nombre', type: 'text', required: true },
     { name: 'descripcion', label: 'Descripción', type: 'textarea' },
     { name: 'precio', label: 'Precio de venta', type: 'number', required: true },

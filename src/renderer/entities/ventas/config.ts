@@ -11,7 +11,7 @@ const ventasConfig: CrudConfig = {
     { titulo: 'Fecha',       clave: 'fecha' },
   ],
   searchFields: ['id', 'clienteNombre', 'total'],
-  formInputs: [],   // ← aunque SalesPage no lo use, lo dejas para que CrudConfig no marque error
+  formInputs: [],
 }
 
 export default ventasConfig

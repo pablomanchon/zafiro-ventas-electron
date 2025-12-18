@@ -18,17 +18,17 @@ export class IngredientesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.ingredientesService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateIngredienteDto) {
+  update(@Param('id') id: number, @Body() dto: UpdateIngredienteDto) {
     return this.ingredientesService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: number) {
     return this.ingredientesService.remove(id);
   }
 }

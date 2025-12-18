@@ -47,4 +47,7 @@ export class Venta {
       0,
     );
   }
+
+  @Column()
+  deleted: boolean = false
 }

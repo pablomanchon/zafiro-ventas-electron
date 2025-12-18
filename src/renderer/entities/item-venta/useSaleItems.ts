@@ -2,9 +2,15 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useProducts } from '../../hooks/useProducts'
 
-type Product = { id: string; nombre: string; precio: number | string }
+type Product = {
+  id: number | string
+  codigo: string
+  nombre: string
+  precio: number | string
+}
 
 export interface SaleItem {
+  // ⚠️ ahora este campo representa el CÓDIGO (string)
   productId: string | ''
   nombre: string
   precio: number
@@ -77,6 +83,7 @@ export function useSaleItems(
         precioFinal: toNum(it.precioFinal),
       }))
     }
+    // 3 filas por defecto
     return [makeBase(), makeBase(), makeBase()]
   })
 
@@ -92,7 +99,6 @@ export function useSaleItems(
       const normalized: SaleItem[] = value.map((it): SaleItem => {
         const precio = toNum(it.precio)
 
-        // 🔹 forzamos el literal '' en la unión
         const cantidad: SaleItem['cantidad'] =
           it.cantidad === '' ? '' : toNum(it.cantidad, 1)
 
@@ -102,8 +108,7 @@ export function useSaleItems(
         const precioFinal = computeFinal(precio, cantidad, descuento)
 
         return {
-          // si tu value podría traer productId solo como string, lo normalizamos
-          productId: (it.productId ?? '') as SaleItem['productId'],
+          productId: (it.productId ?? '') as SaleItem['productId'], // código
           nombre: it.nombre ?? '',
           precio,
           cantidad,
@@ -117,7 +122,6 @@ export function useSaleItems(
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
-
 
   // emitir HACIA el padre
   useEffect(() => {
@@ -136,26 +140,29 @@ export function useSaleItems(
     setItems(prev => {
       const row = { ...prev[idx], ...partial }
 
-      // forzar tipos numéricos coherentes
       row.precio = toNum(row.precio)
       if (row.cantidad !== '') row.cantidad = toNum(row.cantidad, 1)
       if (row.descuento !== '') row.descuento = toNum(row.descuento, 0)
 
       row.precioFinal = computeFinal(row.precio, row.cantidad, row.descuento)
+
       const next = [...prev]
       next[idx] = row
       return next
     })
   }, [])
 
+  // ✅ ahora busca por CODIGO (no por id)
   const onProductIdChange = useCallback((idx: number, raw: string) => {
-    const id = (raw ?? '').trim() as string | ''
-    updateRow(idx, { productId: id })
-    if (id === '') {
+    const codigo = (raw ?? '').trim() as string | ''
+    updateRow(idx, { productId: codigo })
+
+    if (codigo === '') {
       updateRow(idx, { nombre: '', precio: 0 })
       return
     }
-    const prod = products.find(p => p.id === id)
+
+    const prod = products.find(p => String(p.codigo).toLowerCase() === codigo.toLowerCase())
     updateRow(idx, { nombre: prod?.nombre ?? '', precio: toNum(prod?.precio) })
   }, [products, updateRow])
 

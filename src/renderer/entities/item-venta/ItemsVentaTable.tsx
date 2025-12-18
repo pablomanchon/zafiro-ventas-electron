@@ -60,9 +60,7 @@ export default function ItemsVentaTable({
       type="number"
       data-row={idx}
       data-col={field}
-      value={
-        items[idx][field] === '' ? '' : (items[idx][field] as number) // mantener '' para inputs vacíos
-      }
+      value={items[idx][field] === '' ? '' : (items[idx][field] as number)}
       onChange={(e) => {
         const val = parser(e.target.value)
         updateRow(idx, { [field]: val } as any)
@@ -78,7 +76,7 @@ export default function ItemsVentaTable({
   )
 
   const encabezados = [
-    { titulo: 'ID Producto', clave: 'productId' },
+    { titulo: 'Código', clave: 'productId' },
     { titulo: 'Nombre', clave: 'nombre' },
     { titulo: 'Precio', clave: 'precio' },
     { titulo: 'Cantidad', clave: 'cantidad' },
@@ -113,7 +111,6 @@ export default function ItemsVentaTable({
         />
       ),
       nombre: it.nombre,
-      // ⬇️ nunca usamos .toFixed sobre algo que puede ser string
       precio: formatCurrencyARS(precioNum),
       cantidad: renderNumberCell(
         i,

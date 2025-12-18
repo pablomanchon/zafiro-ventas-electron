@@ -19,27 +19,27 @@ export class PlatosController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.platosService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdatePlatoDto) {
+  update(@Param('id') id: number, @Body() dto: UpdatePlatoDto) {
     return this.platosService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: number) {
     return this.platosService.remove(id);
   }
 
   @Post(':id/recalcular-costo')
-  recalcularCosto(@Param('id') id: string) {
+  recalcularCosto(@Param('id') id: number) {
     return this.platosService.recalcularCosto(id);
   }
 
   @Post(':id/ajustar-stock')
-  ajustarStock(@Param('id') id: string, @Body() dto: AjustarStockDto) {
+  ajustarStock(@Param('id') id: number, @Body() dto: AjustarStockDto) {
     return this.platosService.ajustarStock(id, dto);
   }
 }

@@ -17,4 +17,7 @@ export class ItemVenta {
 
   @Column({ default: 1 })
   cantidad: number;
+
+  @Column()
+  codigo: string;
 }

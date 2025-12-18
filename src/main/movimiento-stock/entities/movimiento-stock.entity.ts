@@ -11,6 +11,8 @@ export class MovimientoStock {
   fecha: Date
   @Column()
   moveType: 'in' | 'out'
+  @Column()
+  deleted: boolean = false
 }
 export function toEntity(dto: CreateMovimientoStockDto): MovimientoStock {
   const entity = new MovimientoStock();
