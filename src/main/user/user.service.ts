@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
@@ -11,7 +11,8 @@ export class UserService {
   ) {}
 
   async findByAuthId(authId: string) {
-    return this.repo.findOne({ where: { auth_id: authId } });
+    const user = await this.repo.findOne({ where: { auth_id: authId } });
+    return user && !user.deleted ? user : null;
   }
 
   async create(data: Partial<User>) {
@@ -28,7 +29,8 @@ export class UserService {
   }
 
   async findById(id:string) {
-    const user = await this.repo.findOne({where:{id}})
+    const user = await this.repo.findOne({ where: { id } });
+    if (!user || user.deleted) throw new NotFoundException('Usuario no encontrado');
     return user;
   }
 }

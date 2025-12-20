@@ -180,7 +180,7 @@ export class VentasService {
           }
 
           const prod = byId.get(productoId);
-          if (!prod) throw new NotFoundException(`Producto ${productoId} no encontrado`);
+          if (!prod || prod.deleted) throw new NotFoundException(`Producto ${productoId} no encontrado`);
 
           const stockActual = Number(prod.stock ?? 0);
           if (stockActual < cant) {
@@ -251,6 +251,8 @@ export class VentasService {
 
   async findAll(filter?: FilterVentasDto): Promise<Venta[]> {
     const where: any = {};
+    where.deleted = false;
+    where.cliente = { deleted: false } as any;
 
     if (filter?.from && filter?.to) {
       where.fecha = Between(new Date(filter.from), new Date(filter.to));
@@ -268,21 +270,34 @@ export class VentasService {
   }
 
   async findOne(id: number): Promise<Venta> {
-    return this.repo.findOneOrFail({
+    const venta = await this.repo.findOne({
       where: { id },
       relations: ['cliente', 'detalles', 'pagos'],
     });
+    if (!venta || venta.deleted || (venta.cliente && (venta.cliente as any).deleted)) {
+      throw new NotFoundException('Venta no encontrada');
+    }
+    return venta;
   }
 
   async update(id: number, dto: UpdateVentaDto): Promise<Venta> {
-    await this.repo.update(id, dto);
+    const venta = await this.repo.findOne({
+      where: { id },
+      relations: ['cliente', 'detalles', 'pagos'],
+    });
+    if (!venta || venta.deleted) throw new NotFoundException('Venta no encontrada');
+
+    await this.repo.save(this.repo.merge(venta, dto));
     const updated = await this.findOne(id);
     emitChange('ventas:changed', { type: 'upsert', data: updated });
     return updated;
   }
 
   async remove(id: number): Promise<{ deleted: boolean }> {
-    await this.repo.delete(id);
+    const venta = await this.repo.findOne({ where: { id } });
+    if (!venta || venta.deleted) throw new NotFoundException('Venta no encontrada');
+    venta.deleted = true;
+    await this.repo.save(venta);
     emitChange('ventas:changed', { type: 'remove', data: { id } });
     return { deleted: true };
   }
@@ -301,7 +316,8 @@ export class VentasService {
       .select('mp.tipo', 'tipo')
       .addSelect(`${sumExpr(dbType)}`, 'total');
 
-    if (where) qb.where(where, params);
+    qb.where('v.deleted = false');
+    if (where) qb.andWhere(where, params);
 
     const rows = await qb
       .groupBy('mp.tipo')
@@ -327,7 +343,8 @@ export class VentasService {
       .addSelect('mp.tipo', 'tipo')
       .addSelect(`${sumExpr(dbType)}`, 'total');
 
-    if (where) qb.where(where, params);
+    qb.where('v.deleted = false');
+    if (where) qb.andWhere(where, params);
 
     const rows = await qb
       .groupBy('mp.id')
@@ -364,7 +381,8 @@ export class VentasService {
       .addSelect(`${sumCant}`, 'cantidad')
       .addSelect(`${sumImp}`, 'importe');
 
-    if (where) qb.where(where, params);
+    qb.where('v.deleted = false');
+    if (where) qb.andWhere(where, params);
 
     const rows = await qb
       .groupBy('it.nombre')
@@ -401,7 +419,8 @@ export class VentasService {
       .addSelect(`${sumCant}`, 'cantidad')
       .addSelect(`${sumImp}`, 'importe');
 
-    if (where) qb.where(where, params);
+    qb.where('v.deleted = false');
+    if (where) qb.andWhere(where, params);
 
     const rows = await qb
       .groupBy(bucket)
@@ -433,7 +452,7 @@ export class VentasService {
         ? await repo.findOne({ where: { id: producto } })
         : producto;
 
-    if (!entidad) throw new NotFoundException('Producto no encontrado');
+    if (!entidad || entidad.deleted) throw new NotFoundException('Producto no encontrado');
 
     const stockActual = Number(entidad.stock ?? 0);
     const cant = Number(cantidad);

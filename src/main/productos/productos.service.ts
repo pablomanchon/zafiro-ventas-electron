@@ -1,5 +1,5 @@
 // src/productos/productos.service.ts
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
 import { UpdateProductoDto } from './dto/update-producto.dto';
@@ -17,7 +17,7 @@ export class ProductosService {
 
   async findAll(manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
-    return repo.find();
+    return repo.find({ where: { deleted: false } });
   }
 
   async create(createDto: ProductoDto, manager?: EntityManager) {
@@ -33,20 +33,26 @@ export class ProductosService {
 
   async findOne(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
-    return repo.findOne({ where: { id } });
+    const producto = await repo.findOne({ where: { id } });
+    if (!producto || producto.deleted) throw new NotFoundException('Producto no encontrado');
+    return producto;
   }
 
   async update(id: number, updateDto: UpdateProductoDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
-    await repo.update(id, updateDto);
-    const updated = await repo.findOne({ where: { id } });
+    const existing = await repo.findOne({ where: { id } });
+    if (!existing || existing.deleted) throw new NotFoundException('Producto no encontrado');
+    const updated = await repo.save(repo.merge(existing, updateDto));
     if (updated) emitChange('productos:changed', { type: 'upsert', data: updated }); // 🔔
     return updated;
   }
 
   async remove(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
-    await repo.delete(id);
+    const producto = await repo.findOne({ where: { id } });
+    if (!producto || producto.deleted) throw new NotFoundException('Producto no encontrado');
+    producto.deleted = true;
+    await repo.save(producto);
     // 🔔 notificar baja
     emitChange('productos:changed', { type: 'remove', data: { id } });
     return { deleted: true };
@@ -55,7 +61,7 @@ export class ProductosService {
   async decrementStock(productoId: number, cantidad: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     const producto = await repo.findOne({ where: { id: productoId } });
-    if (!producto) throw new Error('Producto no encontrado');
+    if (!producto || producto.deleted) throw new NotFoundException('Producto no encontrado');
     if (producto.stock < cantidad) throw new Error('Stock insuficiente');
 
     producto.stock -= cantidad;

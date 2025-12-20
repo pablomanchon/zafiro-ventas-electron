@@ -43,7 +43,7 @@ export class PlatosService {
       if (!codigo) throw new BadRequestException('Debe indicar código para el plato')
 
       // codigo único global (tabla base producto)
-      const existsCodigo = await productoRepo.exist({ where: { codigo } as any })
+      const existsCodigo = await productoRepo.exist({ where: { codigo, deleted: false } as any })
       if (existsCodigo) {
         throw new BadRequestException(`Ya existe un producto con código "${codigo}"`)
       }
@@ -128,6 +128,7 @@ export class PlatosService {
         const dup = await productoRepo
           .createQueryBuilder('p')
           .where('p.codigo = :codigo', { codigo: codigoFinal })
+          .andWhere('p.deleted = false')
           .andWhere('p.id <> :id', { id })
           .getExists()
 

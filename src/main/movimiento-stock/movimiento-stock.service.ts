@@ -39,7 +39,7 @@ export class MovimientoStockService {
 
       // Buscar por codigo (NO por id)
       const productos = await prodRepo.find({
-        where: { codigo: In(codigos) },
+        where: { codigo: In(codigos), deleted: false },
       });
 
       // Map por codigo
@@ -84,6 +84,7 @@ export class MovimientoStockService {
       const movimiento = movRepo.create({
         moveType,
         productsMoveStock: products, // guardás el snapshot tal como viene
+        deleted: false,
         // fecha la setea @CreateDateColumn en la entidad
       });
 
@@ -99,13 +100,14 @@ export class MovimientoStockService {
 
   async findAll() {
     return await this.movimientoRepo.find({
+      where: { deleted: false },
       order: { fecha: 'DESC' },
     });
   }
 
   async findOne(id: number) {
     const mov = await this.movimientoRepo.findOne({ where: { id } });
-    if (!mov) throw new NotFoundException('Movimiento no encontrado');
+    if (!mov || mov.deleted) throw new NotFoundException('Movimiento no encontrado');
     return mov;
   }
 
@@ -114,7 +116,7 @@ export class MovimientoStockService {
     // Te lo dejo igual “funcional” (solo actualiza snapshot), pero no es contable.
 
     const mov = await this.movimientoRepo.findOne({ where: { id } });
-    if (!mov) throw new NotFoundException('Movimiento no encontrado');
+    if (!mov || mov.deleted) throw new NotFoundException('Movimiento no encontrado');
 
     if (dto.moveType && dto.moveType !== 'in' && dto.moveType !== 'out') {
       throw new BadRequestException('Tipo de movimiento inválido');
@@ -135,8 +137,9 @@ export class MovimientoStockService {
   async remove(id: number) {
     // Igual que arriba: borrar un movimiento sin revertir stock deja inconsistencia.
     // Te lo dejo como estaba.
-    const res = await this.movimientoRepo.delete(id);
-    if (!res.affected) throw new NotFoundException('Movimiento no encontrado');
-    return { message: 'Movimiento eliminado' };
+    const mov = await this.movimientoRepo.findOne({ where: { id } });
+    if (!mov || mov.deleted) throw new NotFoundException('Movimiento no encontrado');
+    mov.deleted = true;
+    return this.movimientoRepo.save(mov);
   }
 }
