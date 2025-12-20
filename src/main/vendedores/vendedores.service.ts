@@ -1,5 +1,5 @@
 // src/vendedores/vendedores.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { Vendedor } from './entities/vendedor.entity';
@@ -16,7 +16,7 @@ export class VendedoresService {
 
   async findAll(manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Vendedor) : this.repo;
-    return repo.find(); // opcional: order: { nombre: 'ASC' }
+    return repo.find({ where: { deleted: false } }); // opcional: order: { nombre: 'ASC' }
   }
 
   async create(createDto: CreateVendedorDto, manager?: EntityManager) {
@@ -31,13 +31,16 @@ export class VendedoresService {
 
   async findOne(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Vendedor) : this.repo;
-    return repo.findOne({ where: { id } as any });
+    const vendedor = await repo.findOne({ where: { id, deleted: false } as any });
+    if (!vendedor) throw new NotFoundException('Vendedor no encontrado');
+    return vendedor;
   }
 
   async update(id: number, updateDto: UpdateVendedorDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Vendedor) : this.repo;
-    await repo.update(id, updateDto as Partial<Vendedor>);
-    const updated = await repo.findOne({ where: { id } as any });
+    const existing = await repo.findOne({ where: { id, deleted: false } as any });
+    if (!existing) throw new NotFoundException('Vendedor no encontrado');
+    const updated = await repo.save(repo.merge(existing, updateDto as Partial<Vendedor>));
 
     if (updated) {
       // 🔔 notificar actualización
@@ -48,7 +51,10 @@ export class VendedoresService {
 
   async remove(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Vendedor) : this.repo;
-    await repo.delete(id);
+    const vendedor = await repo.findOne({ where: { id, deleted: false } as any });
+    if (!vendedor) throw new NotFoundException('Vendedor no encontrado');
+    vendedor.deleted = true;
+    await repo.save(vendedor);
 
     // 🔔 notificar eliminación
     emitChange('vendedores:changed', { type: 'remove', data: { id } });

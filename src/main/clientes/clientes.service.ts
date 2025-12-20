@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { CreateClienteDto } from "./dto/create-cliente.dto";
 import { InjectRepository } from "@nestjs/typeorm";
 import { EntityManager, Repository } from "typeorm";
@@ -15,7 +15,7 @@ export class ClientesService {
 
   async findAll(manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Cliente) : this.repo;
-    return repo.find();
+    return repo.find({ where: { deleted: false } });
   }
 
   async create(createDto: CreateClienteDto, manager?: EntityManager) {
@@ -30,13 +30,16 @@ export class ClientesService {
 
   async findOne(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Cliente) : this.repo;
-    return repo.findOne({ where: { id } });
+    const cliente = await repo.findOne({ where: { id, deleted: false } });
+    if (!cliente) throw new NotFoundException('Cliente no encontrado');
+    return cliente;
   }
 
   async update(id: number, updateDto: UpdateClienteDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Cliente) : this.repo;
-    await repo.update(id, updateDto);
-    const updated = await repo.findOne({ where: { id } });
+    const existing = await repo.findOne({ where: { id, deleted: false } });
+    if (!existing) throw new NotFoundException('Cliente no encontrado');
+    const updated = await repo.save(repo.merge(existing, updateDto));
 
     if (updated) {
       // 🔔 notificar actualización
@@ -47,7 +50,10 @@ export class ClientesService {
 
   async remove(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Cliente) : this.repo;
-    await repo.delete(id);
+    const cliente = await repo.findOne({ where: { id, deleted: false } });
+    if (!cliente) throw new NotFoundException('Cliente no encontrado');
+    cliente.deleted = true;
+    await repo.save(cliente);
 
     // 🔔 notificar eliminación
     emitChange('clientes:changed', { type: 'remove', data: { id } });
