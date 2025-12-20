@@ -11,7 +11,8 @@ export class UserService {
   ) {}
 
   async findByAuthId(authId: string) {
-    return this.repo.findOne({ where: { auth_id: authId, deleted: false } });
+    const user = await this.repo.findOne({ where: { auth_id: authId } });
+    return user && !user.deleted ? user : null;
   }
 
   async create(data: Partial<User>) {
@@ -28,8 +29,8 @@ export class UserService {
   }
 
   async findById(id:string) {
-    const user = await this.repo.findOne({ where: { id, deleted: false } });
-    if (!user) throw new NotFoundException('Usuario no encontrado');
+    const user = await this.repo.findOne({ where: { id } });
+    if (!user || user.deleted) throw new NotFoundException('Usuario no encontrado');
     return user;
   }
 }

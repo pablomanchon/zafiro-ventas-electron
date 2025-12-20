@@ -106,8 +106,8 @@ export class MovimientoStockService {
   }
 
   async findOne(id: number) {
-    const mov = await this.movimientoRepo.findOne({ where: { id, deleted: false } });
-    if (!mov) throw new NotFoundException('Movimiento no encontrado');
+    const mov = await this.movimientoRepo.findOne({ where: { id } });
+    if (!mov || mov.deleted) throw new NotFoundException('Movimiento no encontrado');
     return mov;
   }
 
@@ -115,8 +115,8 @@ export class MovimientoStockService {
     // Ojo: este update como lo tenías NO revierte stock del movimiento anterior.
     // Te lo dejo igual “funcional” (solo actualiza snapshot), pero no es contable.
 
-    const mov = await this.movimientoRepo.findOne({ where: { id, deleted: false } });
-    if (!mov) throw new NotFoundException('Movimiento no encontrado');
+    const mov = await this.movimientoRepo.findOne({ where: { id } });
+    if (!mov || mov.deleted) throw new NotFoundException('Movimiento no encontrado');
 
     if (dto.moveType && dto.moveType !== 'in' && dto.moveType !== 'out') {
       throw new BadRequestException('Tipo de movimiento inválido');
@@ -137,8 +137,8 @@ export class MovimientoStockService {
   async remove(id: number) {
     // Igual que arriba: borrar un movimiento sin revertir stock deja inconsistencia.
     // Te lo dejo como estaba.
-    const mov = await this.movimientoRepo.findOne({ where: { id, deleted: false } });
-    if (!mov) throw new NotFoundException('Movimiento no encontrado');
+    const mov = await this.movimientoRepo.findOne({ where: { id } });
+    if (!mov || mov.deleted) throw new NotFoundException('Movimiento no encontrado');
     mov.deleted = true;
     return this.movimientoRepo.save(mov);
   }

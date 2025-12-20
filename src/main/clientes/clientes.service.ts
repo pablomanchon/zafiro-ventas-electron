@@ -30,15 +30,15 @@ export class ClientesService {
 
   async findOne(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Cliente) : this.repo;
-    const cliente = await repo.findOne({ where: { id, deleted: false } });
-    if (!cliente) throw new NotFoundException('Cliente no encontrado');
+    const cliente = await repo.findOne({ where: { id } });
+    if (!cliente || cliente.deleted) throw new NotFoundException('Cliente no encontrado');
     return cliente;
   }
 
   async update(id: number, updateDto: UpdateClienteDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Cliente) : this.repo;
-    const existing = await repo.findOne({ where: { id, deleted: false } });
-    if (!existing) throw new NotFoundException('Cliente no encontrado');
+    const existing = await repo.findOne({ where: { id } });
+    if (!existing || existing.deleted) throw new NotFoundException('Cliente no encontrado');
     const updated = await repo.save(repo.merge(existing, updateDto));
 
     if (updated) {
@@ -50,8 +50,8 @@ export class ClientesService {
 
   async remove(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Cliente) : this.repo;
-    const cliente = await repo.findOne({ where: { id, deleted: false } });
-    if (!cliente) throw new NotFoundException('Cliente no encontrado');
+    const cliente = await repo.findOne({ where: { id } });
+    if (!cliente || cliente.deleted) throw new NotFoundException('Cliente no encontrado');
     cliente.deleted = true;
     await repo.save(cliente);
 

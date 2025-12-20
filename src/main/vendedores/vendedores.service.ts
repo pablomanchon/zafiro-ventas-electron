@@ -31,15 +31,15 @@ export class VendedoresService {
 
   async findOne(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Vendedor) : this.repo;
-    const vendedor = await repo.findOne({ where: { id, deleted: false } as any });
-    if (!vendedor) throw new NotFoundException('Vendedor no encontrado');
+    const vendedor = await repo.findOne({ where: { id } as any });
+    if (!vendedor || vendedor.deleted) throw new NotFoundException('Vendedor no encontrado');
     return vendedor;
   }
 
   async update(id: number, updateDto: UpdateVendedorDto, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Vendedor) : this.repo;
-    const existing = await repo.findOne({ where: { id, deleted: false } as any });
-    if (!existing) throw new NotFoundException('Vendedor no encontrado');
+    const existing = await repo.findOne({ where: { id } as any });
+    if (!existing || existing.deleted) throw new NotFoundException('Vendedor no encontrado');
     const updated = await repo.save(repo.merge(existing, updateDto as Partial<Vendedor>));
 
     if (updated) {
@@ -51,8 +51,8 @@ export class VendedoresService {
 
   async remove(id: number, manager?: EntityManager) {
     const repo = manager ? manager.getRepository(Vendedor) : this.repo;
-    const vendedor = await repo.findOne({ where: { id, deleted: false } as any });
-    if (!vendedor) throw new NotFoundException('Vendedor no encontrado');
+    const vendedor = await repo.findOne({ where: { id } as any });
+    if (!vendedor || vendedor.deleted) throw new NotFoundException('Vendedor no encontrado');
     vendedor.deleted = true;
     await repo.save(vendedor);
 

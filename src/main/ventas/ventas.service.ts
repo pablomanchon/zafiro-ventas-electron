@@ -167,7 +167,7 @@ export class VentasService {
 
         // ✅ precargar productos por ID (una sola query)
         const ids = validDetalles.map(d => Number(d.productoId));
-        const productos = await productoRepoTx.find({ where: { id: In(ids), deleted: false } });
+        const productos = await productoRepoTx.find({ where: { id: In(ids) } });
         const byId = new Map(productos.map(p => [p.id, p]));
 
         // 6.a) validar + descontar stock
@@ -180,7 +180,7 @@ export class VentasService {
           }
 
           const prod = byId.get(productoId);
-          if (!prod) throw new NotFoundException(`Producto ${productoId} no encontrado`);
+          if (!prod || prod.deleted) throw new NotFoundException(`Producto ${productoId} no encontrado`);
 
           const stockActual = Number(prod.stock ?? 0);
           if (stockActual < cant) {
@@ -271,19 +271,21 @@ export class VentasService {
 
   async findOne(id: number): Promise<Venta> {
     const venta = await this.repo.findOne({
-      where: { id, deleted: false, cliente: { deleted: false } as any },
+      where: { id },
       relations: ['cliente', 'detalles', 'pagos'],
     });
-    if (!venta) throw new NotFoundException('Venta no encontrada');
+    if (!venta || venta.deleted || (venta.cliente && (venta.cliente as any).deleted)) {
+      throw new NotFoundException('Venta no encontrada');
+    }
     return venta;
   }
 
   async update(id: number, dto: UpdateVentaDto): Promise<Venta> {
     const venta = await this.repo.findOne({
-      where: { id, deleted: false },
+      where: { id },
       relations: ['cliente', 'detalles', 'pagos'],
     });
-    if (!venta) throw new NotFoundException('Venta no encontrada');
+    if (!venta || venta.deleted) throw new NotFoundException('Venta no encontrada');
 
     await this.repo.save(this.repo.merge(venta, dto));
     const updated = await this.findOne(id);
@@ -292,8 +294,8 @@ export class VentasService {
   }
 
   async remove(id: number): Promise<{ deleted: boolean }> {
-    const venta = await this.repo.findOne({ where: { id, deleted: false } });
-    if (!venta) throw new NotFoundException('Venta no encontrada');
+    const venta = await this.repo.findOne({ where: { id } });
+    if (!venta || venta.deleted) throw new NotFoundException('Venta no encontrada');
     venta.deleted = true;
     await this.repo.save(venta);
     emitChange('ventas:changed', { type: 'remove', data: { id } });
@@ -447,10 +449,10 @@ export class VentasService {
 
     const entidad =
       typeof producto === 'number'
-        ? await repo.findOne({ where: { id: producto, deleted: false } })
+        ? await repo.findOne({ where: { id: producto } })
         : producto;
 
-    if (!entidad) throw new NotFoundException('Producto no encontrado');
+    if (!entidad || entidad.deleted) throw new NotFoundException('Producto no encontrado');
 
     const stockActual = Number(entidad.stock ?? 0);
     const cant = Number(cantidad);
