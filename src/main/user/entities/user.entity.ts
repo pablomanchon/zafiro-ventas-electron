@@ -10,11 +10,11 @@ export class User {
     email: string
     @Column({ unique: true })
     auth_id: string;
-@Column({ default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ default: () => 'CURRENT_TIMESTAMP' })
     paymenthDate: Date
-@Column({ default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ default: () => 'CURRENT_TIMESTAMP' })
     vencDate: Date
 
-    @Column()
-    deleted: boolean = false
+    @Column({ type: 'bit', default: false })
+    deleted: boolean;
 }

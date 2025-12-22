@@ -21,7 +21,7 @@ export class Producto {
 
   @Column('int')
   stock: number;
-  
-  @Column()
-  deleted: boolean = false
+
+  @Column({ type: 'bit', default: false })
+  deleted: boolean;
 }

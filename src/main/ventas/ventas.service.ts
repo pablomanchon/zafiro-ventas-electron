@@ -316,7 +316,8 @@ export class VentasService {
       .select('mp.tipo', 'tipo')
       .addSelect(`${sumExpr(dbType)}`, 'total');
 
-    qb.where('v.deleted = false');
+    qb.where('v.deleted = :deleted', { deleted: false });
+
     if (where) qb.andWhere(where, params);
 
     const rows = await qb
@@ -343,7 +344,8 @@ export class VentasService {
       .addSelect('mp.tipo', 'tipo')
       .addSelect(`${sumExpr(dbType)}`, 'total');
 
-    qb.where('v.deleted = false');
+    qb.where('v.deleted = :deleted', { deleted: false });
+
     if (where) qb.andWhere(where, params);
 
     const rows = await qb
@@ -381,7 +383,8 @@ export class VentasService {
       .addSelect(`${sumCant}`, 'cantidad')
       .addSelect(`${sumImp}`, 'importe');
 
-    qb.where('v.deleted = false');
+    qb.where('v.deleted = :deleted', { deleted: false });
+
     if (where) qb.andWhere(where, params);
 
     const rows = await qb
@@ -419,7 +422,8 @@ export class VentasService {
       .addSelect(`${sumCant}`, 'cantidad')
       .addSelect(`${sumImp}`, 'importe');
 
-    qb.where('v.deleted = false');
+    qb.where('v.deleted = :deleted', { deleted: false });
+
     if (where) qb.andWhere(where, params);
 
     const rows = await qb

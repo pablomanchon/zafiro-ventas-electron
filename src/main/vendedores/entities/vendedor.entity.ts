@@ -11,7 +11,7 @@ export class Vendedor {
 
     @OneToMany(() => Venta, venta => venta.vendedor)
     ventas: Venta[];
-
-    @Column()
-    deleted: boolean = false
+  
+    @Column({ type: 'bit', default: false })
+    deleted: boolean;
 }

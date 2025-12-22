@@ -27,7 +27,7 @@ export class PlatosService {
     @InjectRepository(PlatoSubplato)
     private readonly platoSubplatoRepo: Repository<PlatoSubplato>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   // ─────────────────────────────────────────────────────────────
 
@@ -203,6 +203,7 @@ export class PlatosService {
 
   findAll() {
     return this.platoRepo.find({
+      where: { deleted: false } as any,
       relations: [
         'ingredientes',
         'ingredientes.ingrediente',
@@ -214,7 +215,7 @@ export class PlatosService {
 
   async findOne(id: number) {
     const plato = await this.platoRepo.findOne({
-      where: { id },
+      where: { id, deleted: false } as any,
       relations: [
         'ingredientes',
         'ingredientes.ingrediente',
@@ -227,8 +228,9 @@ export class PlatosService {
   }
 
   async remove(id: number) {
-    const plato = await this.findOne(id)
-    await this.platoRepo.remove(plato)
+    const plato = await this.platoRepo.findOne({ where: { id, deleted: false } as any })
+    if (!plato) throw new NotFoundException('Plato no encontrado')
+    await this.platoRepo.update(id, { deleted: true } as any)
     return { deleted: true }
   }
 
