@@ -2,34 +2,41 @@ import 'reflect-metadata'
 import { app, BrowserWindow, Menu, shell, ipcMain, dialog } from 'electron'
 import path from 'path'
 import { URL, pathToFileURL } from 'url'
-import { bootstrap } from './bootstrap'
+import fs from 'fs'
+import { validateLicense } from './license'
 import { onChange } from './broadcast/event-bus'
 import { broadcast } from './broadcast/ipc-broadcast'
 
-// 🧩 🔹 Supabase + Keytar (agregado)
-import { createClient } from '@supabase/supabase-js'
-import keytar from 'keytar'
-import { validateLicense } from './license'
-
-// 🧩 Variables Supabase (leídas desde .env)
-const SUPABASE_URL = process.env.SUPABASE_URL!
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
-  auth: { persistSession: false },
-})
-
-// 🧩 Configuración de almacenamiento seguro del token
-const SERVICE = 'zafiro-stock'
-const ACCOUNT = 'supabase-session'
-
 // -------------------------------------------------------
-let mainWindow: BrowserWindow | null
+let mainWindow: BrowserWindow | null = null
+let splashWindow: BrowserWindow | null = null
+
 const icon = path.join(__dirname, '../public/zafiro_rounded.ico')
-let splashWindow: BrowserWindow | null
 
 // ⚙️ Detección de entorno
 const isProd = app.isPackaged
 const DEV_SERVER = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
+
+async function startApi() {
+ /* if (!isProd) {
+    // DEV: usa el bootstrap local (TS/JS en tu proyecto)
+    const mod = await import('./bootstrap')
+    return mod.bootstrap()
+  }
+*/
+  // PROD: usa el build de Nest (dist)
+  // Ajustá esta ruta si tu estructura final difiere
+  const apiBootstrapPath = path.join(__dirname, '../dist/bootstrap.js')
+
+  // Opcional: logs para diagnosticar si la ruta existe en el instalador
+  if (!fs.existsSync(apiBootstrapPath)) {
+    throw new Error(`No se encontró bootstrap de Nest en: ${apiBootstrapPath}`)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const mod = require(apiBootstrapPath) as { bootstrap: () => Promise<void> }
+  return mod.bootstrap()
+}
 
 function buildSplashHtml(): string {
   const content = `<!DOCTYPE html>
@@ -65,8 +72,9 @@ function buildSplashHtml(): string {
 }
 
 function getRendererUrl(hash = ''): string {
-  if (!isProd) return `${DEV_SERVER}${hash}`
-  const indexHtml = path.join(__dirname, '../renderer/index.html')
+  //if (!isProd) return `${DEV_SERVER}${hash}`
+
+  const indexHtml = path.join(__dirname, '../dist-renderer/index.html')
   return pathToFileURL(indexHtml).toString() + hash
 }
 
@@ -123,6 +131,7 @@ function createSplashWindow(): BrowserWindow {
 
 function updateSplashStatus(message: string) {
   if (!splashWindow || splashWindow.isDestroyed()) return
+
   if (splashWindow.webContents.isLoading()) {
     splashWindow.webContents.once('did-finish-load', () => {
       if (!splashWindow || splashWindow.isDestroyed()) return
@@ -138,44 +147,44 @@ async function createWindow() {
   splashWindow = createSplashWindow()
   updateSplashStatus('Verificando licencia...')
 
+  // 🔐 Licencia (solo una vez)
   try {
-    validateLicense();
-    console.log('🔐 Licencia válida, iniciando app...');
+    validateLicense()
+    console.log('🔐 Licencia válida, iniciando app...')
   } catch (e: any) {
-    console.error('❌ ERROR DE LICENCIA:', e.message);
+    console.error('❌ ERROR DE LICENCIA:', e?.message)
 
-    // Cartel para el usuario
     dialog.showMessageBoxSync({
       type: 'error',
       title: 'Licencia expirada',
       message:
-        e.code === 'LICENSE_EXPIRED'
+        e?.code === 'LICENSE_EXPIRED'
           ? 'Tu licencia ha expirado.\nPor favor, contacta al desarrollador.'
           : 'No se pudo validar la licencia.\nPor favor, contacta al desarrollador.',
       buttons: ['Aceptar'],
-    });
+    })
 
-    splashWindow?.close();
+    splashWindow?.close()
     splashWindow = null
-    app.quit();
-    return; // 👈 MUY IMPORTANTE: no sigas creando la ventana
+    app.quit()
+    return
   }
 
   updateSplashStatus('Abriendo base de datos...')
   try {
-    await bootstrap();
-  } catch (e : any) {
+    await startApi()
+  } catch (e: any) {
     dialog.showMessageBoxSync({
-      type: "error",
-      title: "Error al iniciar",
-      message: "No se pudo iniciar la base de datos o servidor interno.\n" + e.message,
-      buttons: ["Aceptar"]
-    });
+      type: 'error',
+      title: 'Error al iniciar',
+      message: 'No se pudo iniciar la base de datos o servidor interno.\n' + (e?.message ?? e),
+      buttons: ['Aceptar'],
+    })
 
-    splashWindow?.close();
+    splashWindow?.close()
     splashWindow = null
-    app.quit();
-    return;
+    app.quit()
+    return
   }
 
   updateSplashStatus('Iniciando aplicación...')
@@ -195,6 +204,7 @@ async function createWindow() {
 
   mainWindow.maximize()
   mainWindow.loadURL(getRendererUrl())
+
   mainWindow.once('ready-to-show', () => {
     mainWindow?.show()
     mainWindow?.focus()
@@ -211,17 +221,14 @@ async function createWindow() {
     if ((isSameOriginDev || isSameOriginProd) && isHashRoute) {
       const isCreateOrEdit = /\/(create|edit)/.test(u.hash)
       const isVentaCreate = u.hash.includes('#/ventas/create')
-      const width = isVentaCreate ? 900 : (isCreateOrEdit ? 500 : 800)
+      const width = isVentaCreate ? 900 : isCreateOrEdit ? 500 : 800
       const height = isVentaCreate ? 750 : 600
 
       const overrideOptions = buildChildWindowOptions()
       overrideOptions.width = width
       overrideOptions.height = height
 
-      return {
-        action: 'allow',
-        overrideBrowserWindowOptions: overrideOptions,
-      }
+      return { action: 'allow', overrideBrowserWindowOptions: overrideOptions }
     }
 
     shell.openExternal(url)
@@ -233,10 +240,13 @@ async function createWindow() {
     child.once('ready-to-show', () => {
       child.show()
       child.focus()
-      try { child.moveTop() } catch { }
+      try {
+        child.moveTop()
+      } catch {}
     })
   })
 
+  // Broadcasts
   onChange('clientes:changed', (p) => broadcast('clientes:changed', p))
   onChange('productos:changed', (p) => broadcast('productos:changed', p))
   onChange('metodos:changed', (p) => broadcast('metodos:changed', p))
@@ -252,15 +262,14 @@ async function createWindow() {
   })
 }
 
+// IPC
 ipcMain.handle('splash:close', () => {
-  if (splashWindow && !splashWindow.isDestroyed()) {
-    splashWindow.close()
-  }
+  if (splashWindow && !splashWindow.isDestroyed()) splashWindow.close()
   splashWindow = null
   return true
 })
 
-ipcMain.handle('open-child', async (event, options: { route: string; payload?: unknown }) => {
+ipcMain.handle('open-child', async (_event, options: { route: string; payload?: unknown }) => {
   const { route, payload } = options ?? { route: '' }
 
   const child = new BrowserWindow({
@@ -275,7 +284,7 @@ ipcMain.handle('open-child', async (event, options: { route: string; payload?: u
       child.show()
       child.focus()
       child.moveTop()
-    } catch { }
+    } catch {}
   })
 
   child.webContents.once('did-finish-load', () => {
@@ -292,52 +301,7 @@ ipcMain.handle('open-child', async (event, options: { route: string; payload?: u
   return { windowId: child.id }
 })
 
-// ---------------------------------------------------------------------------
-// 🔐 IPC Supabase Auth (agregado)
-// ---------------------------------------------------------------------------
-
-// Login
-ipcMain.handle('auth:login', async (_e, { email, password }) => {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error || !data.session) throw error || new Error('Error de inicio de sesión')
-  await keytar.setPassword(SERVICE, ACCOUNT, data.session.access_token)
-  return { user: data.user, access_token: data.session.access_token }
-})
-
-// Logout
-ipcMain.handle('auth:logout', async () => {
-  await keytar.deletePassword(SERVICE, ACCOUNT)
-  await supabase.auth.signOut()
-  return true
-})
-
-// Obtener usuario actual
-ipcMain.handle('auth:getUser', async () => {
-  const token = await keytar.getPassword(SERVICE, ACCOUNT)
-  if (!token) return null
-  const { data, error } = await supabase.auth.getUser(token)
-  if (error || !data?.user) return null
-  return data.user
-})
-
-// Token directo (para fetch)
-ipcMain.handle('auth:getToken', async () => {
-  const token = await keytar.getPassword(SERVICE, ACCOUNT)
-  return token ?? null
-})
-
-// Fetch proxy (inyecta Authorization)
-ipcMain.handle('net:fetch', async (_e, { input, init }) => {
-  const token = await keytar.getPassword(SERVICE, ACCOUNT)
-  const headers = new Headers(init?.headers || {})
-  if (token) headers.set('Authorization', `Bearer ${token}`)
-  const res = await fetch(input, { ...init, headers })
-  const text = await res.text()
-  return { status: res.status, ok: res.ok, body: text }
-})
-
-// ---------------------------------------------------------------------------
-
+// Start
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
