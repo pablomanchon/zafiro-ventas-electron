@@ -11,19 +11,20 @@ import { broadcast } from './broadcast/ipc-broadcast'
 let mainWindow: BrowserWindow | null = null
 let splashWindow: BrowserWindow | null = null
 
-const icon = path.join(__dirname, '../public/zafiro_rounded.ico')
+const icon = app.isPackaged
+  ? path.join(process.resourcesPath, 'zafiro-rounded.ico')
+  : path.join(__dirname, '../public/zafiro-rounded.ico')
 
 // ⚙️ Detección de entorno
 const isProd = app.isPackaged
 const DEV_SERVER = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
 
 async function startApi() {
- /* if (!isProd) {
+  if (!isProd) {
     // DEV: usa el bootstrap local (TS/JS en tu proyecto)
     const mod = await import('./bootstrap')
     return mod.bootstrap()
   }
-*/
   // PROD: usa el build de Nest (dist)
   // Ajustá esta ruta si tu estructura final difiere
   const apiBootstrapPath = path.join(__dirname, '../dist/bootstrap.js')
@@ -72,7 +73,7 @@ function buildSplashHtml(): string {
 }
 
 function getRendererUrl(hash = ''): string {
-  //if (!isProd) return `${DEV_SERVER}${hash}`
+  if (!isProd) return `${DEV_SERVER}${hash}`
 
   const indexHtml = path.join(__dirname, '../dist-renderer/index.html')
   return pathToFileURL(indexHtml).toString() + hash
@@ -149,18 +150,28 @@ async function createWindow() {
 
   // 🔐 Licencia (solo una vez)
   try {
-    validateLicense()
-    console.log('🔐 Licencia válida, iniciando app...')
+    const lic = validateLicense()
+    console.log('🔐 Licencia válida:', lic)
+
+    // ⚠️ Advertencia si quedan pocos días
+    if (lic.warning) {
+      dialog.showMessageBoxSync({
+        type: 'warning',
+        title: 'Licencia por vencer',
+        message: `Tu licencia vence en ${lic.daysLeft} día(s).\nContactá al desarrollador para renovarla.`,
+        buttons: ['Aceptar'],
+      })
+    }
   } catch (e: any) {
     console.error('❌ ERROR DE LICENCIA:', e?.message)
 
     dialog.showMessageBoxSync({
       type: 'error',
-      title: 'Licencia expirada',
+      title: 'Licencia',
       message:
         e?.code === 'LICENSE_EXPIRED'
           ? 'Tu licencia ha expirado.\nPor favor, contacta al desarrollador.'
-          : 'No se pudo validar la licencia.\nPor favor, contacta al desarrollador.',
+          : 'No se pudo validar la licencia.\n' + (e?.message ?? String(e)),
       buttons: ['Aceptar'],
     })
 
@@ -242,7 +253,7 @@ async function createWindow() {
       child.focus()
       try {
         child.moveTop()
-      } catch {}
+      } catch { }
     })
   })
 
@@ -284,7 +295,7 @@ ipcMain.handle('open-child', async (_event, options: { route: string; payload?: 
       child.show()
       child.focus()
       child.moveTop()
-    } catch {}
+    } catch { }
   })
 
   child.webContents.once('did-finish-load', () => {

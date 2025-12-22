@@ -10,7 +10,6 @@
     ],
     "types": [
       "node",
-      "keytar"
     ],
     "module": "CommonJS",
     "moduleResolution": "node",

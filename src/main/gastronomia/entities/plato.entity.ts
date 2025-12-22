@@ -19,4 +19,5 @@ export class Plato extends Producto {
   // Permite navegar quién reutiliza este plato como subplato
   @OneToMany(() => PlatoSubplato, sp => sp.platoHijo, { cascade: true, eager: true })
   usadoEn!: PlatoSubplato[];
+
 }

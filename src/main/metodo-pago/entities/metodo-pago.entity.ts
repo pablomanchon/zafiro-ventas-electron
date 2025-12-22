@@ -12,4 +12,6 @@ export class MetodoPago {
   @Column()
   tipo: 'debito' | 'credito' | 'efectivo' | 'pendiente' | 'usd' | 'otro';
 
+  @Column({ default: false })
+  deleted: boolean;
 }

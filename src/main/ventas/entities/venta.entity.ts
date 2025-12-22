@@ -48,6 +48,6 @@ export class Venta {
     );
   }
 
-  @Column({ type: 'bit', default: false })
+  @Column({ default: false })
   deleted: boolean;
 }

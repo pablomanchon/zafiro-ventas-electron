@@ -33,4 +33,7 @@ export class Ingrediente {
   // Costo por la cantidadBase
   @Column('decimal', { precision: 12, scale: 2 })
   precioCostoBase!: number;
+  
+  @Column({ default: false })
+  deleted: boolean;
 }

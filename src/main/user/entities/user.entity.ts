@@ -15,6 +15,6 @@ export class User {
     @Column({ default: () => 'CURRENT_TIMESTAMP' })
     vencDate: Date
 
-    @Column({ type: 'bit', default: false })
+    @Column({ default: false })
     deleted: boolean;
 }

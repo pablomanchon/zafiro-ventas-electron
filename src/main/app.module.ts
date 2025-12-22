@@ -20,9 +20,8 @@ import { UserModule } from './user/user.module';
   imports: [
     TypeOrmModule.forRootAsync({
       useFactory: () => ({
-        type: 'mssql',
+        type: 'sqlite',
         host: 'localhost',
-        port: 1433,
         username: process.env.MSUSER ?? 'zafiro_user',
         password: process.env.MSPASSWORD ?? '1234',
         database: process.env.MSDB ?? 'ZafiroDB',
