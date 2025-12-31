@@ -21,6 +21,7 @@ import { UpdateVentaDto } from './dto/update-venta.dto';
 import { FilterVentasDto } from './dto/filter-ventas.dto';
 import { ClientesService } from '../clientes/clientes.service';
 import { ProductosService } from '../productos/productos.service';
+import { VendedoresService } from '../vendedores/vendedores.service';
 import { MetodoPago } from '../metodo-pago/entities/metodo-pago.entity';
 import { VentaPago } from '../venta-pagos/entities/venta-pago.entity';
 import { VentaDetalle } from '../venta-detalle/entities/venta-detalle.entity';
@@ -29,6 +30,7 @@ import { Cliente } from '../clientes/entities/cliente.entity';
 import { CajaService } from '../caja/caja.service';
 import { Producto } from '../productos/entities/producto.entity';
 import { emitChange } from '../broadcast/event-bus';
+import { createVentaPdf } from '../utils';
 
 type Granularity = 'day' | 'week' | 'month';
 
@@ -88,6 +90,7 @@ export class VentasService {
     @InjectRepository(MetodoPago) private readonly metodoRepo: Repository<MetodoPago>,
     private readonly clienteService: ClientesService,
     private readonly productoService: ProductosService,
+    private readonly vendedoresService: VendedoresService,
     private readonly dataSource: DataSource,
     private readonly cajaService: CajaService,
   ) { }
@@ -117,6 +120,15 @@ export class VentasService {
     const cliente = await this.clienteService.findOne(createDto.clienteId);
     if (!cliente) {
       throw new BadRequestException('Cliente no encontrado');
+    }
+
+    // 2.b) Vendedor (opcional/required según DTO)
+    if (createDto.vendedorId == null) {
+      throw new BadRequestException('Debe seleccionar un vendedor');
+    }
+    const vendedor = await this.vendedoresService.findOne(createDto.vendedorId);
+    if (!vendedor) {
+      throw new BadRequestException('Vendedor no encontrado');
     }
 
     // 3) Totales previos
@@ -197,6 +209,7 @@ export class VentasService {
         // 6.b) Crear venta base
         const venta = ventaRepoTx.create({
           cliente: { id: cliente.id } as DeepPartial<Cliente>,
+          vendedor: { id: vendedor.id } as any,
           total: Number(totalDetalles.toFixed(2)),
         });
         await ventaRepoTx.save(venta);
@@ -236,6 +249,8 @@ export class VentasService {
           where: { id: venta.id },
           relations: ['cliente', 'detalles', 'pagos'],
         });
+
+        createVentaPdf(ventaCompleta);
 
         return { venta: ventaCompleta, productos: productosActualizados };
       });

@@ -1,4 +1,3 @@
-// src/entities/clientes/ClienteSelectInput.tsx
 import { useEffect, useState } from 'react'
 import { useModal } from '../../providers/ModalProvider'
 import EntitySearchModal from '../../components/EntitySearchModal'
@@ -25,8 +24,8 @@ export default function VendedorSelectInput({ value, onChange, label }: Props) {
     openModal(
       <EntitySearchModal
         entity="vendedores"
-        columns={['ID', 'Nombre']}
-        searchFilters={['id', 'nombre']}
+        columns={['ID', 'Nombre', 'Email']}
+        searchFilters={['nombre', 'email']}
         onSelect={handleSelect}
       />
     )
@@ -38,7 +37,7 @@ export default function VendedorSelectInput({ value, onChange, label }: Props) {
       <input
         readOnly
         value={selected ? `${selected.id} - ${selected.nombre}` : ''}
-        placeholder={loading ? 'Cargando clientes...' : 'Seleccione cliente'}
+        placeholder={loading ? 'Cargando vendedores...' : 'Seleccione vendedor'}
         className="flex-1 border rounded px-2 py-1 bg-gray-700 text-white cursor-pointer"
         onClick={openSearch}
       />
