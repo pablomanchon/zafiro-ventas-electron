@@ -1,4 +1,4 @@
-// src/components/ItemsVentaTable.tsx
+// src/components/item-venta/ItemsVentaTable.tsx
 import { useRef } from 'react'
 import { useSaleItems, type SaleItem } from './useSaleItems'
 import Table from '../../layout/Table'
@@ -11,29 +11,30 @@ export default function ItemsVentaTable({
   value?: SaleItem[]
   onChange?: (items: SaleItem[]) => void
 }) {
-  const {
-    items,
-    loading,
-    error,
-    updateRow,
-    handleAdd,
-    handleRemove,
-    onProductIdChange,
-  } = useSaleItems(value, onChange)
+  const { items, loading, error, updateRow, handleAdd, handleRemove, onProductIdChange } = useSaleItems(
+    value,
+    onChange
+  )
 
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const focusCell = async (rowIndex: number, col: 'productId' | 'cantidad' | 'descuento') => {
+  const focusCell = async (
+    rowIndex: number,
+    col: 'productId' | 'cantidad' | 'descuentoPct' | 'descuentoMonto'
+  ) => {
     const root = containerRef.current
     if (!root) return
+
     const target: HTMLInputElement | null = root.querySelector(
       `input[data-col="${col}"][data-row="${rowIndex}"]`
     )
+
     if (target) {
       target.focus()
       target.select?.()
       return
     }
+
     if (rowIndex === items.length) {
       await handleAdd()
       requestAnimationFrame(() => {
@@ -46,13 +47,16 @@ export default function ItemsVentaTable({
     }
   }
 
-  const focusBelow = (rowIndex: number, col: 'productId' | 'cantidad' | 'descuento') => {
+  const focusBelow = (
+    rowIndex: number,
+    col: 'productId' | 'cantidad' | 'descuentoPct' | 'descuentoMonto'
+  ) => {
     focusCell(rowIndex + 1, col)
   }
 
   const renderNumberCell = (
     idx: number,
-    field: 'cantidad' | 'descuento',
+    field: 'cantidad' | 'descuentoPct' | 'descuentoMonto',
     parser: (raw: string) => number | '',
     attrs: Omit<JSX.IntrinsicElements['input'], 'value' | 'onChange' | 'type'>
   ) => (
@@ -60,7 +64,14 @@ export default function ItemsVentaTable({
       type="number"
       data-row={idx}
       data-col={field}
-      value={items[idx][field] === '' ? '' : (items[idx][field] as number)}
+      value={
+        items[idx][field] === ''
+          ? ''
+          : Number(items[idx][field]) === 0
+            ? ''
+            : (items[idx][field] as number)
+      }
+      onFocus={(e) => e.currentTarget.select()}
       onChange={(e) => {
         const val = parser(e.target.value)
         updateRow(idx, { [field]: val } as any)
@@ -75,12 +86,14 @@ export default function ItemsVentaTable({
     />
   )
 
+
   const encabezados = [
     { titulo: 'Código', clave: 'productId' },
     { titulo: 'Nombre', clave: 'nombre' },
     { titulo: 'Precio', clave: 'precio' },
     { titulo: 'Cantidad', clave: 'cantidad' },
-    { titulo: 'Descuento (%)', clave: 'descuento' },
+    { titulo: 'Desc. (%)', clave: 'descuentoPct' },
+    { titulo: 'Desc. ($)', clave: 'descuentoMonto' },
     { titulo: 'Precio Final', clave: 'precioFinal' },
     { titulo: 'Acciones', clave: 'acciones' },
   ]
@@ -112,30 +125,30 @@ export default function ItemsVentaTable({
       ),
       nombre: it.nombre,
       precio: formatCurrencyARS(precioNum),
-      cantidad: renderNumberCell(
-        i,
-        'cantidad',
-        (raw) => (raw === '' ? '' : parseInt(raw, 10)),
-        {
-          min: 1,
-          className: 'w-16 bg-inherit outline-none text-white px-1 text-right',
-          disabled: loading,
-        }
-      ),
-      descuento: (
+      cantidad: renderNumberCell(i, 'cantidad', (raw) => (raw === '' ? '' : parseInt(raw, 10)), {
+        min: 1,
+        className: 'w-16 bg-inherit outline-none text-white px-1 text-right',
+        disabled: loading,
+      }),
+      descuentoPct: (
         <div className="flex items-center justify-center">
-          {renderNumberCell(
-            i,
-            'descuento',
-            (raw) => (raw === '' ? '' : parseFloat(raw)),
-            {
-              min: 0,
-              max: 100,
-              className: 'w-16 bg-inherit outline-none text-white px-1 text-right',
-              disabled: loading,
-            }
-          )}
+          {renderNumberCell(i, 'descuentoPct', (raw) => (raw === '' ? '' : parseFloat(raw)), {
+            min: 0,
+            max: 100,
+            className: 'w-16 bg-inherit outline-none text-white px-1 text-right',
+            disabled: loading,
+          })}
           <span className="ml-1">%</span>
+        </div>
+      ),
+      descuentoMonto: (
+        <div className="flex items-center justify-center">
+          {renderNumberCell(i, 'descuentoMonto', (raw) => (raw === '' ? '' : parseFloat(raw)), {
+            min: 0,
+            step: '0.01',
+            className: 'w-24 bg-inherit outline-none text-white px-1 text-right',
+            disabled: loading,
+          })}
         </div>
       ),
       precioFinal: formatCurrencyARS(precioFinalNum),

@@ -2,12 +2,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getAll } from '../../api/crud'
 import Table from '../../layout/Table'
-import { cleanMoneyInput, toCents, centsToInput, formatCentsARS } from '../../utils/utils' // 👈
+import { cleanMoneyInput, toCents, centsToInput, formatCentsARS } from '../../utils/utils'
 
 export interface PaymentItem {
   metodoId: string
   nombre: string
-  monto: string        // ahora puede tener coma, ej "98498,40"
+  monto: string
   cuotas?: string
 }
 
@@ -21,18 +21,22 @@ interface Metodo {
 interface Props {
   value?: PaymentItem[]
   onChange?: (items: PaymentItem[]) => void
-  total?: number      // en pesos (ej 98498.4)
+  total?: number
 }
 
 const EMPTY_PAYMENT = (): PaymentItem => ({ metodoId: '', nombre: '', monto: '', cuotas: '' })
 
 export default function PaymentMethodsTable({ value, onChange, total = 0 }: Props) {
   const [methods, setMethods] = useState<Metodo[]>([])
+
+  // 👇 NUEVO: índice del monto que se está editando (para mostrar crudo en foco)
+  const [montoEditingIndex, setMontoEditingIndex] = useState<number | null>(null)
+
   const [items, setItems] = useState<PaymentItem[]>(
     Array.isArray(value) && value.length > 0
       ? value.map(it => ({
           ...it,
-          monto: cleanMoneyInput(String(it.monto ?? '')), // normaliza a "digitos[,digitos]"
+          monto: cleanMoneyInput(String(it.monto ?? '')),
           cuotas: it.cuotas ?? ''
         }))
       : [EMPTY_PAYMENT(), EMPTY_PAYMENT()]
@@ -56,10 +60,8 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
     getAll<Metodo>('metodo-pago').then(setMethods).catch(console.error)
   }, [])
 
-  // Total en centavos que viene por props
   const totalCents = Math.trunc((total ?? 0) * 100)
 
-  // Suma de montos actuales (centavos)
   const sumaMontosCents = useMemo(
     () => items.reduce((acc, it) => acc + toCents(it.monto), 0),
     [items]
@@ -78,10 +80,7 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
       const next = [...prev]
       const m = methods.find(mm => mm.id === raw)
 
-      // restante EXCLUYENDO fila actual (en centavos)
-      const sumaOtrosCents = prev.reduce((acc, it, i) =>
-        i === idx ? acc : acc + toCents(it.monto), 0
-      )
+      const sumaOtrosCents = prev.reduce((acc, it, i) => (i === idx ? acc : acc + toCents(it.monto)), 0)
       const restanteCents = Math.max(0, totalCents - sumaOtrosCents)
 
       const esCredito = m?.tipo === 'credito'
@@ -90,7 +89,7 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
         ...next[idx],
         metodoId: raw,
         nombre: m?.nombre ?? '',
-        monto: restanteCents ? centsToInput(restanteCents) : '', // 👈 no redondea
+        monto: restanteCents ? centsToInput(restanteCents) : '',
         cuotas: esCredito ? '1' : ''
       }
       return next
@@ -100,7 +99,7 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
   const onMontoChange = (idx: number, raw: string) => {
     updateItems(prev => {
       const next = [...prev]
-      next[idx] = { ...next[idx], monto: cleanMoneyInput(raw) } // 👈 deja coma
+      next[idx] = { ...next[idx], monto: cleanMoneyInput(raw) }
       return next
     })
   }
@@ -121,7 +120,7 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
       {
         metodoId: '',
         nombre: '',
-        monto: restanteCents ? centsToInput(restanteCents) : '', // 👈 setea con coma si corresponde
+        monto: restanteCents ? centsToInput(restanteCents) : '',
         cuotas: ''
       },
     ])
@@ -139,13 +138,13 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
   const baseHeaders = [
     { titulo: 'ID Método', clave: 'metodoId' },
     { titulo: 'Nombre', clave: 'nombre' },
-    { titulo: 'Monto', clave: 'monto' },        // input, Table no lo toca
+    { titulo: 'Monto', clave: 'monto' },
   ]
   const extraHeaders = needsCuotas
     ? [
-        { titulo: 'Cuotas', clave: 'cuotas' },  // input, Table no lo toca
-        { titulo: 'Valor cuota', clave: 'valorCuota' }, // número (pesos)
-        { titulo: 'Total', clave: 'total' },           // número (pesos)
+        { titulo: 'Cuotas', clave: 'cuotas' },
+        { titulo: 'Valor cuota', clave: 'valorCuota' },
+        { titulo: 'Total', clave: 'total' },
       ]
     : []
   const encabezados = [...baseHeaders, ...extraHeaders, { titulo: 'Acciones', clave: 'acciones' }]
@@ -156,7 +155,6 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
     const cuotasN = Math.max(1, parseInt(it.cuotas || '1', 10))
 
     const montoCents = toCents(it.monto)
-    // “no redondear”: usamos división truncada en centavos
     const valorCuotaCents = isCredito ? Math.trunc(montoCents / cuotasN) : undefined
 
     return {
@@ -180,9 +178,19 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
       monto: (
         <input
           inputMode="decimal"
-          className="w-28 bg-inherit outline-none text-white px-1 text-right"
-          value={it.monto}                           // 👈 muestra como lo teclea (con coma)
+          className="w-40 bg-inherit outline-none text-white px-1 text-right"
+          // ✅ si está editando: crudo. si no: formateado en pesos
+          value={montoEditingIndex === i ? it.monto : (montoCents > 0 ? formatCentsARS(montoCents) : '')}
+          onFocus={(e) => {
+            setMontoEditingIndex(i)
+            e.currentTarget.select()
+          }}
           onChange={e => onMontoChange(i, e.target.value)}
+          onBlur={(e) => {
+            // normaliza lo que haya quedado y sale de edición
+            onMontoChange(i, e.currentTarget.value)
+            setMontoEditingIndex(null)
+          }}
         />
       ),
       ...(needsCuotas && {
@@ -194,7 +202,6 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
             onChange={e => onCuotasChange(i, e.target.value)}
           />
         ),
-        // 👉 ahora pasamos números en pesos (no elementos). Table los formatea con Intl.
         valorCuota: isCredito ? (valorCuotaCents! / 100) : '',
         total: montoCents / 100,
       }),

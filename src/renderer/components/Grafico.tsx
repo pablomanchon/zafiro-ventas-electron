@@ -161,7 +161,7 @@ export default function Pie2DChart({
                                 isAnimationActive={true}
                                 labelLine={false}
                                 label={label}
-                                cornerRadius={cornerRadius}    
+                                cornerRadius={cornerRadius}
                                 paddingAngle={3}
                                 onClick={(_, idx) => onSliceClick?.(safeData[idx], idx)} // ✔ firma correcta
                             >
@@ -172,14 +172,9 @@ export default function Pie2DChart({
                                     />
                                 ))}
                             </Pie>
-
                             <Tooltip
-                                formatter={(val: any, _name: string, p: any) => [
-                                    valueFormatter(Number(val)),
-                                    p?.payload?.name,
-                                ]}
+                                formatter={(v: number | undefined) => [v ?? 0, "Cantidad"]}
                             />
-
                             {showLegend && (
                                 <Legend
                                     verticalAlign="bottom"

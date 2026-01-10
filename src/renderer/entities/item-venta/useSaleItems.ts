@@ -1,4 +1,4 @@
-// src/components/useSaleItems.ts
+// src/components/item-venta/useSaleItems.ts
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useProducts } from '../../hooks/useProducts'
 
@@ -10,12 +10,17 @@ type Product = {
 }
 
 export interface SaleItem {
-  // ⚠️ ahora este campo representa el CÓDIGO (string)
+  // ⚠️ este campo representa el CÓDIGO (string)
   productId: string | ''
   nombre: string
   precio: number
   cantidad: number | ''
-  descuento: number | ''
+
+  // Descuento por línea: % y/o monto (ARS)
+  descuentoPct: number | ''
+  descuentoMonto: number | ''
+
+  // Total de la línea luego de descuentos (no unitario)
   precioFinal: number
 }
 
@@ -25,39 +30,49 @@ const toNum = (v: unknown, def = 0) => {
   return Number.isFinite(n) ? n : def
 }
 
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n))
+
 function shallowEqualItems(a?: SaleItem[], b?: SaleItem[]) {
   if (a === b) return true
   if (!a || !b || a.length !== b.length) return false
   for (let i = 0; i < a.length; i++) {
-    const A = a[i], B = b[i]
+    const A = a[i]
+    const B = b[i]
     if (
       A.productId !== B.productId ||
       A.nombre !== B.nombre ||
       A.precio !== B.precio ||
       A.cantidad !== B.cantidad ||
-      A.descuento !== B.descuento ||
+      A.descuentoPct !== B.descuentoPct ||
+      A.descuentoMonto !== B.descuentoMonto ||
       A.precioFinal !== B.precioFinal
-    ) return false
+    ) {
+      return false
+    }
   }
   return true
 }
 
-// ───────────────── hook ─────────────────
-export function useSaleItems(
-  value?: SaleItem[],
-  onChange?: (items: SaleItem[]) => void
-) {
+export function useSaleItems(value?: SaleItem[], onChange?: (items: SaleItem[]) => void) {
   const { products, loading, error } = useProducts() as {
     products: Product[]
     loading: boolean
     error?: unknown
   }
 
-  const computeFinal = (precio: number, cantidad: number | '', descuento: number | '') => {
+  const computeFinal = (
+    precio: number,
+    cantidad: number | '',
+    descuentoPct: number | '',
+    descuentoMonto: number | ''
+  ) => {
     const qty = Number(cantidad) || 0
-    const disc = Number(descuento) || 0
-    const pct = Math.max(0, Math.min(100, disc))
-    return Math.max(0, precio * qty * (1 - pct / 100))
+    const pct = clamp(Number(descuentoPct) || 0, 0, 100)
+    const monto = Math.max(0, Number(descuentoMonto) || 0)
+
+    const base = precio * qty
+    const afterPct = base * (1 - pct / 100)
+    return Math.max(0, afterPct - monto)
   }
 
   const makeBase = (): SaleItem => {
@@ -66,24 +81,42 @@ export function useSaleItems(
       nombre: '',
       precio: 0,
       cantidad: 1,
-      descuento: 0,
+      descuentoPct: '',
+      descuentoMonto: '',
       precioFinal: 0,
     }
-    base.precioFinal = computeFinal(base.precio, base.cantidad, base.descuento)
+
+    base.precioFinal = computeFinal(base.precio, base.cantidad, base.descuentoPct, base.descuentoMonto)
     return base
   }
 
   const [items, setItems] = useState<SaleItem[]>(() => {
     if (Array.isArray(value)) {
-      return value.map(it => ({
-        ...it,
-        precio: toNum(it.precio),
-        cantidad: it.cantidad === '' ? '' : toNum(it.cantidad, 1),
-        descuento: it.descuento === '' ? '' : toNum(it.descuento, 0),
-        precioFinal: toNum(it.precioFinal),
-      }))
+      return value.map((it) => {
+        const precio = toNum(it.precio)
+        const cantidad: SaleItem['cantidad'] = it.cantidad === '' ? '' : toNum(it.cantidad, 1)
+
+        const descuentoPct: SaleItem['descuentoPct'] =
+          (it as any).descuentoPct === '' ? '' : toNum((it as any).descuentoPct ?? 0, 0)
+
+        const descuentoMonto: SaleItem['descuentoMonto'] =
+          (it as any).descuentoMonto === '' ? '' : toNum((it as any).descuentoMonto ?? 0, 0)
+
+        const precioFinal = computeFinal(precio, cantidad, descuentoPct, descuentoMonto)
+
+        return {
+          productId: (it.productId ?? '') as SaleItem['productId'],
+          nombre: it.nombre ?? '',
+          precio,
+          cantidad,
+          descuentoPct,
+          descuentoMonto,
+          precioFinal,
+        }
+      })
     }
-    // 3 filas por defecto
+
+    // ✅ 3 filas vacías por defecto (si querés 4, duplicá una más)
     return [makeBase(), makeBase(), makeBase()]
   })
 
@@ -91,7 +124,10 @@ export function useSaleItems(
   const syncingFromProp = useRef(false)
   const onChangeRef = useRef<typeof onChange>()
   const didMountRef = useRef(false)
-  useEffect(() => { onChangeRef.current = onChange }, [onChange])
+
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
   // sync DESDE prop
   useEffect(() => {
@@ -99,20 +135,23 @@ export function useSaleItems(
       const normalized: SaleItem[] = value.map((it): SaleItem => {
         const precio = toNum(it.precio)
 
-        const cantidad: SaleItem['cantidad'] =
-          it.cantidad === '' ? '' : toNum(it.cantidad, 1)
+        const cantidad: SaleItem['cantidad'] = it.cantidad === '' ? '' : toNum(it.cantidad, 1)
 
-        const descuento: SaleItem['descuento'] =
-          it.descuento === '' ? '' : toNum(it.descuento, 0)
+        const descuentoPct: SaleItem['descuentoPct'] =
+          (it as any).descuentoPct === '' ? '' : toNum((it as any).descuentoPct ?? 0, 0)
 
-        const precioFinal = computeFinal(precio, cantidad, descuento)
+        const descuentoMonto: SaleItem['descuentoMonto'] =
+          (it as any).descuentoMonto === '' ? '' : toNum((it as any).descuentoMonto ?? 0, 0)
+
+        const precioFinal = computeFinal(precio, cantidad, descuentoPct, descuentoMonto)
 
         return {
-          productId: (it.productId ?? '') as SaleItem['productId'], // código
+          productId: (it.productId ?? '') as SaleItem['productId'],
           nombre: it.nombre ?? '',
           precio,
           cantidad,
-          descuento,
+          descuentoPct,
+          descuentoMonto,
           precioFinal,
         }
       })
@@ -137,37 +176,43 @@ export function useSaleItems(
   }, [items])
 
   const updateRow = useCallback((idx: number, partial: Partial<SaleItem>) => {
-    setItems(prev => {
+    setItems((prev) => {
       const row = { ...prev[idx], ...partial }
 
       row.precio = toNum(row.precio)
-      if (row.cantidad !== '') row.cantidad = toNum(row.cantidad, 1)
-      if (row.descuento !== '') row.descuento = toNum(row.descuento, 0)
 
-      row.precioFinal = computeFinal(row.precio, row.cantidad, row.descuento)
+      if (row.cantidad !== '') row.cantidad = toNum(row.cantidad, 1)
+      if (row.descuentoPct !== '') row.descuentoPct = toNum(row.descuentoPct, NaN)
+      if (row.descuentoMonto !== '') row.descuentoMonto = toNum(row.descuentoMonto, NaN)
+
+      row.precioFinal = computeFinal(row.precio, row.cantidad, row.descuentoPct, row.descuentoMonto)
 
       const next = [...prev]
       next[idx] = row
       return next
     })
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products])
 
-  // ✅ ahora busca por CODIGO (no por id)
-  const onProductIdChange = useCallback((idx: number, raw: string) => {
-    const codigo = (raw ?? '').trim() as string | ''
-    updateRow(idx, { productId: codigo })
+  // ✅ busca por CÓDIGO (no por id numérico)
+  const onProductIdChange = useCallback(
+    (idx: number, raw: string) => {
+      const codigo = (raw ?? '').trim() as string | ''
+      updateRow(idx, { productId: codigo })
 
-    if (codigo === '') {
-      updateRow(idx, { nombre: '', precio: 0 })
-      return
-    }
+      if (codigo === '') {
+        updateRow(idx, { nombre: '', precio: 0 })
+        return
+      }
 
-    const prod = products.find(p => String(p.codigo).toLowerCase() === codigo.toLowerCase())
-    updateRow(idx, { nombre: prod?.nombre ?? '', precio: toNum(prod?.precio) })
-  }, [products, updateRow])
+      const prod = products.find((p) => String(p.codigo).toLowerCase() === codigo.toLowerCase())
+      updateRow(idx, { nombre: prod?.nombre ?? '', precio: toNum(prod?.precio) })
+    },
+    [products, updateRow]
+  )
 
-  const handleAdd = useCallback(() => setItems(prev => [...prev, makeBase()]), [])
-  const handleRemove = useCallback((idx: number) => setItems(prev => prev.filter((_, i) => i !== idx)), [])
+  const handleAdd = useCallback(() => setItems((prev) => [...prev, makeBase()]), [])
+  const handleRemove = useCallback((idx: number) => setItems((prev) => prev.filter((_, i) => i !== idx)), [])
 
   return { items, loading, error, updateRow, onProductIdChange, handleAdd, handleRemove }
 }

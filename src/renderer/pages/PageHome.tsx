@@ -123,7 +123,7 @@ export default function PageHome() {
                     border: "1px solid rgba(0,0,0,0.2)",
                     color: "#000",
                   }}
-                  formatter={(v: number) => [v, "Cantidad"]}
+                  formatter={(v: number | undefined) => [v ?? 0, "Cantidad"]}
                   labelClassName="text-sm"
                 />
                 <Bar dataKey="cantidad" radius={8} fill="url(#barGradient)" />

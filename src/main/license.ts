@@ -6,7 +6,7 @@ import path from "path";
 const LICENSE_FILE = path.join(process.cwd(), "license.dat");
 const SECRET = "mi-clave-secreta-privada"; // CAMBIAR
 
-const DAYS = 2; // duración de licencia
+const DAYS = 30; // duración de licencia
 const WARNING_DAYS = 5; // mostrar aviso si faltan ≤ 5 días
 
 function getHardwareId() {
