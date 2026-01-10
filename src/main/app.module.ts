@@ -15,25 +15,30 @@ import { CajaModule } from './caja/caja.module';
 import { VendedoresModule } from './vendedores/vendedores.module';
 import { MovimientoStockModule } from './movimiento-stock/movimiento-stock.module';
 import { UserModule } from './user/user.module';
+import path from 'path'
+import fs from 'fs'
 
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
-      useFactory: () => ({
-        type: 'sqlite',
-        host: 'localhost',
-        username: process.env.MSUSER ?? 'zafiro_user',
-        password: process.env.MSPASSWORD ?? '1234',
-        database: process.env.MSDB ?? 'ZafiroDB',
-        autoLoadEntities: true,
-        synchronize: true,
-        logging: ['error', 'warn'],
-        extra: { max: 5, idleTimeoutMillis: 30000 },
-        options: {
-          encrypt: false,
-          trustServerCertificate: true,
-        },
-      }),
+      useFactory: () => {
+        const dbPath =
+          process.env.ZAFIRO_DB_PATH ||
+          path.join(process.cwd(), 'zafiro.sqlite') // fallback dev
+
+        // asegurá carpeta si viene con directorio
+        try {
+          fs.mkdirSync(path.dirname(dbPath), { recursive: true })
+        } catch { }
+
+        return {
+          type: 'sqlite',
+          database: dbPath,
+          autoLoadEntities: true,
+          synchronize: true,
+          logging: ['error', 'warn'],
+        }
+      },
     }),
     ProductosModule,
     ClientesModule,
