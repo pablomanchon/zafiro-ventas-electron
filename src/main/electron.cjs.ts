@@ -19,17 +19,40 @@ const icon = app.isPackaged
 const isProd = app.isPackaged
 const DEV_SERVER = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
 
+/**
+ * ✅ DB persistente (NO en carpeta de instalación)
+ * Windows: C:\Users\<user>\AppData\Roaming\<AppName>\db\zafiro.sqlite
+ */
+function ensureDbPath() {
+  // userData es la mejor opción para persistencia por usuario
+  const dbDir = path.join(app.getPath('userData'), 'db')
+  fs.mkdirSync(dbDir, { recursive: true })
+
+  const dbPath = path.join(dbDir, 'zafiro.sqlite')
+
+  // Esta env la va a leer Nest/TypeORM
+  process.env.ZAFIRO_DB_PATH = dbPath
+
+  // Log útil para debug
+  console.log('🗄️ ZAFIRO_DB_PATH =', dbPath)
+
+  return dbPath
+}
+
+// (Opcional) evita que se abra 2 veces y te “rompa” la DB por lock
+// const gotLock = app.requestSingleInstanceLock()
+// if (!gotLock) app.quit()
+
 async function startApi() {
   if (!isProd) {
     // DEV: usa el bootstrap local (TS/JS en tu proyecto)
     const mod = await import('./bootstrap')
     return mod.bootstrap()
   }
+
   // PROD: usa el build de Nest (dist)
-  // Ajustá esta ruta si tu estructura final difiere
   const apiBootstrapPath = path.join(__dirname, '../dist/bootstrap.js')
 
-  // Opcional: logs para diagnosticar si la ruta existe en el instalador
   if (!fs.existsSync(apiBootstrapPath)) {
     throw new Error(`No se encontró bootstrap de Nest en: ${apiBootstrapPath}`)
   }
@@ -148,12 +171,11 @@ async function createWindow() {
   splashWindow = createSplashWindow()
   updateSplashStatus('Verificando licencia...')
 
-  // 🔐 Licencia (solo una vez)
+  // 🔐 Licencia
   try {
     const lic = validateLicense()
     console.log('🔐 Licencia válida:', lic)
 
-    // ⚠️ Advertencia si quedan pocos días
     if (lic.warning) {
       dialog.showMessageBoxSync({
         type: 'warning',
@@ -181,7 +203,10 @@ async function createWindow() {
     return
   }
 
-  updateSplashStatus('Abriendo base de datos...')
+  // ✅ setear DB persistente ANTES de arrancar Nest/TypeORM
+  const dbPath = ensureDbPath()
+  updateSplashStatus(`Abriendo base de datos...\n${dbPath}`)
+
   try {
     await startApi()
   } catch (e: any) {
@@ -253,7 +278,7 @@ async function createWindow() {
       child.focus()
       try {
         child.moveTop()
-      } catch { }
+      } catch {}
     })
   })
 
@@ -295,7 +320,7 @@ ipcMain.handle('open-child', async (_event, options: { route: string; payload?: 
       child.show()
       child.focus()
       child.moveTop()
-    } catch { }
+    } catch {}
   })
 
   child.webContents.once('did-finish-load', () => {
