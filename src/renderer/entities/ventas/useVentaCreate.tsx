@@ -110,10 +110,10 @@ export function useVentaCreate() {
     if (!initPayload) return false
     return Boolean(
       initPayload.venta ||
-        (Array.isArray(initPayload.items) && initPayload.items.length > 0) ||
-        (Array.isArray(initPayload.pagos) && initPayload.pagos.length > 0) ||
-        initPayload.clienteId !== undefined ||
-        initPayload.vendedorId !== undefined
+      (Array.isArray(initPayload.items) && initPayload.items.length > 0) ||
+      (Array.isArray(initPayload.pagos) && initPayload.pagos.length > 0) ||
+      initPayload.clienteId !== undefined ||
+      initPayload.vendedorId !== undefined
     )
   }, [initPayload])
 
@@ -131,7 +131,7 @@ export function useVentaCreate() {
 
     try {
       window.opener?.postMessage({ type: 'READY' }, origin)
-    } catch {}
+    } catch { }
 
     const unsubscribe = (window as any).windowApi?.onInitData?.((payload: any) => {
       setInitPayload((payload as VentaInitPayload) ?? null)
@@ -212,9 +212,9 @@ export function useVentaCreate() {
 
   const TotalDiscountProxy = useCallback(
     ({ value, onChange }: { value?: TotalDiscount; onChange?: (v: TotalDiscount) => void }) => {
-      // ✅ default vacío
-      const pct = value?.pct ?? ''
-      const monto = value?.monto ?? ''
+      // ✅ clave: tipado literal (evita string | number)
+      const pct: TotalDiscount['pct'] = value?.pct ?? ''
+      const monto: TotalDiscount['monto'] = value?.monto ?? ''
 
       return (
         <div className="flex flex-col gap-2">
@@ -226,12 +226,12 @@ export function useVentaCreate() {
                 min={0}
                 max={100}
                 className="w-28 bg-inherit outline-none text-white px-2 py-1 border border-white/20 rounded"
-                // ✅ si es 0, mostralo vacío igual (mejor UX)
                 value={pct === '' ? '' : Number(pct) === 0 ? '' : pct}
                 onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => {
-                  const nextPct = e.target.value === '' ? '' : Number(e.target.value)
-                  const next = { pct: nextPct, monto }
+                  const nextPct: TotalDiscount['pct'] =
+                    e.target.value === '' ? '' : Number(e.target.value)
+                  const next: TotalDiscount = { pct: nextPct, monto }
                   onChange?.(next)
                   setTotalDiscountMirror(next)
                 }}
@@ -248,8 +248,9 @@ export function useVentaCreate() {
                 value={monto === '' ? '' : Number(monto) === 0 ? '' : monto}
                 onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => {
-                  const nextMonto = e.target.value === '' ? '' : Number(e.target.value)
-                  const next = { pct, monto: nextMonto }
+                  const nextMonto: TotalDiscount['monto'] =
+                    e.target.value === '' ? '' : Number(e.target.value)
+                  const next: TotalDiscount = { pct, monto: nextMonto }
                   onChange?.(next)
                   setTotalDiscountMirror(next)
                 }}

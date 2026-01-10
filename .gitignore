@@ -9,6 +9,7 @@ lerna-debug.log*
 db.sqlite
 Registro Ventas
 
+*.sqlite
 package-lock.json
 node_modules
 dist-renderer
