@@ -1,54 +1,87 @@
-# React + TypeScript + Vite
+# 💎 Zafiro – Stock y Ventas
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Zafiro** es una aplicación de escritorio para la **gestión integral de stock, ventas y caja**, pensada para comercios, gastronomía y pequeños negocios.  
+Permite administrar productos, clientes, ventas, movimientos de caja y múltiples métodos de pago de forma simple, rápida y offline-first.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Características principales
 
-## Expanding the ESLint configuration
+- 📦 Gestión de **productos y stock**
+- 🧾 Registro de **ventas** con detalle por ítem
+- 💰 **Caja** con ingresos y egresos
+- 💳 Soporte para **múltiples métodos de pago**  
+  (Efectivo, Débito, Crédito, Mercado Pago, Dólar, Pendiente, personalizados)
+- 📊 Paneles de resumen y totales
+- 🗑️ Eliminación lógica (historial completo)
+- 🖥️ Aplicación **desktop multiplataforma**
+- 📶 Funciona **sin conexión a internet**
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## 🛠️ Tecnologías utilizadas
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Frontend
+- ⚛️ **React**
+- ⚡ **Vite**
+- 🎨 **Tailwind CSS**
+- 🧠 **Zustand** (estado global)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Backend
+- 🟢 **Node.js**
+- 🧩 **Express / NestJS**
+- 🗄️ **SQLite**
+- 🧬 **TypeORM**
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+### Desktop
+- 🖥️ **Electron**
+
+---
+
+## 🧱 Arquitectura
+
+El proyecto sigue una arquitectura clara y escalable:
+
+Controlador -> Servicio -> Repositorio
+
+
+- Separación de responsabilidades
+- DTOs para validación de datos
+- Enums para estados y métodos de pago
+- Eliminación lógica (`isDeleted`) en todas las entidades
+
+---
+
+## 📂 Módulos principales
+
+- Productos
+- Clientes
+- Ventas
+- Detalle de ventas
+- Caja
+- Movimientos de stock
+- Métodos de pago
+- Gastronomía (platos, precios, stock)
+- Vendedores
+
+---
+
+## 📥 Descarga
+
+👉 **Instalador (Windows):**  
+🔗 https://github.com/pablomanchon/Zafiro-Stock-y-Ventas/releases/latest
+
+> El instalador se distribuye mediante **GitHub Releases**.
+
+---
+
+## 🧑‍💻 Desarrollo local
+
+### Requisitos
+- Node.js ≥ 18
+- npm
+
+### Instalación
+```bash
+npm install
+
