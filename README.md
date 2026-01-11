@@ -69,7 +69,7 @@ Controlador -> Servicio -> Repositorio
 ## 📥 Descarga
 
 👉 **Instalador (Windows):**  
-🔗 https://github.com/pablomanchon/Zafiro-Stock-y-Ventas/releases/latest
+🔗 https://github.com/pablomanchon/zafiro-ventas-electron/releases/latest
 
 > El instalador se distribuye mediante **GitHub Releases**.
 
