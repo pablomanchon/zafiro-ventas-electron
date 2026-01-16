@@ -1,5 +1,6 @@
 import { Column, Entity, OneToMany, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
 import { Venta } from "../../ventas/entities/venta.entity";
+import { Horario } from "../../horarios/entities/horario.entity";
 
 @Entity()
 export class Vendedor {
@@ -11,6 +12,9 @@ export class Vendedor {
 
     @OneToMany(() => Venta, venta => venta.vendedor)
     ventas: Venta[];
+
+    @OneToMany(() => Horario, horario => horario.vendedor, { nullable: true })
+    horarios?: Horario[];
 
     @Column({ default: false })
     deleted: boolean;

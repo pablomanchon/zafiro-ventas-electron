@@ -78,7 +78,7 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
   const onMetodoIdChange = (idx: number, raw: string) => {
     updateItems(prev => {
       const next = [...prev]
-      const m = methods.find(mm => mm.id === raw)
+      const m = methods.find(mm => mm.id.toLowerCase() === raw.toLowerCase())
 
       const sumaOtrosCents = prev.reduce((acc, it, i) => (i === idx ? acc : acc + toCents(it.monto)), 0)
       const restanteCents = Math.max(0, totalCents - sumaOtrosCents)

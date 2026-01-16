@@ -15,6 +15,7 @@ import { CajaModule } from './caja/caja.module';
 import { VendedoresModule } from './vendedores/vendedores.module';
 import { MovimientoStockModule } from './movimiento-stock/movimiento-stock.module';
 import { UserModule } from './user/user.module';
+import { HorariosModule } from './horarios/horarios.module';
 import path from 'path'
 import fs from 'fs'
 
@@ -52,7 +53,8 @@ import fs from 'fs'
     CajaModule,
     VendedoresModule,
     MovimientoStockModule,
-    UserModule
+    UserModule,
+    HorariosModule
   ],
   controllers: [AppController],
   providers: [AppService],

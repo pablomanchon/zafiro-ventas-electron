@@ -11,8 +11,6 @@ import { ProductosModule } from '../productos/productos.module';
 import { ItemVentaModule } from '../item-venta/item-venta.module';
 import { VentaDetalleModule } from '../venta-detalle/venta-detalle.module';
 import { VentaPagosModule } from '../venta-pagos/venta-pagos.module';
-import { MetodoPagoModule } from '../metodo-pago/metodo-pago.module';
-import { VentaPagosService } from '../venta-pagos/venta-pagos.service';
 import { VentaPago } from '../venta-pagos/entities/venta-pago.entity';
 import { CajaModule } from '../caja/caja.module';
 import { MetodoPago } from '../metodo-pago/entities/metodo-pago.entity';

@@ -1,0 +1,7 @@
+To Do:
+    - Gastos
+    - Empleados
+    - Impuestos
+    - Seguros
+    - Cargas Sociales
+    - Proveedores : Info para compararlos (precios costo)
