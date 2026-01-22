@@ -12,7 +12,14 @@ export class HorariosService {
     @InjectRepository(Vendedor) private readonly vendedoresRepo: Repository<Vendedor>,
   ) {}
 
-  async crearIngreso(dto: CreateHorarioDto) {
+  async findAll() {
+    return this.horariosRepo.find({
+      relations: { vendedor: true },
+      order: { horaIngreso: 'DESC' },
+    });
+  }
+
+  async marcarIngreso(dto: CreateHorarioDto) {
     const vendedor = await this.vendedoresRepo.findOne({
       where: { id: dto.vendedorId, deleted: false },
     });

@@ -13,7 +13,8 @@ import {
   Warehouse,
   ArrowUpDown,
   ChefHat,
-  Salad
+  Salad,
+  Clock
 } from 'lucide-react'
 import bgUrl from '/fondo-h.png'
 import React, { useState } from 'react'
@@ -33,6 +34,7 @@ const navItems = [
   { name: "Stock", href: "/movimientos-stock", icon: <ArrowUpDown size={20} /> },
   { name: "Ingredientes", href: "/ingredientes", icon: <Salad size={20} /> },
   { name: "Platos", href: "/platos", icon: <ChefHat size={20} /> },
+  { name: "Horarios", href: "/horarios", icon: <Clock size={20} /> },
 ]
 
 export default function Navbar() {

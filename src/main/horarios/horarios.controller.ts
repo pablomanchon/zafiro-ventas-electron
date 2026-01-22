@@ -1,34 +1,24 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { HorariosService } from './horarios.service';
-import { CreateHorarioDto } from './dto/create-horario.dto';
-import { UpdateHorarioDto } from './dto/update-horario.dto';
+import { CreateHorarioDto, MarcarEgresoDto } from './dto/create-horario.dto';
 
 @Controller('horarios')
 export class HorariosController {
-  constructor(private readonly horariosService: HorariosService) {}
-
-  @Post()
-  create(@Body() createHorarioDto: CreateHorarioDto) {
-    return this.horariosService.create(createHorarioDto);
-  }
+  constructor(private readonly horariosService: HorariosService) { }
 
   @Get()
   findAll() {
     return this.horariosService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.horariosService.findOne(+id);
+  @Post()
+  marcarIngreso(@Body() createHorarioDto: CreateHorarioDto) {
+    return this.horariosService.marcarIngreso(createHorarioDto);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateHorarioDto: UpdateHorarioDto) {
-    return this.horariosService.update(+id, updateHorarioDto);
+  @Post(':id')
+  marcarEgreso(@Param('id') id: string, @Body() egresoDto: MarcarEgresoDto) {
+    return this.horariosService.marcarEgreso(+id, egresoDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.horariosService.remove(+id);
-  }
 }

@@ -128,9 +128,18 @@ const Table = ({
 
     if (React.isValidElement(valor)) return valor;
 
-    if (lastKey.toLowerCase().includes("fecha")) {
-      return formatearFecha(valor);
+    const lk = lastKey.toLowerCase()
+
+    const isDateTimeKey =
+      lk.includes("fecha") ||
+      lk.includes("hora") ||        // 👈 horaIngreso / horaEgreso
+      lk.includes("ingreso") ||     // opcional
+      lk.includes("egreso")         // opcional
+
+    if (isDateTimeKey) {
+      return formatearFecha(valor)
     }
+
 
     const isMoneyColumn =
       (isObj && (encabezado.tipo === "money" || encabezado.formato === "moneda")) ||
@@ -172,13 +181,12 @@ const Table = ({
               key={index}
               onClick={() => manejarSeleccion(index)}
               onDoubleClick={() => manejarDobleClick(index)}
-              className={`cursor-pointer hover:bg-cyan-700 ${
-                filaSeleccionada === index
+              className={`cursor-pointer hover:bg-cyan-700 ${filaSeleccionada === index
                   ? "bg-cyan-600"
                   : index % 2 === 0
-                  ? "bg-gray-950"
-                  : "bg-gray-800"
-              }`}
+                    ? "bg-gray-950"
+                    : "bg-gray-800"
+                }`}
             >
               {encabezados.map((enc, i) => (
                 <td key={i} className="px-2 border-x-2 text-center">
