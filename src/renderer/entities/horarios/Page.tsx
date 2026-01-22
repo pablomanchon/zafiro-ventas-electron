@@ -9,6 +9,7 @@ import { useHorarios } from './useHorarios'
 import Table from '../../layout/Table'
 import { useModal } from '../../providers/ModalProvider'
 import Confirmation from '../../layout/Confirmation'
+import Wood from '../../layout/Steel'
 
 export default function HorariosPage() {
   const { search } = useSearch()
@@ -79,8 +80,8 @@ export default function HorariosPage() {
   return (
     <Main>
       <div className="flex items-center justify-between gap-2">
-        <Title className="flex items-center gap-2">
-          <Clock />
+        <Title className="flex items-center justify-center gap-2">
+          <Clock className='' />
           Horarios
         </Title>
 
@@ -94,30 +95,33 @@ export default function HorariosPage() {
           Recargar
         </button>
       </div>
+      <div className='flex flex-col gap-2 mt-3'>
 
-      <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">
-        <div className="md:col-span-2">
-          <Search />
-        </div>
-
-        <div className="flex gap-2 items-center bg-gray-900 p-2 rounded">
+        <Search />
+        <Wood typeWood={3} className="flex gap-2 items-center bg-gray-900 p-2 rounded max-w-96">
           <input
             type="number"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                onIngreso()
+              }
+            }}
             value={vendedorId || ''}
             onChange={(e) => setVendedorId(Number(e.target.value))}
-            className="w-full bg-gray-800 outline-none text-white px-2 py-2 rounded"
-            placeholder="Vendedor ID"
+            className="w-full bg-gray-800 outline-none text-white px-2 py-2 rounded shadow-inner shadow-black"
+            placeholder="ID del vendedor"
           />
           <button
             onClick={onIngreso}
             disabled={loading || !vendedorId}
-            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded"
+            className="flex border-2 border-black shadow-inner shadow-black transition-all
+          hover:shadow-black items-center gap-2 font-bold bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded cursor-pointer"
             title="Marcar ingreso"
           >
             <LogIn size={18} />
             Ingreso
           </button>
-        </div>
+        </Wood>
       </div>
 
       <div className="mt-3">

@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  Cell, // ✅ agregado
 } from "recharts";
 import Main from "../layout/Main";
 import Glass from "../layout/Glass";
@@ -31,7 +32,7 @@ export default function PageHome() {
   // rango "hoy" usando utils.ts
   const { from, to } = useMemo(() => {
     const mAgo = monthAgo(new Date());
-    const today = todayYMD()
+    const today = todayYMD();
     return { from: mAgo, to: today };
   }, []);
 
@@ -41,7 +42,9 @@ export default function PageHome() {
       setErr(null);
       try {
         const data = await getSelledProductsByDate(from, to);
-        data.sort((a: Vendido, b: Vendido) => (b.cantidad || 0) - (a.cantidad || 0));
+        data.sort(
+          (a: Vendido, b: Vendido) => (b.cantidad || 0) - (a.cantidad || 0)
+        );
         setItems(data);
       } catch (e: any) {
         setErr(e?.message ?? "Error al cargar vendidos de hoy");
@@ -66,10 +69,20 @@ export default function PageHome() {
     () => items.reduce((s, it) => s + (it.cantidad || 0), 0),
     [items]
   );
+
   const totalImp = useMemo(
     () => items.reduce((s, it) => s + (it.importe || 0), 0),
     [items]
   );
+
+ function getGradientByCantidad(cantidad: number) {
+  if (cantidad < 10) return ["#3a0a0a", "#ff3b3b"];   // rojo neon
+  if (cantidad < 30) return ["#402000", "#ff9f1a"];   // naranja neon
+  if (cantidad < 60) return ["#003d2e", "#00ffb3"];   // verde/turquesa neon
+  return ["#0a1a3a", "#4da3ff"];                      // azul neon
+}
+
+
 
   return (
     <Main className="flex flex-col items-center">
@@ -78,14 +91,17 @@ export default function PageHome() {
           <Glass className="flex items-center justify-between shadow inner shadow-black">
             <h2 className="text-lg font-semibold">Vendidos hoy ({from})</h2>
             <div className="text-sm opacity-80">
-              <span className="mr-4">Total items: <b>{totalCant}</b></span>
-              <span>Recaudado: <b>{formatCurrencyARS(totalImp)}</b></span>
+              <span className="mr-4">
+                Total items: <b>{totalCant}</b>
+              </span>
+              <span>
+                Recaudado: <b>{formatCurrencyARS(totalImp)}</b>
+              </span>
             </div>
           </Glass>
         </Steel>
 
         {/* ------- Gráfico ------- */}
-
         <Glass className="h-96 shadow-inner shadow-cyan-700 border-cyan-700 border">
           {loading ? (
             <div className="text-sm opacity-70 p-2">Cargando gráfico…</div>
@@ -95,21 +111,38 @@ export default function PageHome() {
             <div className="text-sm opacity-70 p-2">Sin ventas hoy.</div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-
               <BarChart
                 data={chartData}
                 layout="vertical"
                 margin={{ top: 8, right: 16, bottom: 8, left: 5 }}
                 barSize={25}
               >
+                {/* ✅ un gradiente por barra (id único) */}
                 <defs>
-                  <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#002" />
-                    <stop offset="100%" stopColor="#016" />
-                  </linearGradient>
+                  {chartData.map((d, i) => {
+                    const [c1, c2] = getGradientByCantidad(d.cantidad);
+                    return (
+                      <linearGradient
+                        key={i}
+                        id={`barGradient-${i}`}
+                        x1="0"
+                        y1="0"
+                        x2="1"
+                        y2="0"
+                      >
+                        <stop offset="0%" stopColor={c1} />
+                        <stop offset="100%" stopColor={c2} />
+                      </linearGradient>
+                    );
+                  })}
                 </defs>
+
                 <CartesianGrid strokeDasharray="5" opacity={0.2} />
-                <XAxis type="number" tick={{ fill: "#fff" }} allowDecimals={false} />
+                <XAxis
+                  type="number"
+                  tick={{ fill: "#fff" }}
+                  allowDecimals={false}
+                />
                 <YAxis
                   dataKey="name"
                   type="category"
@@ -126,7 +159,13 @@ export default function PageHome() {
                   formatter={(v: number | undefined) => [v ?? 0, "Cantidad"]}
                   labelClassName="text-sm"
                 />
-                <Bar dataKey="cantidad" radius={8} fill="url(#barGradient)" />
+
+                {/* ✅ mantenemos tu Bar, solo que ahora cada barra tiene su fill */}
+                <Bar dataKey="cantidad" radius={8}>
+                  {chartData.map((_, i) => (
+                    <Cell key={i} fill={`url(#barGradient-${i})`} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -144,7 +183,10 @@ export default function PageHome() {
             </thead>
             <tbody>
               {items.map((it, idx) => (
-                <tr key={idx} className="border-t border-white/10 hover:bg-white/5">
+                <tr
+                  key={idx}
+                  className="border-t border-white/10 hover:bg-white/5"
+                >
                   <td className="px-3 py-2">{it.nombre}</td>
                   <td className="px-3 py-2 text-right">{it.cantidad}</td>
                   <td className="px-3 py-2 text-right">
@@ -167,7 +209,12 @@ export default function PageHome() {
           </table>
         </Glass>
       </div>
-      <VentasPorMetodoChartSmart className="shadow-white border border-white" from={monthAgo(new Date())} to={todayYMD()} />
+
+      <VentasPorMetodoChartSmart
+        className="shadow-white border border-white"
+        from={monthAgo(new Date())}
+        to={todayYMD()}
+      />
     </Main>
   );
 }
