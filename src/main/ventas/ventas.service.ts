@@ -105,9 +105,13 @@ export class VentasService {
       throw new BadRequestException('Debe incluir al menos un producto con ID válido');
     }
 
-    const validPagos = (createDto.pagos ?? []).filter(
-      p => p.metodoId?.toString().trim() !== '',
-    );
+    const validPagos = (createDto.pagos ?? [])
+      .map(p => ({
+        ...p,
+        metodoId: p.metodoId?.toString().trim().toUpperCase(),
+      }))
+      .filter(p => p.metodoId !== '')
+
     if (!validPagos.length) {
       throw new BadRequestException('Debe incluir al menos un método de pago con ID válido');
     }
@@ -283,6 +287,26 @@ export class VentasService {
       relations: ['cliente', 'detalles', 'pagos'],
     });
   }
+
+  async findByMetodoPago(tipo: string): Promise<Venta[]> {
+    const tipoNorm = tipo.trim().toLowerCase();
+
+    return this.repo
+      .createQueryBuilder('v')
+      .leftJoinAndSelect('v.cliente', 'c')
+      .leftJoinAndSelect('v.detalles', 'd')
+      .leftJoinAndSelect('v.pagos', 'pg')
+      .leftJoinAndSelect('pg.metodo', 'mp')
+      .leftJoinAndSelect('d.item', 'it')
+      .where('v.deleted = :deleted', { deleted: false })
+      .andWhere('c.deleted = :cdeleted', { cdeleted: false })
+      .andWhere('mp.id IS NOT NULL')
+      .andWhere('LOWER(mp.tipo) = :tipo', { tipo: tipoNorm })
+      .orderBy('v.fecha', 'DESC')
+      .distinct(true) // 👈 clave para evitar duplicados
+      .getMany();
+  }
+
 
   async findOne(id: number): Promise<Venta> {
     const venta = await this.repo.findOne({

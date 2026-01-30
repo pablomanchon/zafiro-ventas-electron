@@ -19,13 +19,18 @@ export default function TableAndSearch<T extends { id: number | string }>({
 }: TableAndSearchProps<T>) {
   const { search } = useSearch();
 
+  function getValue(obj: any, path: string) {
+    return path.split('.').reduce((acc, k) => acc?.[k], obj)
+  }
+
   const filteredData = datos.filter(item =>
     searchFilters.some(field =>
-      String((item as any)[field] ?? '')
+      String(getValue(item, field) ?? '')
         .toLowerCase()
-        .includes(search.toLowerCase())
+        .includes((search ?? '').toLowerCase())
     )
-  );
+  )
+
 
   return (
     <div className="flex flex-col gap-2 p-2">

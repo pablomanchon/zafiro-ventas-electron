@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import Title from "../layout/Title";
 import Glass from "../layout/Glass";
+import { formatCurrencyARS } from "../utils/utils";
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Types
@@ -173,8 +174,13 @@ export default function Pie2DChart({
                                 ))}
                             </Pie>
                             <Tooltip
-                                formatter={(v: number | undefined) => [v ?? 0, "Cantidad"]}
+                                formatter={(value) => [
+                                    formatCurrencyARS(Number(value ?? 0)),
+                                    "Importe",
+                                ]}
                             />
+
+
                             {showLegend && (
                                 <Legend
                                     verticalAlign="bottom"

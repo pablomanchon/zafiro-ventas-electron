@@ -35,11 +35,11 @@ export default function VentasPorMetodoChart({
   const data: PieDatum[] = useMemo(
     () =>
       (totals ?? [])
+        .map(t => ({ tipo: t.tipo, total: Number(t.total) }))
         .filter(t => Number.isFinite(t.total) && t.total > 0)
         .map(t => ({ name: t.tipo, value: t.total })),
-
     [totals]
-  );  
+  );
 
   return (
     <div className={`w-full shadow-inner shadow-black rounded ${className}`}>

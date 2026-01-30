@@ -68,7 +68,7 @@ export const getSelledProductsByDate = async (from: string, to: string) => {
     }
 }
 
-export const getUser = async (id:string)=>{
+export const getUser = async (id: string) => {
     try {
         const res = await axios.get(`${baseUrl}/users/${id}`)
         return res.data;
@@ -77,3 +77,18 @@ export const getUser = async (id:string)=>{
         throw error;
     }
 }
+
+export type MetodoTotal = { tipo: string; total: number };
+
+export async function getTotalesPorTipoPago(from?: string, to?: string): Promise<MetodoTotal[]> {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+
+    const res = await fetch(`${baseUrl}/ventas/totales/tipos?${params.toString()}`);
+    if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
+
+    const rows = (await res.json()) as Array<{ tipo: string; total: string | number }>;
+    return (rows ?? []).map(r => ({ tipo: r.tipo, total: Number(r.total) }));
+}
+

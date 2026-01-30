@@ -52,6 +52,11 @@ export class VentasController {
     return this.ventasService.findOne(id);
   }
 
+  @Get(':metodoPago/:tipoPago')
+  findByMetodoPago(@Param('tipoPago') metodoPago: string) {
+    return this.ventasService.findByMetodoPago(metodoPago);
+  }
+
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateVentaDto) {
     return this.ventasService.update(id, dto);

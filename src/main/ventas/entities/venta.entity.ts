@@ -42,11 +42,15 @@ export class Venta {
 
   @AfterLoad()
   computeTotal(): void {
-    this.total = this.detalles.reduce(
-      (sum, det) => sum + Number(det.item.precio) * det.item.cantidad,
-      0,
-    );
+    const detalles = this.detalles ?? [];
+
+    this.total = detalles.reduce((sum, det) => {
+      const precio = Number(det?.item?.precio ?? 0);
+      const cantidad = Number(det?.item?.cantidad ?? 0);
+      return sum + precio * cantidad;
+    }, 0);
   }
+
 
   @Column({ default: false })
   deleted: boolean;

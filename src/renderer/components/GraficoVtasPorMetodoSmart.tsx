@@ -1,13 +1,12 @@
-// src/components/VentasPorMetodoChartSmart.tsx
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { formatCurrencyARS } from "../utils/utils";
-import useSales from "../hooks/useSales";
 import VentasPorMetodoChart from "./GraficoVentasPorMetodoChart";
+import { getTotalesPorTipoPago, type MetodoTotal } from "../api/db";
 
 type Props = {
-  from?: string;   // 'YYYY-MM-DD'
-  to?: string;     // 'YYYY-MM-DD'
+  from?: string;
+  to?: string;
   title?: string;
   height?: number;
   innerRadius?: number;
@@ -28,27 +27,36 @@ export default function VentasPorMetodoChartSmart({
   cornerRadius = 8,
   className = "",
 }: Props) {
-  // usamos TU hook
-  const { setFilter, totales = [], error } = useSales('month');
+  const [totales, setTotales] = useState<MetodoTotal[]>([]);
+  const lastErr = useRef<string | null>(null);
 
-  // cuando cambian from/to, actualizamos el filtro del hook
+  const key = useMemo(() => `${from ?? ""}|${to ?? ""}`, [from, to]);
+
   useEffect(() => {
-    // mantenemos el resto del filtro que ya tuviera el hook (cliente, etc.)
-    setFilter((prev: any) => ({
-      ...prev,
-      ...(from ? { from } : {}),
-      ...(to ? { to } : {}),
-    }));
-  }, [from, to, setFilter]);
+    let alive = true;
 
-  if (error) {
-    toast.error(error);
-  }
+    (async () => {
+      try {
+        const rows = await getTotalesPorTipoPago(from, to);
+        if (!alive) return;
 
-  // callback de click en porción
-  const handleSliceClick = (item: { name: string; value: number }) => {
-    toast.info(`${item.name}: ${formatCurrencyARS(item.value)}`);
-  };
+        setTotales(rows.filter(r => Number.isFinite(r.total) && r.total > 0));
+      } catch (e: any) {
+        if (!alive) return;
+
+        setTotales([]);
+        const msg = e?.message ?? "Error al cargar totales por método";
+        if (lastErr.current !== msg) {
+          lastErr.current = msg;
+          toast.error(msg);
+        }
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [key]);
 
   return (
     <VentasPorMetodoChart
@@ -61,7 +69,7 @@ export default function VentasPorMetodoChartSmart({
       showLegend={showLegend}
       cornerRadius={cornerRadius}
       valueFormatter={(n) => formatCurrencyARS(Number(n))}
-      onSliceClick={handleSliceClick}
+      onSliceClick={(item) => toast.info(`${item.name}: ${formatCurrencyARS(item.value)}`)}
     />
   );
 }

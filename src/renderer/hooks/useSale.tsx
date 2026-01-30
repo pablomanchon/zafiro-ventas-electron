@@ -12,8 +12,10 @@ export function useSale(id: string | number, ttlMs = 60_000) {
   const stale = useAppSelector(s => needsRefresh(s, id, ttlMs))
   const loading = useAppSelector(s => selectLoadingVenta(s, id))
 
+
   useEffect(() => {
     if (!venta || stale) dispatch(fetchSaleById(id))
+    console.log(venta);
   }, [dispatch, id, !!venta, stale])
 
   return { venta, loading }

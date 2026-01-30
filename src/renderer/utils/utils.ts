@@ -126,3 +126,16 @@ export const monthAgo = (date: Date): string => {
 
   return `${y}-${m}-${day}`;
 };
+export function isValidDateValue(value: any) {
+  if (!value) return false
+
+  const d = value instanceof Date ? value : new Date(value)
+
+  if (Number.isNaN(d.getTime())) return false
+
+  // fechas absurdas comunes
+  const year = d.getFullYear()
+  if (year < 2000) return false
+
+  return true
+}

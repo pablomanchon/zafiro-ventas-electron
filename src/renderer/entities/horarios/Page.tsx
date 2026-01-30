@@ -2,77 +2,63 @@
 import { useEffect, useMemo, useState } from 'react'
 import Main from '../../layout/Main'
 import Title from '../../layout/Title'
-import Search from '../../layout/Search'
+// import Search from '../../layout/Search' // ❌ ya no
 import { Clock, LogIn, LogOut, RefreshCcw } from 'lucide-react'
-import { useSearch } from '../../providers/SearchProvider'
+// import { useSearch } from '../../providers/SearchProvider' // ❌ ya no
 import { useHorarios } from './useHorarios'
-import Table from '../../layout/Table'
 import { useModal } from '../../providers/ModalProvider'
 import Confirmation from '../../layout/Confirmation'
 import Wood from '../../layout/Steel'
+import { isValidDateValue } from '../../utils/utils'
+import config from './config'
+import TableAndSearch from '../../components/TableAndSearch'
 
 export default function HorariosPage() {
-  const { search } = useSearch()
+  // const { search } = useSearch() // ❌ ya no
   const { horarios, loading, fetchAll, marcarIngreso, marcarEgreso } = useHorarios()
   const { openModal } = useModal()
+  const { columns, searchFields } = config
 
   const [vendedorId, setVendedorId] = useState<number>(0)
 
   useEffect(() => {
-    // si tu backend no tiene GET /horarios, esto va a setear error pero la pantalla sigue funcionando
     fetchAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const datos = useMemo(() => {
-    const q = (search ?? '').trim().toLowerCase()
-    if (!q) return horarios
-
-    return horarios.filter((h) => {
-      const vend = h.vendedor?.nombre?.toLowerCase() ?? ''
-      const idStr = String(h.id)
-      return vend.includes(q) || idStr.includes(q)
-    })
-  }, [horarios, search])
-
-  const encabezados = useMemo(
-    () => [
-      { titulo: 'ID', clave: 'vendedor.id' },
-      { titulo: 'Vendedor', clave: 'vendedor.nombre' },
-      { titulo: 'Hora Ingreso', clave: 'horaIngreso' }, // Table detecta "fecha" por key; acá lo dejamos así (muestra string si no parsea)
-      { titulo: 'Hora Egreso', clave: 'horaEgreso' },
-      {
-        titulo: 'Estado',
-        clave: 'estado',
-      },
-    ],
-    []
-  )
-
   const datosConEstado = useMemo(() => {
-    return datos.map((h) => ({
-      ...h,
-      estado: h.horaEgreso ? (
-        <span className="text-green-300 font-semibold">Cerrado</span>
-      ) : (
-        <span className="text-yellow-300 font-semibold">Abierto</span>
-      ),
-    }))
-  }, [datos])
+    return horarios.map((h) => {
+      const egresoValido = isValidDateValue(h.horaEgreso)
+
+      return {
+        ...h,
+        horaEgreso: egresoValido ? h.horaEgreso : '-',
+        estado: egresoValido ? (
+          <span className="text-green-300 font-semibold">Cerrado</span>
+        ) : (
+          <span className="text-yellow-300 font-semibold">Abierto</span>
+        ),
+      }
+    })
+  }, [horarios])
 
   const onIngreso = async () => {
     if (!vendedorId || Number.isNaN(vendedorId)) return
     await marcarIngreso({ vendedorId })
   }
 
-  const onDobleClickFila = async (id: number) => {
-    const h = horarios.find((x) => x.id === id)
+  const onDobleClickFila = (id: string | number) => {
+    const numId = typeof id === 'string' ? Number(id) : id
+    const h = horarios.find((x) => x.id === numId)
     if (!h) return
     if (h.horaEgreso) return // ya está cerrado
+
     openModal(
       <Confirmation
         mensaje={`Marcar egreso para ${h.vendedor?.nombre}?`}
-        onConfirm={async () => { await marcarEgreso(h.vendedor!.id, {}) }}
+        onConfirm={async () => {
+          await marcarEgreso(h.vendedor!.id, {})
+        }}
       />
     )
   }
@@ -81,7 +67,7 @@ export default function HorariosPage() {
     <Main>
       <div className="flex items-center justify-between gap-2">
         <Title className="flex items-center justify-center gap-2">
-          <Clock className='' />
+          <Clock className="" />
           Horarios
         </Title>
 
@@ -95,16 +81,14 @@ export default function HorariosPage() {
           Recargar
         </button>
       </div>
-      <div className='flex flex-col gap-2 mt-3'>
 
-        <Search />
+      <div className="flex flex-col gap-2 mt-3">
+        {/* <Search />  ❌ lo saca TableAndSearch */}
         <Wood typeWood={3} className="flex gap-2 items-center bg-gray-900 p-2 rounded max-w-96">
           <input
             type="number"
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                onIngreso()
-              }
+              if (e.key === 'Enter') onIngreso()
             }}
             value={vendedorId || ''}
             onChange={(e) => setVendedorId(Number(e.target.value))}
@@ -115,7 +99,7 @@ export default function HorariosPage() {
             onClick={onIngreso}
             disabled={loading || !vendedorId}
             className="flex border-2 border-black shadow-inner shadow-black transition-all
-          hover:shadow-black items-center gap-2 font-bold bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded cursor-pointer"
+            hover:shadow-black items-center gap-2 font-bold bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded cursor-pointer"
             title="Marcar ingreso"
           >
             <LogIn size={18} />
@@ -130,12 +114,12 @@ export default function HorariosPage() {
           Tip: doble click (o Enter) en una fila “Abierto” para marcar eg **egreso**
         </div>
 
-        <Table
-          encabezados={encabezados}
+        <TableAndSearch
+          encabezados={columns}
           datos={datosConEstado}
           onDobleClickFila={onDobleClickFila}
-          formatoFecha="fecha-hora"
-          onFilaSeleccionada={null}
+          onFilaSeleccionada={() => {}}
+          searchFilters={searchFields}
         />
       </div>
     </Main>

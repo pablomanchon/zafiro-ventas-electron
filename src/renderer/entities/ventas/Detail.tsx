@@ -7,12 +7,15 @@ import type { SaleItem } from "../item-venta/useSaleItems";
 import type { PaymentItem } from "../metodo-pago/PaymentMethodsTable";
 import Table from "../../layout/Table";
 import bgUrl from "../../assets/fondo-h.png"
+import type { Vendedor } from "../../hooks/useSellers";
+
 export type TypeVenta = {
   id: number,
   fecha: Date,
   cliente: Cliente
+  vendedor: Vendedor
   detalles: SaleItem[]
-  pagos:PaymentItem[]
+  pagos: PaymentItem[]
 }
 
 const itemsColumns = [
@@ -34,7 +37,7 @@ export default function SaleDetail() {
   const { idVenta } = useParams<{ idVenta: string }>();
 
   console.log(idVenta)
-  
+
   // solo invocamos el hook si hay idVenta
   const { venta, loading } = useSale(idVenta ?? "");
 
@@ -47,11 +50,12 @@ export default function SaleDetail() {
       <Title>Detalle Venta {venta.id}</Title>
       <div className="flex flex-col gap-2">
         <h2 className="font-bold text-lg">Cliente: {venta.cliente.nombre} {venta.cliente.apellido}</h2>
+        <h2 className="font-bold text-lg">Vendedor: {venta.vendedor.nombre} {venta.cliente.apellido}</h2>
         <h2 className="font-bold text-lg">Productos:</h2>
-        <Table datos={venta.detalles} encabezados={itemsColumns} onDobleClickFila={()=>{}} onFilaSeleccionada={()=>{}} />
+        <Table datos={venta.detalles} encabezados={itemsColumns} onDobleClickFila={() => { }} onFilaSeleccionada={() => { }} />
 
         <h2 className="font-bold text-lg mt-5">Metodos de Pago:</h2>
-        <Table datos={venta.pagos} encabezados={salesColumns} onDobleClickFila={()=>{}} onFilaSeleccionada={()=>{}}/>
+        <Table datos={venta.pagos} encabezados={salesColumns} onDobleClickFila={() => { }} onFilaSeleccionada={() => { }} />
       </div>
     </Main>
   );
