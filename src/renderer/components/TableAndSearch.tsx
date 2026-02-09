@@ -1,6 +1,7 @@
 import Table from '../layout/Table';
 import { useSearch } from '../providers/SearchProvider';
 import Search from '../layout/Search';
+import { useEffect } from 'react';
 
 interface TableAndSearchProps<T extends { id: number | string }> {
   datos: T[];
@@ -17,11 +18,15 @@ export default function TableAndSearch<T extends { id: number | string }>({
   onFilaSeleccionada,
   searchFilters,
 }: TableAndSearchProps<T>) {
-  const { search } = useSearch();
+  const { search, setSearch } = useSearch();
+  useEffect(() => {
+    setSearch(""); // o null
+  }, [setSearch]);
 
   function getValue(obj: any, path: string) {
     return path.split('.').reduce((acc, k) => acc?.[k], obj)
   }
+
 
   const filteredData = datos.filter(item =>
     searchFilters.some(field =>

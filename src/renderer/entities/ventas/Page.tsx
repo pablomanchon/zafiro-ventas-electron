@@ -97,6 +97,7 @@ export default function SalesPage() {
       ch.close()
     }
   }, [setFilter])
+  
   return (
     <Main className="flex flex-col h-screen p-4 gap-4">
       <div
@@ -105,7 +106,6 @@ export default function SalesPage() {
         className="flex flex-col h-full outline-none focus:outline-none"
       >
         <Title className="mb-2">Ventas</Title>
-
         <DateNavigator
           filter={filter}
           setFilter={setFilter}
@@ -113,7 +113,6 @@ export default function SalesPage() {
           goToday={goToday}
           label={label}
         />
-
         {error && (
           <Steel className="p-3 text-red-300 bg-red-900/30 border border-red-700">
             {error}

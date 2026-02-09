@@ -20,6 +20,7 @@ import MovimientoStockView from "./entities/movimiento-stock/movimientoStockView
 import PageIngredientes from "./entities/ingredientes/Page";
 import PagePlatos from "./entities/platos/Page";
 import HorariosPage from "./entities/horarios/Page";
+import VentaCreate2 from "./entities/ventas/VentaCreate2";
 
 export default function App() {
   const { expired } = useUser();
@@ -31,6 +32,7 @@ export default function App() {
       <Route path="/crud/:entity/:mode/:id?" element={<CrudFormPage />} />
       <Route path="/detail/:entity/:id" element={<SaleDetail />} />
       <Route path="/ventas/create" element={<VentaCreate />} />
+      <Route path="/ventas/create2" element={<VentaCreate2 />} />
       <Route path="/ventas/:idVenta" element={<SaleDetail />} />
       <Route path="/movimiento-stock/create" element={<MovimientoStockCreate />} />
       <Route path="/movimiento-stock/:id" element={<MovimientoStockView />} />

@@ -2,14 +2,18 @@ import { useEffect, useState } from 'react'
 import { useModal } from '../../providers/ModalProvider'
 import EntitySearchModal from '../../components/EntitySearchModal'
 import { useVendedores } from '../../hooks/useSellers'
+import type { ComponentPropsWithoutRef } from 'react'
 
-interface Props {
+type DivProps = Omit<ComponentPropsWithoutRef<'div'>, 'onChange'>
+
+interface Props extends DivProps {
   value: number | null
   onChange: (value: number) => void
   label?: string
 }
 
-export default function VendedorSelectInput({ value, onChange, label }: Props) {
+
+export default function VendedorSelectInput({ value, onChange, label, ...props }: Props) {
   const { openModal } = useModal()
   const { vendedores, getById, loading } = useVendedores()
   const [selected, setSelected] = useState(getById(value))
@@ -32,7 +36,7 @@ export default function VendedorSelectInput({ value, onChange, label }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div {...props} className="flex items-center gap-2">
       {label && <span className="font-semibold">{label}:</span>}
       <input
         readOnly

@@ -10,8 +10,8 @@ type SalesState = {
   ventas: any[]
   totales: TotalPorTipo[]
   loading: boolean
-  loadingById: Record<string, boolean>   // 👈 nuevo
-  fetchedAt: Record<string, number>      // 👈 nuevo
+  loadingById: Record<string, boolean>
+  fetchedAt: Record<string, number>   
   error: string | null
   lastRange: DateRange
 }

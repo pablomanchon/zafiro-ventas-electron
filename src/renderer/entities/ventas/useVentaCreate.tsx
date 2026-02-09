@@ -1,18 +1,14 @@
+// useVentaCreateLogic.ts
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { create } from '../../api/crud'
-import type { SaleItem } from '../item-venta/useSaleItems'
-import ItemsVentaTable from '../item-venta/ItemsVentaTable'
-import PaymentMethodsTable from '../metodo-pago/PaymentMethodsTable'
-import type { PaymentItem } from '../metodo-pago/PaymentMethodsTable'
-import { useProducts } from '../../hooks/useProducts'
 import { toast } from 'react-toastify'
+import { create } from '../../api/crud'
+import { useProducts } from '../../hooks/useProducts'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { fetchSaleById, makeSelectVentaById, needsRefresh } from '../../store/salesReduce'
 import { toCents, formatCentsARS } from '../../utils/utils'
-import VendedorSelectInput from '../sellers/VendedorSelectInput'
-import ClienteSelectInput from '../clientes/ClienteSelectInput'
-import type { FormInput } from '../../layout/DynamicForm'
+import type { SaleItem } from '../item-venta/useSaleItems'
+import type { PaymentItem } from '../metodo-pago/PaymentMethodsTable'
 
 type VentaInitPayload = {
   clienteId?: string | number
@@ -23,10 +19,7 @@ type VentaInitPayload = {
   [key: string]: unknown
 }
 
-type TotalDiscount = {
-  pct: number | ''
-  monto: number | ''
-}
+export type TotalDiscount = { pct: number | ''; monto: number | '' }
 
 const coerceId = (value: unknown): string | undefined => {
   if (value === undefined || value === null || value === '') return undefined
@@ -76,7 +69,7 @@ const normalizePayments = (raw?: unknown): PaymentItem[] | undefined => {
   }))
 }
 
-export function useVentaCreate() {
+export function useVentaCreateLogic() {
   const { products } = useProducts()
   const params = useParams<{ idVenta?: string }>()
   const dispatch = useAppDispatch()
@@ -92,7 +85,6 @@ export function useVentaCreate() {
   const [formKey, setFormKey] = useState(0)
   const [submitting, setSubmitting] = useState(false)
 
-  // mirrors (para calcular total)
   const [itemsMirror, setItemsMirror] = useState<SaleItem[]>([])
   const [totalDiscountMirror, setTotalDiscountMirror] = useState<TotalDiscount>({ pct: '', monto: '' })
 
@@ -110,14 +102,14 @@ export function useVentaCreate() {
     if (!initPayload) return false
     return Boolean(
       initPayload.venta ||
-      (Array.isArray(initPayload.items) && initPayload.items.length > 0) ||
-      (Array.isArray(initPayload.pagos) && initPayload.pagos.length > 0) ||
-      initPayload.clienteId !== undefined ||
-      initPayload.vendedorId !== undefined
+        (Array.isArray(initPayload.items) && initPayload.items.length > 0) ||
+        (Array.isArray(initPayload.pagos) && initPayload.pagos.length > 0) ||
+        initPayload.clienteId !== undefined ||
+        initPayload.vendedorId !== undefined
     )
   }, [initPayload])
 
-  // Recibe INIT_DATA (popup / windowApi)
+  // INIT_DATA
   useEffect(() => {
     const origin = window.location.origin
 
@@ -131,7 +123,7 @@ export function useVentaCreate() {
 
     try {
       window.opener?.postMessage({ type: 'READY' }, origin)
-    } catch { }
+    } catch {}
 
     const unsubscribe = (window as any).windowApi?.onInitData?.((payload: any) => {
       setInitPayload((payload as VentaInitPayload) ?? null)
@@ -143,7 +135,7 @@ export function useVentaCreate() {
     }
   }, [])
 
-  // Si estamos editando (sin initData), traer desde store
+  // editar sin initData: store
   useEffect(() => {
     if (!params.idVenta) return
     if (hasInitData) return
@@ -152,7 +144,7 @@ export function useVentaCreate() {
     }
   }, [params.idVenta, hasInitData, ventaDesdeStore, ventaNecesitaFetch, dispatch])
 
-  // Defaults desde initPayload
+  // defaults desde init
   useEffect(() => {
     if (!hasInitData || !initPayload) return
     const payloadVenta = initPayload.venta ?? {}
@@ -165,15 +157,15 @@ export function useVentaCreate() {
       clienteId: coerceId(initPayload.clienteId ?? payloadVenta.clienteId ?? payloadVenta.cliente?.id),
       items: normalizedItems,
       pagos: normalizedPagos,
-      // ✅ vacío (no 0)
       descuentoTotal: { pct: '', monto: '' },
     })
+
     setItemsMirror(normalizedItems ?? [])
     setTotalDiscountMirror({ pct: '', monto: '' })
     setFormKey((k) => k + 1)
   }, [hasInitData, initPayload])
 
-  // Defaults desde store (edición)
+  // defaults desde store
   useEffect(() => {
     if (!params.idVenta) return
     if (hasInitData) return
@@ -187,83 +179,13 @@ export function useVentaCreate() {
       clienteId: coerceId(ventaDesdeStore.clienteId ?? ventaDesdeStore.cliente?.id),
       items: normalizedItems,
       pagos: normalizedPagos,
-      // ✅ vacío (no 0)
       descuentoTotal: { pct: '', monto: '' },
     })
+
     setItemsMirror(normalizedItems ?? [])
     setTotalDiscountMirror({ pct: '', monto: '' })
     setFormKey((k) => k + 1)
   }, [params.idVenta, hasInitData, ventaDesdeStore])
-
-  // ───────────────── Proxies ─────────────────
-
-  const ItemsProxy = useCallback(
-    ({ value, onChange }: { value?: SaleItem[]; onChange?: (v: SaleItem[]) => void }) => (
-      <ItemsVentaTable
-        value={value}
-        onChange={(v) => {
-          onChange?.(v)
-          setItemsMirror(v || [])
-        }}
-      />
-    ),
-    []
-  )
-
-  const TotalDiscountProxy = useCallback(
-    ({ value, onChange }: { value?: TotalDiscount; onChange?: (v: TotalDiscount) => void }) => {
-      // ✅ clave: tipado literal (evita string | number)
-      const pct: TotalDiscount['pct'] = value?.pct ?? ''
-      const monto: TotalDiscount['monto'] = value?.monto ?? ''
-
-      return (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-end gap-4">
-            <label className="flex flex-col gap-1">
-              <span className="text-white">Descuento total (%)</span>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                className="w-28 bg-inherit outline-none text-white px-2 py-1 border border-white/20 rounded"
-                value={pct === '' ? '' : Number(pct) === 0 ? '' : pct}
-                onFocus={(e) => e.currentTarget.select()}
-                onChange={(e) => {
-                  const nextPct: TotalDiscount['pct'] =
-                    e.target.value === '' ? '' : Number(e.target.value)
-                  const next: TotalDiscount = { pct: nextPct, monto }
-                  onChange?.(next)
-                  setTotalDiscountMirror(next)
-                }}
-              />
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-white">Descuento total ($)</span>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                className="w-40 bg-inherit outline-none text-white px-2 py-1 border border-white/20 rounded text-right"
-                value={monto === '' ? '' : Number(monto) === 0 ? '' : monto}
-                onFocus={(e) => e.currentTarget.select()}
-                onChange={(e) => {
-                  const nextMonto: TotalDiscount['monto'] =
-                    e.target.value === '' ? '' : Number(e.target.value)
-                  const next: TotalDiscount = { pct, monto: nextMonto }
-                  onChange?.(next)
-                  setTotalDiscountMirror(next)
-                }}
-              />
-            </label>
-          </div>
-        </div>
-      )
-    },
-    []
-  )
-
-  // ───────────────── Totales ─────────────────
 
   const calcSubtotalItems = useCallback(
     (items: SaleItem[]): number => {
@@ -286,112 +208,50 @@ export function useVentaCreate() {
 
   const totalConDescuento = useMemo(() => {
     const subtotal = calcSubtotalItems(itemsMirror)
-
     const pct = Math.max(0, Math.min(100, Number(totalDiscountMirror.pct) || 0))
     const monto = Math.max(0, Number(totalDiscountMirror.monto) || 0)
-
     const total = Math.max(0, subtotal * (1 - pct / 100) - monto)
     return Number(total.toFixed(2))
   }, [itemsMirror, totalDiscountMirror, calcSubtotalItems])
 
-  // ───────────────── Inputs del DynamicForm ─────────────────
-
-  const inputsBase: FormInput[] = useMemo(
-    () => [
-      {
-        name: 'vendedorId',
-        label: 'Vendedor',
-        type: 'component',
-        Component: VendedorSelectInput,
-        value: defaults.vendedorId,
-      },
-      {
-        name: 'clienteId',
-        label: 'Cliente',
-        type: 'component',
-        Component: ClienteSelectInput,
-        value: defaults.clienteId,
-      },
-      {
-        name: 'items',
-        label: 'Productos',
-        type: 'component',
-        Component: ItemsProxy,
-        value: defaults.items,
-      },
-      {
-        name: 'descuentoTotal',
-        label: 'Descuento Total',
-        type: 'component',
-        Component: TotalDiscountProxy,
-        // ✅ vacío (no 0)
-        value: defaults.descuentoTotal ?? { pct: '', monto: '' },
-      },
-      {
-        name: 'pagos',
-        label: 'Métodos de Pago',
-        type: 'component',
-        Component: PaymentMethodsTable,
-        value: defaults.pagos,
-      },
-    ],
-    [defaults, ItemsProxy, TotalDiscountProxy]
-  )
-
-  // pasamos total al PaymentMethodsTable
-  const inputsWithTotal: FormInput[] = useMemo(() => {
-    return inputsBase.map((inp) =>
-      inp.name === 'pagos'
-        ? ({ ...inp, componentProps: { ...(inp as any).componentProps, total: totalConDescuento } } as any)
-        : inp
-    )
-  }, [inputsBase, totalConDescuento])
-
-  // ───────────────── Submit ─────────────────
+  const resetForm = useCallback(() => {
+    setFormKey((k) => k + 1)
+    setItemsMirror([])
+    setTotalDiscountMirror({ pct: '', monto: '' })
+    setDefaults({})
+  }, [])
 
   const handleSubmit = useCallback(
     async (values: Record<string, any>) => {
       try {
         setSubmitting(true)
 
-        if (!values.vendedorId) {
-          toast.error('Debe seleccionar un vendedor')
-          return
-        }
-        if (!values.clienteId) {
-          toast.error('Debe seleccionar un cliente')
-          return
-        }
+        if (!values.vendedorId) return toast.error('Debe seleccionar un vendedor')
+        if (!values.clienteId) return toast.error('Debe seleccionar un cliente')
 
         const itemsRaw: SaleItem[] = values.items || []
         const items = itemsRaw.filter((it) => String(it.productId ?? '').trim() !== '')
         const pagos: PaymentItem[] = values.pagos || []
 
-        if (!items.length) {
-          toast.error('Debe incluir al menos un producto (código)')
-          return
-        }
+        if (!items.length) return toast.error('Debe incluir al menos un producto (código)')
 
-        // valida pagos contra el total con descuento
         const totalCDCents = Math.round((totalConDescuento ?? 0) * 100)
         const sumaPagosCents = (pagos ?? [])
           .filter((p) => p?.metodoId)
           .reduce((acc, p) => acc + toCents((p as any).monto), 0)
 
         if (sumaPagosCents !== totalCDCents) {
-          toast.error(
+          return toast.error(
             `Los métodos de pago (${formatCentsARS(sumaPagosCents)}) no coinciden con el total (${formatCentsARS(
               totalCDCents
             )}).`
           )
-          return
         }
 
         const descuentoTotal: TotalDiscount = values.descuentoTotal ?? totalDiscountMirror
         const gpct = Math.max(0, Math.min(100, Number(descuentoTotal?.pct) || 0))
         const gmonto = Math.max(0, Number(descuentoTotal?.monto) || 0)
 
-        // 1) subtotal luego de descuentos por ítem
         const enriched = items.map((item: any) => {
           const codigo = String(item.productId ?? '').trim()
           const prod: any = products.find((p: any) => String(p.codigo) === codigo)
@@ -413,11 +273,9 @@ export function useVentaCreate() {
         const totalFinal = Math.max(0, subtotal * (1 - gpct / 100) - gmonto)
         const globalDiscountAbs = Math.max(0, subtotal - totalFinal)
 
-        // 2) distribuir el descuento global proporcionalmente
         const detalles = enriched.map(({ item, prod, qty, pct, lineAfterItem }) => {
           const share = subtotal > 0 ? lineAfterItem / subtotal : 0
           const lineAfterAll = Math.max(0, lineAfterItem - globalDiscountAbs * share)
-
           const unitFinal = qty > 0 ? lineAfterAll / qty : 0
           const unitFinal2 = Number(unitFinal.toFixed(2))
 
@@ -429,7 +287,6 @@ export function useVentaCreate() {
               descripcion: prod.descripcion ?? '',
               precio: unitFinal2,
               cantidad: qty,
-              // guardamos el % del ítem (el descuento monto y el global quedan reflejados en el precio final)
               descuento: Number.isFinite(pct) ? pct : 0,
             },
           }
@@ -439,13 +296,8 @@ export function useVentaCreate() {
           .filter((p) => p?.metodoId)
           .map((p) => {
             const cents = toCents((p as any).monto)
-            const dto: Record<string, any> = {
-              metodoId: p.metodoId,
-              monto: cents / 100,
-            }
-            if ((p as any).cuotas != null && (p as any).cuotas !== '') {
-              dto.cuotas = Number((p as any).cuotas) || 0
-            }
+            const dto: Record<string, any> = { metodoId: p.metodoId, monto: cents / 100 }
+            if ((p as any).cuotas != null && (p as any).cuotas !== '') dto.cuotas = Number((p as any).cuotas) || 0
             return dto
           })
 
@@ -457,10 +309,7 @@ export function useVentaCreate() {
         })
 
         toast.success(`Venta ${venta.id} creada con éxito`)
-        setFormKey((k) => k + 1)
-        setItemsMirror([])
-        setTotalDiscountMirror({ pct: '', monto: '' })
-        setDefaults({})
+        resetForm()
       } catch (err: any) {
         const msg = err?.response?.data?.message ?? err?.message ?? 'Ocurrió un error al crear la venta'
         toast.error(`Error: ${msg}`)
@@ -468,14 +317,18 @@ export function useVentaCreate() {
         setSubmitting(false)
       }
     },
-    [products, totalConDescuento, totalDiscountMirror]
+    [products, totalConDescuento, totalDiscountMirror, resetForm]
   )
 
   return {
     params,
     formKey,
     submitting,
-    inputsWithTotal,
+    defaults,
+    totalConDescuento,
+    // setters para que la UI actualice mirrors
+    setItemsMirror,
+    setTotalDiscountMirror,
     handleSubmit,
   }
 }
