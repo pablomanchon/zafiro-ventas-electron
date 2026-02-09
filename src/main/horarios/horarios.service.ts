@@ -7,13 +7,30 @@ import { CreateHorarioDto, MarcarEgresoDto } from './dto/create-horario.dto';
 
 @Injectable()
 export class HorariosService {
+
+
   constructor(
     @InjectRepository(Horario) private readonly horariosRepo: Repository<Horario>,
     @InjectRepository(Vendedor) private readonly vendedoresRepo: Repository<Vendedor>,
-  ) {}
+  ) { }
 
   async findAll() {
     return this.horariosRepo.find({
+      relations: { vendedor: true },
+      order: { horaIngreso: 'DESC' },
+    });
+  }
+
+  async findOne(id: number) {
+    return this.horariosRepo.findOne({
+      where: { id },
+      relations: { vendedor: true },
+    });
+  }
+
+  async findAllByVendedor(vendedorId: number) {
+    return this.horariosRepo.find({
+      where: { vendedor: { id: vendedorId } },
       relations: { vendedor: true },
       order: { horaIngreso: 'DESC' },
     });

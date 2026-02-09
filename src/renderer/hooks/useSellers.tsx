@@ -15,7 +15,6 @@ export function useVendedores() {
     setLoading(true)
     try {
       const data = await getAll<Vendedor>('vendedores')
-      console.log(data)
       setItems(data)
       setError(null)
     } catch (e) {

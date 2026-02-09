@@ -19,8 +19,8 @@ import MovimientoStockCreate from "./entities/movimiento-stock/movimientoStockCr
 import MovimientoStockView from "./entities/movimiento-stock/movimientoStockView";
 import PageIngredientes from "./entities/ingredientes/Page";
 import PagePlatos from "./entities/platos/Page";
-import HorariosPage from "./entities/horarios/Page";
 import VentaCreate2 from "./entities/ventas/VentaCreate2";
+import PageHorarios from "./entities/horarios/Page2";
 
 export default function App() {
   const { expired } = useUser();
@@ -49,7 +49,7 @@ export default function App() {
         <Route path="/movimientos-stock" element={<PageMoveStock />} />
         <Route path="/ingredientes" element={<PageIngredientes />} />
         <Route path="/platos" element={<PagePlatos />} />
-        <Route path="/horarios" element={<HorariosPage/>} />
+        <Route path="/horarios" element={<PageHorarios/>} />
       </Route>
       {/* fallback */}
       <Route path="*" element={<Navigate to="/" />} />

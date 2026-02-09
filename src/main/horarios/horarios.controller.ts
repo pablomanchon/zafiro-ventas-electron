@@ -4,21 +4,33 @@ import { CreateHorarioDto, MarcarEgresoDto } from './dto/create-horario.dto';
 
 @Controller('horarios')
 export class HorariosController {
-  constructor(private readonly horariosService: HorariosService) { }
+  constructor(private readonly horariosService: HorariosService) {}
 
   @Get()
   findAll() {
-    return this.horariosService.findAll();
+    return this.horariosService.findAll()
+  }
+
+  @Get('vendedor/:id')
+  findAllByVendedor(@Param('id') id: string) {
+    return this.horariosService.findAllByVendedor(+id)
   }
 
   @Post()
-  marcarIngreso(@Body() createHorarioDto: CreateHorarioDto) {
-    return this.horariosService.marcarIngreso(createHorarioDto);
+  marcarIngreso(@Body() dto: CreateHorarioDto) {
+    return this.horariosService.marcarIngreso(dto)
   }
 
-  @Post(':id')
-  marcarEgreso(@Param('id') id: string, @Body() egresoDto: MarcarEgresoDto) {
-    return this.horariosService.marcarEgreso(+id, egresoDto);
+  // ✅ egreso por vendedor (porque tu mensaje dice "no hay horario abierto para ese vendedor")
+  @Post('vendedor/:id/egreso')
+  marcarEgreso(@Param('id') id: string, @Body() dto: MarcarEgresoDto) {
+    return this.horariosService.marcarEgreso(+id, dto)
   }
 
+  // ✅ si querés mantener findOne, dejalo al final para no “tapar” rutas
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.horariosService.findOne(+id)
+  }
 }
+
