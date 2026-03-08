@@ -18,8 +18,8 @@ import { UserModule } from './user/user.module';
 import { HorariosModule } from './horarios/horarios.module';
 import path from 'path'
 import fs from 'fs'
-import { BackupImportService } from './importer/backup-import.service';
 import { ImporterModule } from './importer/importer.module';
+import { HealthController } from './healt.controller';
 
 @Module({
   imports: [
@@ -59,7 +59,7 @@ import { ImporterModule } from './importer/importer.module';
     HorariosModule,
     ImporterModule
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [AppService],
 })
 export class AppModule { }

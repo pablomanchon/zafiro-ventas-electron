@@ -3,29 +3,72 @@ import crypto from "crypto";
 import os from "os";
 import path from "path";
 
-const LICENSE_FILE = path.join(process.cwd(), "license.dat");
 const SECRET = "mi-clave-secreta-privada"; // CAMBIAR
+const DAYS = 30;
+const WARNING_DAYS = 5;
 
-const DAYS = 30; // duración de licencia
-const WARNING_DAYS = 5; // mostrar aviso si faltan ≤ 5 días
+const APP_NAME = "Zafiro Stock y Ventas";
 
+// =====================================================
+// Obtener carpeta de datos de la app
+// =====================================================
+function getAppDataDir() {
+  if (process.platform === "win32" && process.env.APPDATA) {
+    return process.env.APPDATA;
+  }
+
+  if (process.platform === "darwin") {
+    return path.join(os.homedir(), "Library", "Application Support");
+  }
+
+  return path.join(os.homedir(), ".config");
+}
+
+// =====================================================
+// Ruta final del archivo de licencia
+// =====================================================
+function getLicensePath() {
+  // Si Electron pasa la ruta por env la usamos
+  if (process.env.ZAFIRO_LICENSE_PATH) {
+    return process.env.ZAFIRO_LICENSE_PATH;
+  }
+
+  return path.join(getAppDataDir(), APP_NAME, "license.dat");
+}
+
+const LICENSE_FILE = getLicensePath();
+
+// =====================================================
+// Hardware ID
+// =====================================================
 function getHardwareId() {
   return os.hostname();
 }
 
+// =====================================================
+// Crear hash
+// =====================================================
 function createHash(data: string) {
   return crypto.createHmac("sha256", SECRET).update(data).digest("hex");
 }
 
+// =====================================================
+// Validar licencia
+// =====================================================
 export function validateLicense() {
   const hwid = getHardwareId();
 
+  // asegurarse que exista la carpeta
+  fs.mkdirSync(path.dirname(LICENSE_FILE), { recursive: true });
+
   // =====================================================
-  // 1) Si la licencia NO existe → crearla
+  // 1) Si la licencia NO existe → crear trial
   // =====================================================
   if (!fs.existsSync(LICENSE_FILE)) {
     const installDate = new Date();
-    const expiresAt = new Date(installDate.getTime() + DAYS * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(
+      installDate.getTime() + DAYS * 24 * 60 * 60 * 1000
+    );
 
     const content = {
       installDate: installDate.toISOString(),
@@ -38,17 +81,22 @@ export function validateLicense() {
 
     fs.writeFileSync(LICENSE_FILE, JSON.stringify({ content, hash }));
 
-    return { valid: true, daysLeft: DAYS };
+    return {
+      valid: true,
+      daysLeft: DAYS,
+      warning: false,
+    };
   }
 
   // =====================================================
-  // 2) Leer archivo de licencia
+  // 2) Leer licencia existente
   // =====================================================
   const { content, hash } = JSON.parse(fs.readFileSync(LICENSE_FILE, "utf8"));
+
   const recalculatedHash = createHash(JSON.stringify(content));
 
   // -----------------------------------------------------
-  // 2.1) Validar manipulación del archivo
+  // Detectar manipulación
   // -----------------------------------------------------
   if (hash !== recalculatedHash) {
     const err: any = new Error("LICENCIA_MANIPULADA");
@@ -57,16 +105,16 @@ export function validateLicense() {
   }
 
   // -----------------------------------------------------
-  // 2.2) Validar hardware
+  // Validar hardware
   // -----------------------------------------------------
   if (content.hwid !== hwid) {
-    const err: any = new Error("LICENCIA_INCORRECTA");
+    const err: any = new Error("LICENCIA_INVALIDA_DISPOSITIVO");
     err.code = "LICENSE_INVALID_DEVICE";
     throw err;
   }
 
   // -----------------------------------------------------
-  // 2.3) Validar expiración
+  // Validar expiración
   // -----------------------------------------------------
   const now = new Date();
   const expiresAt = new Date(content.expiresAt);
@@ -81,7 +129,7 @@ export function validateLicense() {
   }
 
   // =====================================================
-  // 3) Licencia válida → devolver días restantes
+  // Licencia válida
   // =====================================================
   return {
     valid: true,

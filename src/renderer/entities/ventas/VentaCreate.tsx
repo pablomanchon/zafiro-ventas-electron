@@ -91,46 +91,51 @@ export default function VentaCreate() {
   )
 
   const inputs: FormInput[] = useMemo(
-    () => [
-      {
-        name: 'vendedorId',
-        label: 'Vendedor',
-        type: 'component',
-        Component: VendedorSelectInput,
-        value: defaults.vendedorId,
-      },
-      {
-        name: 'clienteId',
-        label: 'Cliente',
-        type: 'component',
-        Component: ClienteSelectInput,
-        value: defaults.clienteId,
-      },
-      {
-        name: 'items',
-        label: 'Productos',
-        type: 'component',
-        Component: ItemsProxy,
-        value: defaults.items,
-      },
-      {
-        name: 'descuentoTotal',
-        label: 'Descuento Total',
-        type: 'component',
-        Component: TotalDiscountProxy,
-        value: defaults.descuentoTotal ?? { pct: '', monto: '' },
-      },
-      {
-        name: 'pagos',
-        label: 'Métodos de Pago',
-        type: 'component',
-        Component: PaymentMethodsTable as any,
-        value: defaults.pagos as PaymentItem[] | undefined,
-        componentProps: { total: totalConDescuento },
-      },
-    ],
-    [defaults, ItemsProxy, TotalDiscountProxy, totalConDescuento]
-  )
+  () => [
+    {
+      name: 'vendedorId',
+      label: 'Vendedor',
+      type: 'component',
+      Component: VendedorSelectInput,
+      value: defaults.vendedorId,
+      colSpan: 1,
+    },
+    {
+      name: 'clienteId',
+      label: 'Cliente',
+      type: 'component',
+      Component: ClienteSelectInput,
+      value: defaults.clienteId,
+      colSpan: 1,
+    },
+    {
+      name: 'items',
+      label: 'Productos',
+      type: 'component',
+      Component: ItemsProxy,
+      value: defaults.items,
+      colSpan: 2, // para que arranque debajo ocupando toda la fila
+    },
+    {
+      name: 'descuentoTotal',
+      label: 'Descuento Total',
+      type: 'component',
+      Component: TotalDiscountProxy,
+      value: defaults.descuentoTotal ?? { pct: '', monto: '' },
+      colSpan: 2,
+    },
+    {
+      name: 'pagos',
+      label: 'Métodos de Pago',
+      type: 'component',
+      Component: PaymentMethodsTable as any,
+      value: defaults.pagos as PaymentItem[] | undefined,
+      componentProps: { total: totalConDescuento },
+      colSpan: 2,
+    },
+  ],
+  [defaults, ItemsProxy, TotalDiscountProxy, totalConDescuento]
+)
 
   return (
     <Main
@@ -143,6 +148,7 @@ export default function VentaCreate() {
 
       <DynamicForm
         key={formKey}
+        columns={2}
         inputs={inputs}
         onSubmit={async (values) => {
           await handleSubmit(values)

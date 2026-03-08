@@ -308,7 +308,7 @@ export function useVentaCreateLogic() {
           pagos: pagosPayload,
         })
 
-        toast.success(`Venta ${venta.id} creada con éxito`)
+        toast.success(`Venta ${venta.id} creada con éxito!`)
         resetForm()
       } catch (err: any) {
         const msg = err?.response?.data?.message ?? err?.message ?? 'Ocurrió un error al crear la venta'

@@ -7,59 +7,29 @@ import { validateLicense } from './license'
 import { onChange } from './broadcast/event-bus'
 import { broadcast } from './broadcast/ipc-broadcast'
 
-// -------------------------------------------------------
 let mainWindow: BrowserWindow | null = null
 let splashWindow: BrowserWindow | null = null
+
+const isProd = app.isPackaged
+const DEV_SERVER = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
 
 const icon = app.isPackaged
   ? path.join(process.resourcesPath, 'zafiro-rounded.ico')
   : path.join(__dirname, '../public/zafiro-rounded.ico')
-
-// ⚙️ Detección de entorno
-const isProd = app.isPackaged
-const DEV_SERVER = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173'
 
 /**
  * ✅ DB persistente (NO en carpeta de instalación)
  * Windows: C:\Users\<user>\AppData\Roaming\<AppName>\db\zafiro.sqlite
  */
 function ensureDbPath() {
-  // userData es la mejor opción para persistencia por usuario
   const dbDir = path.join(app.getPath('userData'), 'db')
   fs.mkdirSync(dbDir, { recursive: true })
 
   const dbPath = path.join(dbDir, 'zafiro.sqlite')
-
-  // Esta env la va a leer Nest/TypeORM
   process.env.ZAFIRO_DB_PATH = dbPath
 
-  // Log útil para debug
   console.log('🗄️ ZAFIRO_DB_PATH =', dbPath)
-
   return dbPath
-}
-
-// (Opcional) evita que se abra 2 veces y te “rompa” la DB por lock
-// const gotLock = app.requestSingleInstanceLock()
-// if (!gotLock) app.quit()
-
-async function startApi() {
-  if (!isProd) {
-    // DEV: usa el bootstrap local (TS/JS en tu proyecto)
-    const mod = await import('./bootstrap')
-    return mod.bootstrap()
-  }
-
-  // PROD: usa el build de Nest (dist)
-  const apiBootstrapPath = path.join(__dirname, '../dist/bootstrap.js')
-
-  if (!fs.existsSync(apiBootstrapPath)) {
-    throw new Error(`No se encontró bootstrap de Nest en: ${apiBootstrapPath}`)
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const mod = require(apiBootstrapPath) as { bootstrap: () => Promise<void> }
-  return mod.bootstrap()
 }
 
 function buildSplashHtml(): string {
@@ -74,7 +44,7 @@ function buildSplashHtml(): string {
         .logo { font-weight: 700; font-size: 1.4rem; letter-spacing: 0.02em; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; justify-content: center; }
         .logo-circle { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #22d3ee, #0ea5e9); display: grid; place-items: center; color: #0b1120; font-weight: 800; box-shadow: 0 10px 30px rgba(34, 211, 238, 0.35); }
         .title { font-size: 1rem; opacity: 0.9; margin-bottom: 16px; }
-        .status { margin-top: 18px; color: #cbd5e1; font-size: 0.95rem; letter-spacing: 0.01em; }
+        .status { margin-top: 18px; color: #cbd5e1; font-size: 0.95rem; letter-spacing: 0.01em; white-space: pre-line; }
         .spinner { width: 58px; height: 58px; border-radius: 50%; border: 6px solid rgba(255, 255, 255, 0.08); border-top-color: #22d3ee; margin: 12px auto; animation: spin 1s linear infinite; box-shadow: 0 0px 24px rgba(14, 165, 233, 0.35); }
         @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
       </style>
@@ -87,12 +57,61 @@ function buildSplashHtml(): string {
         </div>
         <div class="title">Preparando tu entorno...</div>
         <div class="spinner"></div>
-        <div class="status" id="status-text">Verificando licencia...</div>
+        <div class="status" id="status-text">Iniciando...</div>
       </div>
+
+      <script>
+        // ✅ sin preload: usamos el bridge de Electron solo si existe.
+        // Si tenés splash-preload, podés reemplazar esto por IPC.
+        // Esto queda como fallback visual simple.
+      </script>
     </body>
   </html>`
 
   return `data:text/html;charset=utf-8,${encodeURIComponent(content)}`
+}
+
+function createSplashWindow(): BrowserWindow {
+  const splash = new BrowserWindow({
+    width: 420,
+    height: 300,
+    resizable: false,
+    frame: false,
+    transparent: false,
+    show: false,
+    alwaysOnTop: true,
+    icon,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      // Si tenés un splash-preload que escucha IPC, dejalo:
+      preload: path.join(__dirname, 'splash-preload.js'),
+    },
+  })
+
+  splash.loadURL(buildSplashHtml())
+  splash.once('ready-to-show', () => splash.show())
+  splash.on('closed', () => {
+    splashWindow = null
+  })
+
+  return splash
+}
+
+function updateSplashStatus(message: string) {
+  if (!splashWindow || splashWindow.isDestroyed()) return
+
+  // Enviar al preload del splash (lo ideal)
+  if (!splashWindow.webContents.isDestroyed()) {
+    if (splashWindow.webContents.isLoading()) {
+      splashWindow.webContents.once('did-finish-load', () => {
+        if (!splashWindow || splashWindow.isDestroyed()) return
+        splashWindow.webContents.send('splash:update', message)
+      })
+      return
+    }
+    splashWindow.webContents.send('splash:update', message)
+  }
 }
 
 function getRendererUrl(hash = ''): string {
@@ -128,50 +147,62 @@ function buildChildWindowOptions(): Electron.BrowserWindowConstructorOptions {
   }
 }
 
-function createSplashWindow(): BrowserWindow {
-  const splash = new BrowserWindow({
-    width: 420,
-    height: 300,
-    resizable: false,
-    frame: false,
-    transparent: false,
-    show: false,
-    alwaysOnTop: true,
-    icon,
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-      preload: path.join(__dirname, 'splash-preload.js'),
-    },
-  })
-
-  splash.loadURL(buildSplashHtml())
-  splash.once('ready-to-show', () => splash.show())
-  splash.on('closed', () => {
-    if (!mainWindow) splashWindow = null
-  })
-  return splash
-}
-
-function updateSplashStatus(message: string) {
-  if (!splashWindow || splashWindow.isDestroyed()) return
-
-  if (splashWindow.webContents.isLoading()) {
-    splashWindow.webContents.once('did-finish-load', () => {
-      if (!splashWindow || splashWindow.isDestroyed()) return
-      splashWindow.webContents.send('splash:update', message)
-    })
-    return
+async function startApi() {
+  if (!isProd) {
+    const mod = await import('./bootstrap')
+    return mod.bootstrap()
   }
 
-  splashWindow.webContents.send('splash:update', message)
+  const apiBootstrapPath = path.join(__dirname, '../dist/bootstrap.js')
+  if (!fs.existsSync(apiBootstrapPath)) {
+    throw new Error(`No se encontró bootstrap de Nest en: ${apiBootstrapPath}`)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const mod = require(apiBootstrapPath) as { bootstrap: () => Promise<void> }
+  return mod.bootstrap()
+}
+
+/**
+ * ✅ Espera hasta que el API responda /api/health
+ * (evita el “loading eterno” por backend aún no listo)
+ */
+async function waitForApi(opts: {
+  port: number
+  timeoutMs?: number
+  intervalMs?: number
+}) {
+  const { port, timeoutMs = 12000, intervalMs = 250 } = opts
+  const url = `http://127.0.0.1:${port}/api/health`
+
+  const start = Date.now()
+  let lastErr: any = null
+
+  // Node 18+ trae fetch. Si no, podés usar undici.
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(url, { method: 'GET' })
+      if (res.ok) return true
+      lastErr = new Error(`Health respondió ${res.status}`)
+    } catch (e) {
+      lastErr = e
+    }
+
+    await new Promise((r) => setTimeout(r, intervalMs))
+  }
+
+  throw new Error(
+    `API no respondió a tiempo (${timeoutMs}ms) en ${url}. Último error: ${
+      lastErr?.message ?? String(lastErr)
+    }`,
+  )
 }
 
 async function createWindow() {
   splashWindow = createSplashWindow()
-  updateSplashStatus('Verificando licencia...')
 
-  // 🔐 Licencia
+  // 1) Licencia
+  updateSplashStatus('Verificando licencia...')
   try {
     const lic = validateLicense()
     console.log('🔐 Licencia válida:', lic)
@@ -203,17 +234,21 @@ async function createWindow() {
     return
   }
 
-  // ✅ setear DB persistente ANTES de arrancar Nest/TypeORM
+  // 2) DB path
   const dbPath = ensureDbPath()
   updateSplashStatus(`Abriendo base de datos...\n${dbPath}`)
 
+  // 3) Start API
+  updateSplashStatus('Iniciando servidor interno...')
   try {
     await startApi()
   } catch (e: any) {
     dialog.showMessageBoxSync({
       type: 'error',
       title: 'Error al iniciar',
-      message: 'No se pudo iniciar la base de datos o servidor interno.\n' + (e?.message ?? e),
+      message:
+        'No se pudo iniciar la base de datos o servidor interno.\n' +
+        (e?.message ?? String(e)),
       buttons: ['Aceptar'],
     })
 
@@ -223,6 +258,26 @@ async function createWindow() {
     return
   }
 
+  // 4) Wait for API ready (healthcheck)
+  const PORT = Number(process.env.PORT ?? 3000)
+  updateSplashStatus(`Esperando API...\nhttp://127.0.0.1:${PORT}/api`)
+  try {
+    await waitForApi({ port: PORT, timeoutMs: 15000, intervalMs: 250 })
+  } catch (e: any) {
+    dialog.showMessageBoxSync({
+      type: 'error',
+      title: 'Error al iniciar',
+      message: 'El servidor interno no respondió.\n' + (e?.message ?? String(e)),
+      buttons: ['Aceptar'],
+    })
+
+    splashWindow?.close()
+    splashWindow = null
+    app.quit()
+    return
+  }
+
+  // 5) Crear main window recién cuando el API está OK
   updateSplashStatus('Iniciando aplicación...')
   mainWindow = new BrowserWindow({
     width: 1000,

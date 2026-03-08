@@ -15,24 +15,24 @@ interface InputDefBase {
 
 type InputDef =
   | (InputDefBase & {
-      type:
-        | 'text'
-        | 'number'
-        | 'email'
-        | 'date'
-        | 'password'
-        | 'checkbox'
-        | 'select'
-        | 'textarea'
-      options?: { label: string; value: string }[]
-    })
+    type:
+    | 'text'
+    | 'number'
+    | 'email'
+    | 'date'
+    | 'password'
+    | 'checkbox'
+    | 'select'
+    | 'textarea'
+    options?: { label: string; value: string }[]
+  })
   | (InputDefBase & {
-      type: 'component'
-      Component: React.ComponentType<
-        { value: any; onChange: (value: any) => void } & Record<string, any>
-      >
-      componentProps?: Record<string, any>
-    })
+    type: 'component'
+    Component: React.ComponentType<
+      { value: any; onChange: (value: any) => void } & Record<string, any>
+    >
+    componentProps?: Record<string, any>
+  })
 
 export type FormInput = InputDef
 
@@ -236,20 +236,20 @@ export default function DynamicForm({
   const cols = columns ?? 1
   const gridColsClass =
     cols === 1 ? 'grid-cols-1'
-    : cols === 2 ? 'grid-cols-2'
-    : cols === 3 ? 'grid-cols-3'
-    : 'grid-cols-4'
+      : cols === 2 ? 'grid-cols-2'
+        : cols === 3 ? 'grid-cols-3'
+          : 'grid-cols-4'
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col py-2">
-      <div className={`grid ${gridColsClass} ${compact ? 'gap-2' : 'gap-3'}`}>
+      <div className={`grid ${gridColsClass} ${compact ? 'gap-y-2 gap-x-4' : 'gap-y-3 gap-x-6'}`}>
         {inputs.map((input, idx) => {
           const span = Math.min(input.colSpan ?? 1, cols)
           const spanClass =
             span === 1 ? 'col-span-1'
-            : span === 2 ? 'col-span-2'
-            : span === 3 ? 'col-span-3'
-            : 'col-span-4'
+              : span === 2 ? 'col-span-2'
+                : span === 3 ? 'col-span-3'
+                  : 'col-span-4'
 
           const commonProps = {
             required: input.required,
