@@ -23,6 +23,7 @@ type TableEntityConfig = {
 type RpcEntityConfig = {
   kind: 'rpc'
   listRpc: string
+  listArgs?: (params?: Record<string, any>) => Record<string, unknown> | undefined
   createRpc: string
   getRpc?: string
   updateRpc?: string
@@ -83,12 +84,17 @@ const entityMap: Record<EntityName, EntityConfig> = {
   'movimiento-stock': {
     kind: 'rpc',
     listRpc: 'movimiento_stock_listar',
+    listArgs: () => undefined,
     createRpc: 'movimiento_stock_crear',
     getRpc: 'movimiento_stock_detalle',
   },
   ventas: {
     kind: 'rpc',
     listRpc: 'ventas_listar',
+    listArgs: (params) => ({
+      p_from: params?.from ?? null,
+      p_to: params?.to ?? null,
+    }),
     createRpc: 'ventas_crear',
     getRpc: 'ventas_detalle',
     updateRpc: 'ventas_actualizar',
@@ -97,6 +103,7 @@ const entityMap: Record<EntityName, EntityConfig> = {
   platos: {
     kind: 'rpc',
     listRpc: 'platos_listar',
+    listArgs: () => undefined,
     createRpc: 'platos_crear',
     getRpc: 'platos_detalle',
     updateRpc: 'platos_actualizar',

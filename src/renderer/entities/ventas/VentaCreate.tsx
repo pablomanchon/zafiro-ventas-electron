@@ -3,6 +3,7 @@ import Main from '../../layout/Main'
 import Title from '../../layout/Title'
 import DynamicForm from '../../layout/DynamicForm'
 import bgUrl from '../../assets/fondo-w.png'
+import SecondaryBtn from '../../components/SecondaryButton'
 
 import type { FormInput } from '../../layout/DynamicForm'
 
@@ -16,7 +17,17 @@ import VendedorSelectInput from '../sellers/VendedorSelectInput'
 import ClienteSelectInput from '../clientes/ClienteSelectInput'
 import { useVentaCreateLogic, type TotalDiscount } from './useVentaCreate'
 
-export default function VentaCreate() {
+type VentaCreateProps = {
+  embedded?: boolean
+  onSaved?: (venta: any) => void
+  onCancel?: () => void
+}
+
+export default function VentaCreate({
+  embedded = false,
+  onSaved,
+  onCancel,
+}: VentaCreateProps) {
   const {
     formKey,
     submitting,
@@ -47,7 +58,7 @@ export default function VentaCreate() {
 
       return (
         <div className="flex flex-col gap-2">
-          <div className="flex items-end gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
             <label className="flex flex-col gap-1">
               <span className="text-white">Descuento total (%)</span>
               <input
@@ -137,24 +148,64 @@ export default function VentaCreate() {
   [defaults, ItemsProxy, TotalDiscountProxy, totalConDescuento]
 )
 
-  return (
-    <Main
-      style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-      className="flex flex-col gap-4 md:mt-auto text-white"
-    >
-      <div className="flex items-center justify-between">
-        <Title className="text-white pb-2">Crear Venta</Title>
+  const content = (
+    <div className={embedded ? 'venta-create-modal' : ''}>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="flex-1">
+          {embedded && (
+            <p className="text-[11px] uppercase tracking-[0.22em] text-white/50 mb-2">
+              Punto de venta
+            </p>
+          )}
+          <Title className={embedded ? 'text-white pb-1 border-white/10 text-left' : 'text-white pb-2'}>
+            {embedded ? 'Nueva Venta' : 'Crear Venta'}
+          </Title>
+          {embedded && (
+            <p className="text-sm text-white/65 mt-2">
+              Carga cliente, productos y pagos en una sola vista, sin salir del listado.
+            </p>
+          )}
+        </div>
+        {embedded && onCancel && (
+          <SecondaryBtn functionClick={onCancel} title="Cerrar" />
+        )}
       </div>
 
       <DynamicForm
         key={formKey}
         columns={2}
+        compact={embedded}
         inputs={inputs}
+        onRequestClose={onCancel}
         onSubmit={async (values) => {
-          await handleSubmit(values)
+          const venta = await handleSubmit(values)
+          if (venta) {
+            onSaved?.(venta)
+          }
         }}
         titleBtn={submitting ? 'Guardando...' : 'Guardar Venta'}
       />
+    </div>
+  )
+
+  if (embedded) {
+    return (
+      <div
+        className="w-[min(1120px,95vw)] max-h-[90vh] overflow-y-auto text-white"
+      >
+        <div className="p-3 sm:p-5 rounded-2xl border border-white/10 shadow-2xl bg-[#11161c]">
+          {content}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Main
+      style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+      className="flex flex-col gap-4 md:mt-auto text-white"
+    >
+      {content}
     </Main>
   )
 }

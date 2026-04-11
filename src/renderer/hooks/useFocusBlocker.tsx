@@ -1,17 +1,9 @@
-// src/hooks/useFocusBlocker.ts
 import { useEffect } from 'react'
 
 type Options = {
-  /** Selector para permitir foco en ciertos nodos (por si lo necesitás). Default: ninguno */
   allowSelector?: string | null
 }
 
-/**
- * Evita que cualquier elemento dentro de rootRef tome foco.
- * - Previene el focus en mousedown (sin impedir el click)
- * - Si algo llega a focusearse (focusin), lo blurrea y devuelve el foco al root
- * - Bloquea Enter/Espacio en <a>/<button> para que no se "clickéen" por estar enfocados
- */
 export function useFocusBlocker(rootRef: React.RefObject<HTMLElement>, opts: Options = {}) {
   const { allowSelector = null } = opts
 
@@ -19,33 +11,48 @@ export function useFocusBlocker(rootRef: React.RefObject<HTMLElement>, opts: Opt
     const root = rootRef.current
     if (!root) return
 
+    let restoringFocus = false
+
     const isAllowed = (el: HTMLElement | null) =>
       !!(allowSelector && el?.closest(allowSelector))
+
+    const focusRootSafely = () => {
+      if (restoringFocus) return
+      if (document.activeElement === root) return
+
+      restoringFocus = true
+      requestAnimationFrame(() => {
+        root.focus?.()
+        restoringFocus = false
+      })
+    }
 
     const onMouseDown = (e: MouseEvent) => {
       const t = e.target as HTMLElement
       if (!root.contains(t)) return
+      if (t === root) return
       if (isAllowed(t)) return
-      // Evita que el mousedown mueva el foco (el click igual se dispara)
+
       e.preventDefault()
-      // Reafirmamos foco en el root para que las teclas sigan funcionando
-      ;(root as HTMLElement).focus?.()
+      focusRootSafely()
     }
 
     const onFocusIn = (e: FocusEvent) => {
       const t = e.target as HTMLElement
       if (!root.contains(t)) return
+      if (t === root) return
       if (isAllowed(t)) return
-      // Si por cualquier motivo entró el foco, lo sacamos
+
       t.blur?.()
-      ;(root as HTMLElement).focus?.()
+      focusRootSafely()
     }
 
     const onKeyDown = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement
       if (!root.contains(t)) return
+      if (t === root) return
       if (isAllowed(t)) return
-      // Si por foco residual se presiona Enter/Espacio sobre botones/links, no dispares click
+
       if ((e.key === 'Enter' || e.key === ' ') && t.closest('a,button,[role="button"]')) {
         e.preventDefault()
       }

@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { useModal } from '../providers/ModalProvider';
 import { X } from 'lucide-react';
-import Glass from './Glass';
 
 export default function Modal() {
   const { isModalOpen, modalStack, closeModal } = useModal();
@@ -27,22 +26,24 @@ export default function Modal() {
   if (!isModalOpen || modalStack.length === 0) return null;
 
   return (
-    <div className="fixed p-2 inset-0 max-h-screen overflow-y-auto bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <Glass styles='min-w-96 p-2 rounded border-black border-2 bg-cyan-800 bg-opacity-30'>
-
+    <div className="modal-overlay fixed inset-0 z-50 p-2 sm:p-4">
+      <div className="modal-backdrop absolute inset-0" onClick={closeModal} />
       {modalStack.map((modalContent, index) => (
         <div
-        key={index}
-        className={`rounded-md shadow-lg max-w-lg w-full relative ${index !== modalStack.length - 1 ? 'hidden' : ''}`}
+          key={index}
+          className={`modal-shell relative mx-auto my-auto w-fit min-w-0 max-w-[96vw] max-h-[94vh] ${index !== modalStack.length - 1 ? 'hidden' : ''}`}
         >
-          <X
-            className="absolute cursor-pointer top-0 right-2 text-xl text-white hover:text-orange-600 transition-colors"
+          <button
+            type="button"
+            aria-label="Cerrar modal"
+            className="modal-close"
             onClick={closeModal}
-            />
-          <div>{modalContent}</div>
+          >
+            <X size={18} strokeWidth={2.2} />
+          </button>
+          <div className="modal-content">{modalContent}</div>
         </div>
       ))}
-      </Glass>
     </div>
   );
 }

@@ -6,6 +6,14 @@ type QueryParams = Record<string, any>
 function normalizeError(error: unknown): never {
   if (error instanceof Error) throw error.message
   if (typeof error === 'string') throw error
+  if (error && typeof error === 'object') {
+    const maybe = error as Record<string, unknown>
+    const message = typeof maybe.message === 'string' ? maybe.message : null
+    const details = typeof maybe.details === 'string' ? maybe.details : null
+    const code = typeof maybe.code === 'string' ? maybe.code : null
+    const parts = [message, details, code ? `(${code})` : null].filter(Boolean)
+    if (parts.length > 0) throw parts.join(' ')
+  }
   throw 'Ocurrio un error inesperado'
 }
 
@@ -34,7 +42,10 @@ export async function getAll<T = any>(
     const config = getEntityConfig(entity as EntityName)
 
     if (isRpcEntity(config)) {
-      return await runRpc<T[]>(config.listRpc, withRangeParams(params))
+      return await runRpc<T[]>(
+        config.listRpc,
+        config.listArgs ? config.listArgs(params) : undefined
+      )
     }
 
     let query = supabase.from(config.table).select(config.select ?? '*')

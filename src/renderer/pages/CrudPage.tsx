@@ -95,7 +95,7 @@ export default function CrudPage<T extends { id: number | string }>({
   const openCreateModal = () => {
     openModal(
       <div tabIndex={-1} onKeyDown={(e) => e.stopPropagation()} onKeyUp={(e) => e.stopPropagation()}>
-        <Steel className='text-white max-h-svh overflow-y-auto'>
+        <Steel className='text-white max-h-[90vh] overflow-y-auto w-[min(96vw,900px)]'>
           <Title>Crear {toSingular(config.title)}</Title>
           <DynamicForm
             inputs={config.formInputs}
@@ -129,7 +129,7 @@ export default function CrudPage<T extends { id: number | string }>({
 
     openModal(
       <div tabIndex={-1} onKeyDown={(e) => e.stopPropagation()} onKeyUp={(e) => e.stopPropagation()}>
-        <Steel className='text-white'>
+        <Steel className='text-white max-h-[90vh] overflow-y-auto w-[min(96vw,900px)]'>
           <Title>Editar {toSingular(config.title)}</Title>
           <DynamicForm
             inputs={inputsWithValues}
@@ -153,7 +153,7 @@ export default function CrudPage<T extends { id: number | string }>({
   }
 
   return (
-    <Main className={`flex flex-col h-screen w-full mt-8 md:mt-auto bg-stone-800 ${color ?? ''}`}>
+    <Main className={`flex flex-col min-h-0 w-full mt-12 md:mt-auto bg-stone-800 p-3 sm:p-4 ${color ?? ''}`}>
       <div
         ref={scopeRef}
         tabIndex={-1} // no queremos que el root reciba foco
@@ -177,7 +177,7 @@ export default function CrudPage<T extends { id: number | string }>({
         </div>
 
         {/* Barra de acciones */}
-        <Steel className="flex gap-2 items-center mt-auto bg-gray-800 p-2">
+        <Steel className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mt-auto bg-gray-800 p-2">
           <PrimaryButton
             title="Crear"
             functionClick={openCreateModal}

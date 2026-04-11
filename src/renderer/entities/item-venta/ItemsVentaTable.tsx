@@ -168,16 +168,20 @@ export default function ItemsVentaTable({
     <div ref={containerRef} className="space-y-2">
       {!!error && <p className="text-red-500">Error al cargar productos</p>}
 
-      <Table
-        encabezados={encabezados}
-        datos={datosTabla}
-        onFilaSeleccionada={() => { }}
-        onDobleClickFila={() => { }}
-      />
+      <div className="w-full overflow-x-auto">
+        <div className="min-w-[760px]">
+          <Table
+            encabezados={encabezados}
+            datos={datosTabla}
+            onFilaSeleccionada={() => { }}
+            onDobleClickFila={() => { }}
+          />
+        </div>
+      </div>
 
       <button
         type="button"
-        className="px-4 py-2 bg-green-800 rounded shadow-inner shadow-black text-white"
+        className="w-full sm:w-auto px-4 py-2 bg-green-800 rounded shadow-inner shadow-black text-white"
         onClick={handleAdd}
       >
         + Agregar producto

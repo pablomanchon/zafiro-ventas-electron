@@ -1,5 +1,6 @@
 import PrimaryButton from '../../components/PrimaryButton'
 import Wood from '../../layout/Steel'
+import Steel from '../../layout/Steel'
 import Plato from './components/Plato'
 import usePlato from './usePlato'
 
@@ -7,16 +8,24 @@ export default function PagePlatos() {
   const { error, loading, platos, deletePlato, modifyPlato, createPlato } = usePlato()
 
   if (loading) return <div>Cargando platos...</div>
-  if (error) return <div>Error al cargar platos</div>
+  if (error) return <div>Error al cargar platos: {error}</div>
 
   return (
     <>
-      <div className="grid sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-5 items-center justify-center h-full overflow-y-auto p-2 pb-20 relative">
-        {platos.map((p) => (
-          <Plato key={p.id} p={p} onModify={modifyPlato} onDelete={deletePlato} />
-        ))}
+      <div className="flex-1 overflow-y-auto p-2 pb-20">
+        {platos.length === 0 ? (
+          <Steel className="text-white text-center p-6">
+            No hay platos cargados todavia.
+          </Steel>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 items-start justify-center">
+            {platos.map((p) => (
+              <Plato key={p.id} p={p} onModify={modifyPlato} onDelete={deletePlato} />
+            ))}
+          </div>
+        )}
       </div>
-      <Wood className="mt-auto h-16 m-2">
+      <Wood className="mt-auto m-2 p-2">
         <PrimaryButton title="Crear" functionClick={createPlato} />
       </Wood>
     </>

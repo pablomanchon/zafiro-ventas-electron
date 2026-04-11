@@ -95,7 +95,7 @@ export default function MovimientoStockView() {
       : 'bg-slate-800/70 border-slate-500 text-slate-100'
 
   return (
-    <Main className="flex flex-col h-screen p-4 gap-4 bg-slate-950">
+    <Main className="flex flex-col min-h-0 p-3 sm:p-4 gap-4 bg-slate-950">
       <div className="flex items-center justify-between">
         <Title className="text-white">
           Movimiento de Stock {movimiento?.id ? `#${movimiento.id}` : ''}
@@ -155,7 +155,7 @@ export default function MovimientoStockView() {
             </h2>
 
             <div className="overflow-auto max-h-[60vh] text-white">
-              <table className="w-full text-xs md:text-sm border border-slate-700 rounded-md overflow-hidden">
+              <table className="w-full min-w-[520px] text-xs md:text-sm border border-slate-700 rounded-md overflow-hidden">
                 <thead className="bg-slate-800">
                   <tr>
                     <th className="px-2 py-1 text-left">ID Producto</th>

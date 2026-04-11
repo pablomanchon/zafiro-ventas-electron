@@ -2,7 +2,16 @@ import { supabase } from './supabase'
 
 function normalizeError(error: unknown): never {
   if (error instanceof Error) throw error
-  throw new Error(typeof error === 'string' ? error : 'Ocurrio un error inesperado')
+  if (typeof error === 'string') throw new Error(error)
+  if (error && typeof error === 'object') {
+    const maybe = error as Record<string, unknown>
+    const message = typeof maybe.message === 'string' ? maybe.message : null
+    const details = typeof maybe.details === 'string' ? maybe.details : null
+    const code = typeof maybe.code === 'string' ? maybe.code : null
+    const parts = [message, details, code ? `(${code})` : null].filter(Boolean)
+    if (parts.length > 0) throw new Error(parts.join(' '))
+  }
+  throw new Error('Ocurrio un error inesperado')
 }
 
 async function runRpc<T>(fn: string, args?: Record<string, unknown>): Promise<T> {

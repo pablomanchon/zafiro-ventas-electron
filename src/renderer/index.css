@@ -72,3 +72,154 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 }
+
+.modal-overlay {
+  display: grid;
+  place-items: center;
+}
+
+.modal-backdrop {
+  background:
+    radial-gradient(circle at top, rgba(67, 141, 170, 0.14), transparent 32%),
+    rgba(7, 10, 14, 0.74);
+  backdrop-filter: blur(10px);
+}
+
+.modal-shell {
+  position: relative;
+  z-index: 1;
+  animation: modal-enter 140ms ease-out;
+}
+
+.modal-content {
+  overflow: auto;
+  max-height: 94vh;
+  border-radius: 1.15rem;
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(13, 18, 24, 0.82);
+  color: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease,
+    border-color 120ms ease;
+}
+
+.modal-close:hover {
+  background: rgba(159, 47, 47, 0.92);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.modal-close:focus-visible {
+  outline: 2px solid rgba(72, 187, 255, 0.55);
+  outline-offset: 2px;
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.venta-create-modal form {
+  margin-top: 1.25rem;
+}
+
+.venta-create-modal label {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+.venta-create-modal input,
+.venta-create-modal select,
+.venta-create-modal textarea {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f4f7fb;
+  border-radius: 0.75rem;
+}
+
+.venta-create-modal table {
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+.venta-create-modal thead {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.venta-create-modal th {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.venta-create-modal td {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.venta-create-modal tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.venta-create-modal tbody tr:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.venta-create-modal tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015) !important;
+}
+
+.venta-create-modal tbody tr:hover,
+.venta-create-modal tbody tr.bg-cyan-600,
+.venta-create-modal tbody tr.hover\:bg-cyan-700:hover {
+  background: rgba(72, 187, 255, 0.18) !important;
+}
+
+.venta-create-modal button {
+  border-radius: 0.85rem;
+}
+
+.venta-create-modal button.bg-green-800,
+.venta-create-modal button.bg-cyan-800 {
+  background: #1f7a8c !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+}
+
+.venta-create-modal button.bg-green-800:hover,
+.venta-create-modal button.bg-cyan-800:hover {
+  background: #2a93a8 !important;
+}
+
+.venta-create-modal button.bg-red-800 {
+  background: #9f2f2f !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}

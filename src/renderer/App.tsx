@@ -21,9 +21,18 @@ import PageIngredientes from "./entities/ingredientes/Page";
 import PagePlatos from "./entities/platos/Page";
 import VentaCreate2 from "./entities/ventas/VentaCreate2";
 import PageHorarios from "./entities/horarios/Page2";
+import PageAuth from "./pages/PageAuth";
+import { useAuth } from "./hooks/useAuth";
 
 export default function App() {
+  const { loading, isAuthenticated } = useAuth();
   const { expired } = useUser();
+
+  if (loading) {
+    return <div className="min-h-screen bg-[#0b1016] text-white flex items-center justify-center">Cargando sesión...</div>
+  }
+
+  if (!isAuthenticated) return <PageAuth />
 
   if (expired) return <PageLicencia />
 

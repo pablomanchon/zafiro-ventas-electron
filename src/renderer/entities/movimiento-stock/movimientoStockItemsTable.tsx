@@ -1,4 +1,3 @@
-// src/pages/movimiento-stock/MovimientoStockItemsTable.tsx
 import { useRef } from 'react'
 import { toast } from 'react-toastify'
 import Table from '../../layout/Table'
@@ -6,7 +5,7 @@ import { useProducts } from '../../hooks/useProducts'
 
 type Product = {
   id: number
-  codigo:string
+  codigo: string
   nombre: string
   [key: string]: unknown
 }
@@ -32,7 +31,7 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
     onChange?.(next)
   }
 
-  const handleAdd = async () => {
+  const handleAdd = () => {
     setItems([
       ...items,
       {
@@ -53,7 +52,7 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
     setItems(next)
   }
 
-  const focusCell = async (rowIndex: number, col: 'productId' | 'cantidad') => {
+  const focusCell = (rowIndex: number, col: 'productId' | 'cantidad') => {
     const root = containerRef.current
     if (!root) return
     const target: HTMLInputElement | null = root.querySelector(
@@ -65,9 +64,8 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
       return
     }
 
-    // si quiero enfocar la fila siguiente que todavía no existe, la creo
     if (rowIndex === items.length) {
-      await handleAdd()
+      handleAdd()
       requestAnimationFrame(() => {
         const again: HTMLInputElement | null = root.querySelector(
           `input[data-col="${col}"][data-row="${rowIndex}"]`
@@ -83,22 +81,24 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
   }
 
   const onProductIdChange = (index: number, raw: string) => {
-    const id = raw.trim()
-    if (!id) {
+    const lookup = raw.trim()
+    if (!lookup) {
       updateRow(index, { productId: '', nombre: '' })
       return
     }
 
-    const prod = (products as Product[]).find((p) => p.codigo === id)
+    const prod = (products as Product[]).find(
+      (p) => String(p.codigo).toLowerCase() === lookup.toLowerCase() || String(p.id) === lookup
+    )
 
     if (!prod) {
-      toast.error(`No se encontró producto con ID ${id}`)
-      updateRow(index, { productId: id, nombre: '' })
+      toast.error(`No se encontró producto con código o ID ${lookup}`)
+      updateRow(index, { productId: lookup, nombre: '' })
       return
     }
 
     updateRow(index, {
-      productId: id,
+      productId: String(prod.codigo ?? lookup),
       nombre: prod.nombre ?? '',
     })
   }
@@ -116,7 +116,7 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
       value={items[idx][field] === '' ? '' : (items[idx][field] as number)}
       onChange={(e) => {
         const val = parser(e.target.value)
-        updateRow(idx, { [field]: val } as any)
+        updateRow(idx, { [field]: val } as Partial<StockItem>)
       }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
@@ -129,7 +129,7 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
   )
 
   const encabezados = [
-    { titulo: 'ID Producto', clave: 'productId' },
+    { titulo: 'Codigo / ID', clave: 'productId' },
     { titulo: 'Nombre', clave: 'nombre' },
     { titulo: 'Cantidad', clave: 'cantidad' },
     { titulo: 'Acciones', clave: 'acciones' },
@@ -155,7 +155,7 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
         className="w-full bg-inherit outline-none text-white px-1"
       />
     ),
-    nombre: it.nombre || <span className="text-slate-400">—</span>,
+    nombre: it.nombre || <span className="text-slate-400">-</span>,
     cantidad: renderNumberCell(
       i,
       'cantidad',
@@ -171,7 +171,7 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
         className="p-1 bg-red-800 rounded shadow-inner shadow-black"
         onClick={() => handleRemove(i)}
       >
-        🗑
+        X
       </button>
     ),
   }))

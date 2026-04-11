@@ -15,7 +15,7 @@ export default function PageResumen() {
 
 
   return (
-    <Main className='flex flex-col h-screen p-4 gap-4 outline-n'>
+    <Main className='flex flex-col min-h-0 p-3 sm:p-4 gap-4 outline-n'>
       <div className="flex flex-col h-full min-h-0 outline-none focus:outline-none">
         <DateNavigator
           filter={filter}
@@ -36,15 +36,15 @@ export default function PageResumen() {
           />
         </div>
 
-        <div className="focus:outline-none flex flex-wrap gap-2">
+        <div className="focus:outline-none grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
           {/* Tarjetas de totales */}
           {!loading && totales.map(p => (
-            <Steel key={p.tipo} className='flex justify-between max-w-96 min-w-60'>
+            <Steel key={p.tipo} className='flex justify-between w-full min-w-0'>
               <p className='capitalize font-bold text-lg'>{p.tipo}</p>
               <p className='text-xl font-bold'>{formatCurrencyARS(p.total)}</p>
             </Steel>
           ))}
-          <Steel className='flex justify-between max-w-96 min-w-60'>
+          <Steel className='flex justify-between w-full min-w-0'>
             <p className='capitalize font-bold text-lg'>Total</p>
             <p className='text-xl font-bold'>{!loading && formatCurrencyARS(totalGeneral)}</p>
           </Steel>

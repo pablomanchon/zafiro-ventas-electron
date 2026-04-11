@@ -49,9 +49,9 @@ export default function EntitySearchModal<T extends { id: number }>({
     };
 
     return (
-        <div className="p-4 bg-cyan-800 text-white rounded max-h-screen overflow-y-auto">
+        <div className="w-[min(96vw,980px)] p-3 sm:p-4 bg-cyan-800 text-white rounded max-h-[85vh] overflow-y-auto">
             {loading ? (
-                <div className="w-80 h-40">Cargando...</div>
+                <div className="w-full sm:w-80 h-40">Cargando...</div>
             ) : (
                 <>
                     <h3 className="text-lg font-bold mb-2">Buscar {entity}</h3>
@@ -62,7 +62,7 @@ export default function EntitySearchModal<T extends { id: number }>({
                         onDobleClickFila={handleSelect}          // 👈 pasa id y cierra
                         onFilaSeleccionada={setSelectedId}       // 👈 guardamos el id seleccionado
                     />
-                    <Glass className="mt-2 shadow-inner shadow-black flex justify-center">
+                    <Glass className="mt-2 shadow-inner shadow-black flex justify-stretch sm:justify-center">
                         <PrimaryButton
                             title={'Seleccionar'}
                             functionClick={() => handleSelect()}  // 👈 usa el selectedId

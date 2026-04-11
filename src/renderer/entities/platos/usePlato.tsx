@@ -11,21 +11,63 @@ import { toSingular } from '../../utils/utils'
 import Confirmation from '../../layout/Confirmation'
 import type { FormInput } from '../../layout/DynamicForm'
 
+type PlatoFormValues = Record<string, any>
+
+function normalizeNumber(value: unknown) {
+  const num = Number(value)
+  return Number.isFinite(num) ? num : 0
+}
+
+function validatePlatoPayload(payload: PlatoFormValues) {
+  if (!String(payload.codigo ?? '').trim()) {
+    throw new Error('El codigo es obligatorio')
+  }
+
+  if (!String(payload.nombre ?? '').trim()) {
+    throw new Error('El nombre es obligatorio')
+  }
+
+  const ingredientes = Array.isArray(payload.ingredientes) ? payload.ingredientes : []
+  if (ingredientes.length === 0) {
+    throw new Error('Debes cargar al menos un ingrediente')
+  }
+
+  for (const ingrediente of ingredientes) {
+    if (!ingrediente?.ingredienteId) {
+      throw new Error('Todos los ingredientes deben tener un item seleccionado')
+    }
+    if (normalizeNumber(ingrediente.cantidadUsada) <= 0) {
+      throw new Error('La cantidad usada de cada ingrediente debe ser mayor a 0')
+    }
+  }
+
+  const subplatos = Array.isArray(payload.subplatos) ? payload.subplatos : []
+  for (const subplato of subplatos) {
+    if (!subplato?.platoHijoId) {
+      throw new Error('Todos los subplatos deben tener un item seleccionado')
+    }
+    if (normalizeNumber(subplato.cantidadUsada) <= 0) {
+      throw new Error('La cantidad usada de cada subplato debe ser mayor a 0')
+    }
+  }
+}
+
 export default function usePlato() {
   const [platos, setPlatos] = useState<CreatePlatoDto[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const { openModal, closeModal } = useModal()
 
   const fetchData = async () => {
     setLoading(true)
     try {
       const data = await getAll('platos')
-      setError(false)
+      setError(null)
       setPlatos(data as CreatePlatoDto[])
     } catch (e) {
-      setError(true)
-      toast.error(String(e))
+      const message = String(e)
+      setError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -35,40 +77,55 @@ export default function usePlato() {
     fetchData()
   }, [])
 
-  // ✅ build inputs y opcionalmente ocultar "id" en create
   const buildInputsWithValues = (item: any | null): FormInput[] => {
-    return config.formInputs
-      .map((def: any) => {
-        const val = item ? item[def.name] : undefined
+    return config.formInputs.map((def: any) => {
+      const val = item ? item[def.name] : undefined
 
-        // ✅ si es CREATE, ocultamos id (si existe en config)
-        if (!item && def.name === 'id') {
-          return { ...def, hidden: true } // tu DynamicForm ya soporta "hidden"
-        }
+      if (!item && def.name === 'id') {
+        return { ...def, hidden: true }
+      }
 
-        if (def.type === 'component') {
-          return {
-            ...def,
-            value: item ? (val ?? def.value ?? []) : (def.value ?? []),
-          }
-        }
-
+      if (def.type === 'component') {
         return {
           ...def,
-          value: item ? (val ?? '') : undefined,
+          value: item ? val ?? def.value ?? [] : def.value ?? [],
         }
-      })
+      }
+
+      return {
+        ...def,
+        value: item ? val ?? '' : undefined,
+      }
+    })
   }
 
-  // ✅ helper: limpiar payload antes de mandar
-  const sanitizePayload = (values: Record<string, any>) => {
+  const sanitizePayload = (values: PlatoFormValues) => {
     const payload = { ...values }
 
-    // ✅ nunca mandar id en create (igual lo sacamos por seguridad)
-    delete (payload as any).id
+    delete payload.id
 
-    // ✅ codigo obligatorio y sin espacios (ajustá si querés permitir espacios)
     if (payload.codigo != null) payload.codigo = String(payload.codigo).trim()
+    if (payload.nombre != null) payload.nombre = String(payload.nombre).trim()
+    if (payload.descripcion != null) payload.descripcion = String(payload.descripcion).trim()
+
+    payload.precio = normalizeNumber(payload.precio)
+    payload.stock = Math.max(0, Math.trunc(normalizeNumber(payload.stock)))
+
+    payload.ingredientes = (Array.isArray(payload.ingredientes) ? payload.ingredientes : [])
+      .map((item: any) => ({
+        ingredienteId: String(item.ingredienteId ?? ''),
+        cantidadUsada: normalizeNumber(item.cantidadUsada),
+      }))
+      .filter((item: any) => item.ingredienteId)
+
+    payload.subplatos = (Array.isArray(payload.subplatos) ? payload.subplatos : [])
+      .map((item: any) => ({
+        platoHijoId: String(item.platoHijoId ?? ''),
+        cantidadUsada: normalizeNumber(item.cantidadUsada),
+      }))
+      .filter((item: any) => item.platoHijoId)
+
+    validatePlatoPayload(payload)
 
     return payload
   }
@@ -82,15 +139,9 @@ export default function usePlato() {
           onSubmit={async (values) => {
             try {
               const payload = sanitizePayload(values)
-
-              if (!payload.codigo) {
-                toast.error('El código es obligatorio')
-                return
-              }
-
               await create('platos', payload)
               closeModal()
-              toast.success('¡Plato creado con éxito!')
+              toast.success('Plato creado con exito')
               fetchData()
             } catch (e) {
               toast.error(String(e))
@@ -98,11 +149,11 @@ export default function usePlato() {
           }}
           titleBtn="Crear Plato"
         />
-      </Wood>,
+      </Wood>
     )
   }
 
-  const modifyPlato = async (id: string) => {
+  const modifyPlato = async (id: string | number) => {
     try {
       const full = await getById<any>('platos', id)
 
@@ -114,14 +165,9 @@ export default function usePlato() {
             columns={config.columns}
             onSubmit={async (values) => {
               try {
-                // ✅ en update NO usamos values.id; usamos el id del registro
-                const payload = { ...values }
-                if (payload.codigo != null) payload.codigo = String(payload.codigo).trim()
-                delete (payload as any).id
-
+                const payload = sanitizePayload(values)
                 await update(config.entity, id, payload)
-
-                toast.success(`${toSingular(config.title)} actualizado con éxito`)
+                toast.success(`${toSingular(config.title)} actualizado con exito`)
                 closeModal()
                 fetchData()
               } catch (e) {
@@ -130,7 +176,7 @@ export default function usePlato() {
             }}
             titleBtn="Guardar cambios"
           />
-        </Wood>,
+        </Wood>
       )
     } catch (e) {
       toast.error('No se pudo cargar el plato para editar')
@@ -138,21 +184,21 @@ export default function usePlato() {
     }
   }
 
-  const deletePlato = async (id: string) => {
+  const deletePlato = async (id: string | number) => {
     openModal(
       <Confirmation
         mensaje="¿Eliminar registro?"
         onConfirm={async () => {
           try {
             await remove(config.entity, id)
-            toast.success('Plato eliminado con éxito!')
+            toast.success('Plato eliminado con exito')
             closeModal()
             fetchData()
           } catch (e) {
             toast.error(String(e))
           }
         }}
-      />,
+      />
     )
   }
 

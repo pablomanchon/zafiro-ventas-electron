@@ -44,20 +44,20 @@ export default function PageCaja() {
   }
 
   return (
-    <Main>
+    <Main className="p-3 sm:p-4">
       <Title>Caja</Title>
-      <div className="flex flex-col items-center gap-5 h-full">
-        <div className="mt-auto flex gap-2 w-1/2 ml-auto">
-          <Steel className="w-full text-xl font-bold flex">
+      <div className="flex flex-col gap-5 h-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 w-full md:max-w-3xl md:ml-auto">
+          <Steel className="w-full text-lg sm:text-xl font-bold flex">
             <h3 className="mr-auto">Pesos:</h3>
             {formatCurrencyARS(sales.pesos)}
           </Steel>
-          <Steel className="w-full text-xl font-bold flex">
+          <Steel className="w-full text-lg sm:text-xl font-bold flex">
             <h3 className="mr-auto">USD:</h3>
             {formatCurrencyARS(sales.usd)}
           </Steel>
         </div>
-        <Steel className="w-full flex gap-2">
+        <Steel className="w-full flex flex-col sm:flex-row gap-2">
           <PrimaryButton functionClick={handleShowMoveDetails} title="Movimientos de Dinero" />
           <SecondaryBtn functionClick={() => handleOpenMove('in')} title="Ingreso de Dinero" />
           <DangerBtn functionClick={() => handleOpenMove('out')} title="Egreso de Dinero" />

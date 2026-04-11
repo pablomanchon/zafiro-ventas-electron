@@ -100,8 +100,8 @@ export default function CrudFormPage<T extends { id: number }>() {
   }
 
   return (
-    <Main style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} className="text-white rounded-md h-screen">
-      <div className='bg-stone-900 bg-opacity-50 h-full rounded p-2 shadow-inner shadow-black'>
+    <Main style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} className="text-white rounded-md min-h-0 p-3 sm:p-4">
+      <div className='bg-stone-900 bg-opacity-50 min-h-full rounded p-2 sm:p-3 shadow-inner shadow-black'>
         <Title className='pb-2'>
           {mode === 'edit' ? 'Editar' : 'Crear'} {toSingular(config.title)}
         </Title>

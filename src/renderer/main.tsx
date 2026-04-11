@@ -10,20 +10,23 @@ import { store } from './store'
 import { ModalProvider } from './providers/ModalProvider'
 import { SearchProvider } from './providers/SearchProvider'
 import Modal from './layout/Modal'
+import { AuthProvider } from './providers/AuthProvider'
 
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Provider store={store}>
-      <ModalProvider>
-          <SearchProvider>
-            <HashRouter>
-              <App />
-              <Modal />
-              <ToastContainer />
-            </HashRouter>
-          </SearchProvider>
-      </ModalProvider>
+      <AuthProvider>
+        <ModalProvider>
+            <SearchProvider>
+              <HashRouter>
+                <App />
+                <Modal />
+                <ToastContainer />
+              </HashRouter>
+            </SearchProvider>
+        </ModalProvider>
+      </AuthProvider>
     </Provider>
   </StrictMode>,
 )

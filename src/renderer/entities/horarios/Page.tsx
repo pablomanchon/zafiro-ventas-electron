@@ -84,7 +84,7 @@ export default function HorariosPage() {
 
       <div className="flex flex-col gap-2 mt-3">
         {/* <Search />  ❌ lo saca TableAndSearch */}
-        <Wood typeWood={3} className="flex gap-2 items-center bg-gray-900 p-2 rounded max-w-96">
+        <Wood typeWood={3} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center bg-gray-900 p-2 rounded w-full sm:max-w-xl">
           <input
             type="number"
             onKeyDown={(e) => {

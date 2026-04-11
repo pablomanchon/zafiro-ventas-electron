@@ -39,6 +39,7 @@ export type FormInput = InputDef
 interface DynamicFormProps {
   inputs: InputDef[]
   onSubmit: (formValues: Record<string, any>) => void | Promise<void>
+  onRequestClose?: () => void
   typeBtn?: 'primary' | 'secondary' | 'danger'
   titleBtn: string
   resetOn?: any
@@ -72,6 +73,7 @@ const buildInitial = (inputs: InputDef[]) =>
 export default function DynamicForm({
   inputs,
   onSubmit,
+  onRequestClose,
   titleBtn = 'Button',
   resetOn,
   disableWhileSubmitting = true,
@@ -81,10 +83,17 @@ export default function DynamicForm({
 }: DynamicFormProps) {
   const { openModal, closeModal, modalStack } = useModal()
   const openCount = modalStack.length
+  const baseOpenCountRef = useRef<number | null>(null)
 
   const [initialValues, setInitialValues] = useState(() => buildInitial(inputs))
   const [formValues, setFormValues] = useState(() => buildInitial(inputs))
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (baseOpenCountRef.current === null) {
+      baseOpenCountRef.current = openCount
+    }
+  }, [openCount])
 
   /* =======================
      Reset externo
@@ -122,9 +131,16 @@ export default function DynamicForm({
   /* =======================
      Close confirm modal
   ======================= */
-  const doClose = () => window.close()
+  const doClose = () => {
+    if (onRequestClose) {
+      onRequestClose()
+      return
+    }
+    window.close()
+  }
   const closeConfirmOpenRef = useRef(false)
   const pendingOpenCloseRef = useRef(false)
+  const baseOpenCount = baseOpenCountRef.current ?? openCount
 
   function CloseConfirmWrapper({ children }: { children: React.ReactNode }) {
     useEffect(() => () => { closeConfirmOpenRef.current = false }, [])
@@ -145,14 +161,14 @@ export default function DynamicForm({
   }
 
   useEffect(() => {
-    if (pendingOpenCloseRef.current && openCount === 0) {
+    if (pendingOpenCloseRef.current && openCount === baseOpenCount) {
       pendingOpenCloseRef.current = false
       isDirtyRef.current ? openCloseConfirm() : doClose()
     }
-    if (openCount === 0 && !pendingOpenCloseRef.current) {
+    if (openCount === baseOpenCount && !pendingOpenCloseRef.current) {
       closeConfirmOpenRef.current = false
     }
-  }, [openCount])
+  }, [baseOpenCount, openCount])
 
   /* =======================
      ESC global
@@ -169,7 +185,7 @@ export default function DynamicForm({
         return
       }
 
-      if (openCount > 0) {
+      if (openCount > baseOpenCount) {
         pendingOpenCloseRef.current = true
         closeModal()
         return
@@ -180,7 +196,7 @@ export default function DynamicForm({
 
     document.addEventListener('keydown', handler, { capture: true })
     return () => document.removeEventListener('keydown', handler, { capture: true })
-  }, [openCount, closeModal, isSubmitting])
+  }, [baseOpenCount, openCount, closeModal, isSubmitting, onRequestClose])
 
   /* =======================
      Change handler
@@ -236,9 +252,9 @@ export default function DynamicForm({
   const cols = columns ?? 1
   const gridColsClass =
     cols === 1 ? 'grid-cols-1'
-      : cols === 2 ? 'grid-cols-2'
-        : cols === 3 ? 'grid-cols-3'
-          : 'grid-cols-4'
+      : cols === 2 ? 'grid-cols-1 md:grid-cols-2'
+        : cols === 3 ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+          : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4'
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col py-2">
@@ -247,9 +263,9 @@ export default function DynamicForm({
           const span = Math.min(input.colSpan ?? 1, cols)
           const spanClass =
             span === 1 ? 'col-span-1'
-              : span === 2 ? 'col-span-2'
-                : span === 3 ? 'col-span-3'
-                  : 'col-span-4'
+              : span === 2 ? 'col-span-1 md:col-span-2'
+                : span === 3 ? 'col-span-1 md:col-span-2 xl:col-span-3'
+                  : 'col-span-1 md:col-span-2 xl:col-span-4'
 
           const commonProps = {
             required: input.required,
@@ -341,6 +357,7 @@ export default function DynamicForm({
           type="submit"
           disabled={isSubmitting}
           functionClick={undefined}
+          className="w-full md:w-auto"
           title={isSubmitting ? submittingText : titleBtn}
         />
       </div>

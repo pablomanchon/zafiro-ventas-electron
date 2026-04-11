@@ -184,10 +184,22 @@ export function useVentaCreateLogic() {
     setFormKey((k) => k + 1)
   }, [params.idVenta, hasInitData, ventaDesdeStore])
 
+  const findProductByCode = useCallback(
+    (value: unknown) => {
+      const codigo = String(value ?? '').trim().toLowerCase()
+      if (!codigo) return null
+      return (
+        products.find((p: any) => String(p.codigo ?? '').trim().toLowerCase() === codigo) ??
+        null
+      )
+    },
+    [products]
+  )
+
   const calcSubtotalItems = useCallback(
     (items: SaleItem[]): number => {
       return (items ?? []).reduce((acc, it: any) => {
-        const prod = products.find((p: any) => String(p.codigo) === String(it.productId))
+        const prod = findProductByCode(it.productId)
         const precio = Number(prod?.precio ?? it?.precio ?? 0)
         const cant = Number(it?.cantidad || 0)
 
@@ -200,7 +212,7 @@ export function useVentaCreateLogic() {
         return acc + line
       }, 0)
     },
-    [products]
+    [findProductByCode]
   )
 
   const totalConDescuento = useMemo(() => {
@@ -251,7 +263,7 @@ export function useVentaCreateLogic() {
 
         const enriched = items.map((item: any) => {
           const codigo = String(item.productId ?? '').trim()
-          const prod: any = products.find((p: any) => String(p.codigo) === codigo)
+          const prod: any = findProductByCode(codigo)
           if (!prod) throw new Error(`Producto código "${codigo}" no encontrado`)
 
           const qty = Number(item.cantidad || 0)
@@ -313,6 +325,7 @@ export function useVentaCreateLogic() {
 
         toast.success(`Venta ${venta.id} creada con éxito!`)
         resetForm()
+        return venta
       } catch (err: any) {
         const msg =
           err?.response?.data?.message ?? err?.message ?? 'Ocurrió un error al crear la venta'
@@ -321,7 +334,7 @@ export function useVentaCreateLogic() {
         setSubmitting(false)
       }
     },
-    [products, totalConDescuento, totalDiscountMirror, resetForm]
+    [findProductByCode, totalConDescuento, totalDiscountMirror, resetForm]
   )
 
   return {

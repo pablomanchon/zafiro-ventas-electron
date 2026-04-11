@@ -44,7 +44,7 @@ export default function MovimientoStockPage() {
   useFocusBlocker(scopeRef)
 
   return (
-    <Main className="flex flex-col h-screen p-4 gap-4">
+    <Main className="flex flex-col min-h-0 p-3 sm:p-4 gap-4">
       <div
         ref={scopeRef}
         tabIndex={0}
@@ -68,7 +68,7 @@ export default function MovimientoStockPage() {
           />
         </div>
 
-        <Steel className="flex justify-end bg-gray-800 p-2">
+        <Steel className="flex justify-stretch sm:justify-end bg-gray-800 p-2">
           <PrimaryButton functionClick={handleOpenCreate} title="Crear movimiento" />
         </Steel>
       </div>

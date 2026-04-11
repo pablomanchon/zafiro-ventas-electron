@@ -80,8 +80,8 @@ export default function PageHorarios() {
     if (error) return <div>Error al cargar vendedores: {(error as Error).message}</div>
 
     return (
-        <Main>
-            <div className="grid grid-cols-3 gap-3 p-5 text-center">
+        <Main className="p-3 sm:p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-2 sm:p-4 text-center">
                 {vendedores.map((vendedor) => {
                     const estaAbierto = horariosAbiertosPorVendedor.get(vendedor.id) ?? false
 

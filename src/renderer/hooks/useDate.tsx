@@ -123,9 +123,9 @@ export function DateNavigator({
         ))}
       </div>
 
-      <div className="flex items-center gap-2 ml-auto">
+      <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-2 sm:ml-auto">
         <PrimaryButton functionClick={() => shift(-1)} title="<" />
-        <span className="text-sm md:text-base text-gray-200">{label}</span>
+        <span className="text-sm md:text-base text-gray-200 text-center flex-1 sm:flex-none">{label}</span>
         <PrimaryButton functionClick={() => shift(1)} title=">" />
         <PrimaryButton functionClick={goToday} title="Hoy" />
       </div>
