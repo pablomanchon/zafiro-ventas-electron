@@ -344,7 +344,8 @@ async function createWindow() {
   onChange('ventas:changed', (p) => broadcast('ventas:changed', p))
   onChange('vendedores:changed', (p) => broadcast('vendedores:changed', p))
 
-  Menu.setApplicationMenu(null)
+  Menu.setApplicationMenu(null);
+
 
   mainWindow.on('closed', () => {
     mainWindow = null

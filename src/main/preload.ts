@@ -1,5 +1,5 @@
-// src/main/preload.ts
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron';
+import type { IpcRendererEvent } from 'electron';
 
 // ─────────────────────────────────────────────
 // 🔐 EVENTOS PERMITIDOS (lo que ya tenías)
@@ -24,6 +24,10 @@ contextBridge.exposeInMainWorld('entityEvents', {
     ipcRenderer.on(channel, wrapped)
     return () => ipcRenderer.removeListener(channel, wrapped)
   },
+  onInitData<T = unknown>(callback: InitDataCallback<T>) {
+    const listener = (_event: IpcRendererEvent, data: T) => {
+      callback(data);
+    };
 
   off(channel: string, listener: Listener) {
     if (!allowedIncoming.has(channel)) return
