@@ -1,5 +1,4 @@
 import { useEffect, useMemo } from "react";
-import PrimaryButton from "../../components/PrimaryButton";
 import Wood from "../../layout/Steel";
 import Title from "../../layout/Title";
 import { useHorarios } from "./useHorarios";

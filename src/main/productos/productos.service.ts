@@ -21,12 +21,35 @@ export class ProductosService {
   }
 
   async create(createDto: ProductoDto, manager?: EntityManager) {
+    console.log(createDto);
+
     const repo = manager ? manager.getRepository(Producto) : this.repo;
-    const data = await repo.findOne({ where: { id: createDto.id } });
-    if (data) throw new BadRequestException("Ya existe un producto con esa id")
+
+    // Buscar por código sin importar si está eliminado o no
+    const existing = await repo.findOne({
+      where: { codigo: createDto.codigo },
+    });
+
+    console.log(existing);
+
+    // Si existe y está activo, no dejar duplicar
+    if (existing && !existing.deleted) {
+      throw new BadRequestException('Ya existe un producto con ese código');
+    }
+
+    // Si existe pero estaba soft-deleted, lo reactivamos
+    if (existing && existing.deleted) {
+      Object.assign(existing, createDto, { deleted: false });
+      const restored = await repo.save(existing);
+
+      emitChange('productos:changed', { type: 'upsert', data: restored });
+      return restored;
+    }
+
+    // Si no existe, crear normal
     const entity = repo.create(createDto);
     const saved = await repo.save(entity);
-    // 🔔 notificar alta
+
     emitChange('productos:changed', { type: 'upsert', data: saved });
     return saved;
   }
