@@ -1,8 +1,7 @@
-// src/pages/MovimientoStockPage.tsx
 import { useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { CrudConfig } from '../CrudConfig'
 import { crudConfigs } from '..'
-
 import Main from '../../layout/Main'
 import Title from '../../layout/Title'
 import Steel from '../../layout/Steel'
@@ -12,84 +11,33 @@ import { useFocusBlocker } from '../../hooks/useFocusBlocker'
 import { useStockMovements } from '../../hooks/useMovimientoStock'
 
 export default function MovimientoStockPage() {
+  const navigate = useNavigate()
   const config = crudConfigs['movimiento-stock'] as CrudConfig
   const { columns, searchFields } = config
+  const { movimientos, loading, error } = useStockMovements()
 
-  const {
-    movimientos,
-    loading,
-    error,
-  } = useStockMovements()
-
-  // 🔹 Transformamos productsMoveStock (array de objetos) a string
   const movimientosProcesados = (loading ? [] : movimientos).map((m: any) => ({
     ...m,
     productsMoveStock: Array.isArray(m.productsMoveStock)
-      ? m.productsMoveStock
-        .map((p: any) => `${p.idProduct} x${p.quantity}`)
-        .join(', ')
+      ? m.productsMoveStock.map((p: any) => `${p.idProduct} x${p.quantity}`).join(', ')
       : m.productsMoveStock ?? '',
-    moveType: m.moveType == 'in' ? "Entrada" : "Salida"
+    moveType: m.moveType === 'in' ? 'Entrada' : 'Salida',
   }))
 
-  const openChildWithPayload = useCallback((hashRoute: string, payload?: unknown) => {
-    if (window.windowApi?.openChild) {
-      window.windowApi.openChild(hashRoute, payload).catch((err: unknown) => {
-        console.error('No se pudo abrir la ventana desde el proceso main', err)
-      })
-      return
-    }
+  const openMovimiento = useCallback((id: number) => {
+    const movimiento = movimientos.find((m: any) => Number(m.id) === Number(id))
+    navigate(`/movimiento-stock/${id}`, {
+      state: movimiento ? { movimiento, idMovimiento: id } : { idMovimiento: id },
+    })
+  }, [movimientos, navigate])
 
-    const child = window.open(hashRoute, '_blank', 'noopener,noreferrer')
-    if (!child) return
-    const childWindow = child
-
-    const origin = window.location.origin
-    let intervalId: number | null = null
-
-    function cleanup() {
-      window.removeEventListener('message', handleReady)
-      if (intervalId !== null) {
-        window.clearInterval(intervalId)
-        intervalId = null
-      }
-    }
-
-    function handleReady(event: MessageEvent) {
-      if (event.source !== childWindow) return
-      if (event.origin !== origin) return
-      if (event.data?.type === 'READY') {
-        childWindow.postMessage({ type: 'INIT_DATA', payload }, origin)
-        cleanup()
-      }
-    }
-
-    window.addEventListener('message', handleReady)
-
-    intervalId = window.setInterval(() => {
-      if (childWindow.closed) cleanup()
-    }, 500)
-  }, [])
-
-  const openMovimiento = useCallback(
-    (id: number) => {
-      const movimiento = movimientos.find((m: any) => Number(m.id) === Number(id))
-      const payload = movimiento ? { movimiento, idMovimiento: id } : { idMovimiento: id }
-      openChildWithPayload(`#/movimiento-stock/${id}`, payload)
-    },
-    [movimientos, openChildWithPayload]
-  )
-
-  const handleDobleClickFila = useCallback(
-    (id: number) => {
-      openMovimiento(id)
-    },
-    [openMovimiento]
-  )
+  const handleDobleClickFila = useCallback((id: number) => {
+    openMovimiento(id)
+  }, [openMovimiento])
 
   const handleOpenCreate = useCallback(() => {
-    openChildWithPayload('#/movimiento-stock/create', { from: 'movimiento-stock' })
-  }, [openChildWithPayload])
+    navigate('/movimiento-stock/create', { state: { from: 'movimiento-stock' } })
+  }, [navigate])
 
   const scopeRef = useRef<HTMLDivElement>(null)
   const tableRef = useRef<HTMLDivElement>(null)

@@ -1,7 +1,3 @@
-// src/hooks/useClients.ts
-// (opcional) si tu .d.ts no entra todavía, forzá la carga:
-// import type {} from '../types/preload'
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getAll } from '../api/crud'
 
@@ -27,10 +23,10 @@ export function useClients() {
     }
   }, [])
 
-  // primer carga
-  useEffect(() => { refetch() }, [refetch])
+  useEffect(() => {
+    refetch()
+  }, [refetch])
 
-  // escuchar eventos + refresh al volver a foco (con debounce)
   const timer = useRef<number | null>(null)
   const debouncedRefetch = useCallback(() => {
     if (timer.current) window.clearTimeout(timer.current)
@@ -41,20 +37,21 @@ export function useClients() {
   }, [refetch])
 
   useEffect(() => {
-    const ee = (window as Window & { entityEvents?: Window['entityEvents'] }).entityEvents
-    const unsub = ee?.on?.('clientes:changed', () => debouncedRefetch())
-
     const onFocus = () => debouncedRefetch()
+    const onVis = () => {
+      if (document.visibilityState === 'visible') debouncedRefetch()
+    }
+
     window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVis)
 
     return () => {
-      if (typeof unsub === 'function') unsub()
       window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVis)
       if (timer.current) window.clearTimeout(timer.current)
     }
   }, [debouncedRefetch])
 
-  // helpers
   const mapById = useMemo(() => {
     const m = new Map<number, Cliente>()
     for (const c of items) m.set(c.id, c)

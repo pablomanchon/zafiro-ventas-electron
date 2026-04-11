@@ -16,32 +16,46 @@ import { VendedoresModule } from './vendedores/vendedores.module';
 import { MovimientoStockModule } from './movimiento-stock/movimiento-stock.module';
 import { UserModule } from './user/user.module';
 import { HorariosModule } from './horarios/horarios.module';
-import path from 'path'
-import fs from 'fs'
+import path from 'path';
+import fs from 'fs';
 import { ImporterModule } from './importer/importer.module';
 import { HealthController } from './healt.controller';
+
+function buildTypeOrmConfig() {
+  const databaseUrl = process.env.DATABASE_URL?.trim();
+
+  if (databaseUrl) {
+    return {
+      type: 'postgres' as const,
+      url: databaseUrl,
+      autoLoadEntities: true,
+      synchronize: process.env.TYPEORM_SYNCHRONIZE === 'true',
+      logging: ['error', 'warn'],
+      ssl: { rejectUnauthorized: false },
+    };
+  }
+
+  const dbPath =
+    process.env.ZAFIRO_DB_PATH ||
+    path.join(process.cwd(), 'zafiro.sqlite');
+
+  try {
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+  } catch {}
+
+  return {
+    type: 'sqlite' as const,
+    database: dbPath,
+    autoLoadEntities: true,
+    synchronize: true,
+    logging: ['error', 'warn'],
+  };
+}
 
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
-      useFactory: () => {
-        const dbPath =
-          process.env.ZAFIRO_DB_PATH ||
-          path.join(process.cwd(), 'zafiro.sqlite') // fallback dev
-
-        // asegurá carpeta si viene con directorio
-        try {
-          fs.mkdirSync(path.dirname(dbPath), { recursive: true })
-        } catch { }
-
-        return {
-          type: 'sqlite',
-          database: dbPath,
-          autoLoadEntities: true,
-          synchronize: true,
-          logging: ['error', 'warn'],
-        }
-      },
+      useFactory: buildTypeOrmConfig,
     }),
     ProductosModule,
     ClientesModule,
@@ -57,9 +71,9 @@ import { HealthController } from './healt.controller';
     MovimientoStockModule,
     UserModule,
     HorariosModule,
-    ImporterModule
+    ImporterModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

@@ -1,54 +1,31 @@
-# React + TypeScript + Vite
+# Zafiro - Stock y Ventas
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicacion de escritorio con Electron, frontend en React y API local en NestJS.
 
-Currently, two official plugins are available:
+## Base de datos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+El backend soporta dos modos:
 
-## Expanding the ESLint configuration
+- `Postgres/Supabase` si existe `DATABASE_URL`
+- `SQLite` como fallback si no existe `DATABASE_URL`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Variables recomendadas
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+Usa `.env.example` como referencia.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- `DATABASE_URL`: conexion a Supabase Postgres
+- `TYPEORM_SYNCHRONIZE`: en Supabase conviene `false`
+- `VITE_SUPABASE_URL`: URL del proyecto de Supabase
+- `VITE_SUPABASE_ANON_KEY`: clave publica para el frontend
+- `SUPABASE_ACCESS_TOKEN`: token personal para tareas administrativas
+- `ZAFIRO_DB_PATH`: ruta local del archivo SQLite si quieres seguir usando modo local
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Recomendacion de arquitectura
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+La recomendacion para este proyecto es:
+
+- mantener una capa backend chica para la logica de negocio;
+- usar Supabase como Postgres principal;
+- no mover ventas, stock y caja directamente al cliente.
+
+Eso simplifica la infraestructura sin repartir logica critica por toda la app.

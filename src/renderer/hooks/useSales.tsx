@@ -1,5 +1,4 @@
-// src/hooks/useSales.ts
-import { useEffect } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useDateRange } from './useDate'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import {
@@ -11,11 +10,11 @@ import {
   selectTotalGeneral,
 } from '../store/salesReduce'
 
+const DEBOUNCE_MS = 200
+
 export default function useSales(initialMode: 'day' | 'week' | 'month' = 'day') {
-  // Fecha/rango + helpers (igual que antes)
   const { range, filter, setFilter, shift, goToday, label } = useDateRange(initialMode)
 
-  // Redux
   const dispatch = useAppDispatch()
   const ventas = useAppSelector(selectVentas)
   const totales = useAppSelector(selectTotales)
@@ -23,26 +22,49 @@ export default function useSales(initialMode: 'day' | 'week' | 'month' = 'day') 
   const error = useAppSelector(selectError)
   const totalGeneral = useAppSelector(selectTotalGeneral)
 
-  // Cargar al cambiar el rango
-  useEffect(() => {
-    dispatch(fetchSales(range))
-  }, [dispatch, range?.from, range?.to])
+  const reload = useCallback(() => dispatch(fetchSales(range)), [dispatch, range])
 
-  const reload = () => dispatch(fetchSales(range))
+  useEffect(() => {
+    reload()
+  }, [reload, range?.from, range?.to])
+
+  const timer = useRef<number | null>(null)
+  const debouncedReload = useCallback(() => {
+    if (timer.current) window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => {
+      reload()
+      timer.current = null
+    }, DEBOUNCE_MS)
+  }, [reload])
+
+  useEffect(() => {
+    const onFocus = () => debouncedReload()
+    const onVis = () => {
+      if (document.visibilityState === 'visible') debouncedReload()
+    }
+
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVis)
+
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVis)
+      if (timer.current) window.clearTimeout(timer.current)
+    }
+  }, [debouncedReload])
 
   return {
-    // datos
     ventas,
     totales,
     totalGeneral,
     loading,
     error,
-
-    // rango/fecha + helpers
     range,
-    filter, setFilter, shift, goToday, label,
-
-    // acciones
+    filter,
+    setFilter,
+    shift,
+    goToday,
+    label,
     reload,
   }
 }

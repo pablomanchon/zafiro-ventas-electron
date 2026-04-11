@@ -1,5 +1,5 @@
-// src/pages/movimiento-stock/MovimientoStockCreate.tsx
 import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import type { FormInput } from '../../layout/DynamicForm'
 import DynamicForm from '../../layout/DynamicForm'
@@ -8,6 +8,7 @@ import Title from '../../layout/Title'
 import MovimientoStockItemsTable, { type StockItem } from './movimientoStockItemsTable'
 import bgUrl from '../../assets/fondo-w.png'
 import { useStockMovements } from '../../hooks/useMovimientoStock'
+import { getInitPayload } from '../../utils/init-data'
 
 type MovimientoInitPayload = {
   moveType?: 'in' | 'out'
@@ -15,7 +16,6 @@ type MovimientoInitPayload = {
   [key: string]: unknown
 }
 
-// 🔹 4 filas vacías por defecto
 const EMPTY_ROWS: StockItem[] = [
   { productId: '', nombre: '', cantidad: 1 },
   { productId: '', nombre: '', cantidad: 1 },
@@ -24,6 +24,7 @@ const EMPTY_ROWS: StockItem[] = [
 ]
 
 export default function MovimientoStockCreate() {
+  const location = useLocation()
   const { createMove } = useStockMovements()
 
   const [formKey, setFormKey] = useState(0)
@@ -33,7 +34,7 @@ export default function MovimientoStockCreate() {
     items?: StockItem[]
   }>({
     moveType: undefined,
-    items: EMPTY_ROWS, // 👈 comienza con 4 filas vacías
+    items: EMPTY_ROWS,
   })
 
   const [initPayload, setInitPayload] = useState<MovimientoInitPayload | null>(null)
@@ -46,34 +47,13 @@ export default function MovimientoStockCreate() {
     )
   }, [initPayload])
 
-  // Comunicación con ventana padre
   useEffect(() => {
-    const origin = window.location.origin
-
-    function handleMessage(event: MessageEvent) {
-      if (event.origin !== origin) return
-      if (event.data?.type !== 'INIT_DATA') return
-      setInitPayload((event.data.payload as MovimientoInitPayload) ?? null)
+    const fromLocation = getInitPayload<MovimientoInitPayload>(location.state)
+    if (fromLocation) {
+      setInitPayload(fromLocation)
     }
+  }, [location.state])
 
-    window.addEventListener('message', handleMessage)
-
-    // avisar que está lista
-    try {
-      window.opener?.postMessage({ type: 'READY' }, origin)
-    } catch {}
-
-    const unsubscribe = (window as any).windowApi?.onInitData?.((payload: any) => {
-      setInitPayload((payload as MovimientoInitPayload) ?? null)
-    })
-
-    return () => {
-      window.removeEventListener('message', handleMessage)
-      unsubscribe?.()
-    }
-  }, [])
-
-  // Aplicar defaults si hay INIT_DATA
   useEffect(() => {
     if (!hasInitData || !initPayload) return
 
@@ -82,13 +62,12 @@ export default function MovimientoStockCreate() {
       items:
         initPayload.items && initPayload.items.length > 0
           ? initPayload.items
-          : EMPTY_ROWS, // 👈 si no envían items, igual dejamos 4 filas vacías
+          : EMPTY_ROWS,
     })
 
     setFormKey((k) => k + 1)
   }, [hasInitData, initPayload])
 
-  // Proxy para tabla de items
   const ItemsProxy = useCallback(
     ({ value, onChange }: { value?: StockItem[]; onChange?: (v: StockItem[]) => void }) => (
       <MovimientoStockItemsTable value={value} onChange={onChange} />
@@ -119,7 +98,6 @@ export default function MovimientoStockCreate() {
     [defaults, ItemsProxy]
   )
 
-  // Guardar usando el hook
   const handleSubmit = async (values: Record<string, any>) => {
     try {
       setSubmitting(true)
@@ -147,7 +125,6 @@ export default function MovimientoStockCreate() {
 
       toast.success(`Movimiento ${movimiento.movimientoId} creado con éxito`)
 
-      // Reset form → vuelve a 4 filas vacías
       setDefaults({
         moveType: undefined,
         items: EMPTY_ROWS,
@@ -164,7 +141,11 @@ export default function MovimientoStockCreate() {
 
   return (
     <Main
-      style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+      style={{
+        backgroundImage: `url(${bgUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
       className="flex flex-col gap-4 md:mt-auto text-white"
     >
       <div className="flex items-center justify-between">

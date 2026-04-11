@@ -1,6 +1,5 @@
-// src/pages/movimiento-stock/MovimientoStockView.tsx
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 
 import Main from '../../layout/Main'
 import Title from '../../layout/Title'
@@ -8,9 +7,11 @@ import Steel from '../../layout/Steel'
 
 import { useProducts } from '../../hooks/useProducts'
 import { useStockMovements, type StockMove } from '../../hooks/useMovimientoStock'
+import { getInitPayload } from '../../utils/init-data'
 
 export default function MovimientoStockView() {
   const { id: routeId } = useParams<{ id?: string }>()
+  const location = useLocation()
 
   const { movimientos, loading, error, getById, normalizeLines } = useStockMovements()
   const { products } = useProducts()
@@ -20,63 +21,35 @@ export default function MovimientoStockView() {
   )
   const [movimientoFromPayload, setMovimientoFromPayload] = useState<StockMove | null>(null)
 
-  // 🔹 Escuchar INIT_DATA desde la ventana padre
   useEffect(() => {
-    const origin = window.location.origin
+    const fromLocation = getInitPayload<any>(location.state)
+    if (!fromLocation) return
 
-    function handleMessage(event: MessageEvent) {
-      if (event.origin !== origin) return
-      if (event.data?.type !== 'INIT_DATA') return
-
-      const payload = event.data.payload || {}
-      if (payload.idMovimiento != null) {
-        setIdMovimiento(Number(payload.idMovimiento))
-      }
-      if (payload.movimiento) {
-        setMovimientoFromPayload(payload.movimiento as StockMove)
-      }
+    if (fromLocation.idMovimiento != null) {
+      setIdMovimiento(Number(fromLocation.idMovimiento))
     }
-
-    window.addEventListener('message', handleMessage)
-
-    // Avisar al opener que esta ventana está lista
-    try {
-      window.opener?.postMessage({ type: 'READY' }, origin)
-    } catch {}
-
-    // Compatibilidad con windowApi.onInitData (Electron)
-    const unsubscribe = (window as any).windowApi?.onInitData?.((payload: any) => {
-      if (payload?.idMovimiento != null) {
-        setIdMovimiento(Number(payload.idMovimiento))
-      }
-      if (payload?.movimiento) {
-        setMovimientoFromPayload(payload.movimiento as StockMove)
-      }
-    })
-
-    return () => {
-      window.removeEventListener('message', handleMessage)
-      unsubscribe?.()
+    if (fromLocation.movimiento) {
+      setMovimientoFromPayload(fromLocation.movimiento as StockMove)
     }
-  }, [])
+  }, [location.state])
 
-  // 🔹 Movimiento efectivo (payload > hook)
   const movimiento: StockMove | null = useMemo(() => {
     if (movimientoFromPayload) return movimientoFromPayload
     if (idMovimiento != null) return getById(idMovimiento)
     return null
   }, [movimientoFromPayload, idMovimiento, getById, movimientos])
 
-  // 🔹 Mapeo de productos para mostrar nombre a partir del id
   const productMap = useMemo(() => {
     const map = new Map<string, string>()
     products.forEach((p: any) => {
       map.set(String(p.id), p.nombre ?? String(p.id))
+      if (p.codigo != null) {
+        map.set(String(p.codigo), p.nombre ?? String(p.codigo))
+      }
     })
     return map
   }, [products])
 
-  // 🔹 Normalizamos las líneas y completamos el nombre con el productMap si falta
   const lineas = useMemo(() => {
     const base = normalizeLines(movimiento)
     return base.map((l, index) => {
@@ -149,7 +122,6 @@ export default function MovimientoStockView() {
 
       {movimiento && (
         <div className="flex flex-col gap-4">
-          {/* Cabecera de datos generales */}
           <Steel className="flex flex-col md:flex-row justify-between gap-3 p-3 bg-slate-900/80 border border-slate-700 mt-2">
             <div className="space-y-1 text-sm text-slate-200">
               <div>
@@ -177,7 +149,6 @@ export default function MovimientoStockView() {
             </div>
           </Steel>
 
-          {/* Tabla de productos */}
           <Steel className="p-3 bg-slate-900/80 border border-slate-700">
             <h2 className="text-sm font-semibold text-slate-100 mb-2">
               Productos del movimiento

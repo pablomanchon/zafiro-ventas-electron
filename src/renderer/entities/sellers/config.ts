@@ -1,4 +1,4 @@
-import type { CrudConfig } from '../CrudConfig';
+import type { CrudConfig } from '../CrudConfig'
 
 export const vendedoresConfig: CrudConfig = {
   entity: 'vendedores',
@@ -6,9 +6,8 @@ export const vendedoresConfig: CrudConfig = {
   columns: ['id', 'nombre'],
   searchFields: ['id', 'nombre'],
   formInputs: [
-    { name: 'id', label: 'Id', type: 'number', required: true },
     { name: 'nombre', label: 'Nombre', type: 'text', required: true },
   ],
-};
+}
 
-export default vendedoresConfig;
+export default vendedoresConfig

@@ -126,7 +126,6 @@ export default function PageHome() {
       try {
         const data = await getSelledProductsByDate(from, to);
         data.sort((a: Vendido, b: Vendido) => (b.cantidad || 0) - (a.cantidad || 0));
-        console.log(data);
         setItems(data);
       } catch (e: any) {
         setErr(e?.message ?? "Error al cargar vendidos");

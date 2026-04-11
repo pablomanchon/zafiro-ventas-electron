@@ -12,7 +12,6 @@ interface Props extends DivProps {
   label?: string
 }
 
-
 export default function VendedorSelectInput({ value, onChange, label, ...props }: Props) {
   const { openModal } = useModal()
   const { vendedores, getById, loading } = useVendedores()
@@ -28,8 +27,8 @@ export default function VendedorSelectInput({ value, onChange, label, ...props }
     openModal(
       <EntitySearchModal
         entity="vendedores"
-        columns={['ID', 'Nombre', 'Email']}
-        searchFilters={['nombre', 'email']}
+        columns={['ID', 'Nombre']}
+        searchFilters={['id', 'nombre']}
         onSelect={handleSelect}
       />
     )

@@ -1,6 +1,3 @@
-// 👇 fuerza a TypeScript a cargar la augmentación global del preload
-import type {} from '../types/preload'  // <- SIN .d.ts y solo 'type' import
-
 import { useEffect, useRef, useCallback } from 'react'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import { fetchProducts } from '../store/productsSlice'
@@ -25,20 +22,15 @@ export function useProducts() {
   }, [dispatch])
 
   useEffect(() => {
-    if (!window?.entityEvents) return
-
-    const unsub = window.entityEvents.on('productos:changed', () => {
-      debouncedFetch()
-    }) as (() => void) | void
-
     const onFocus = () => debouncedFetch()
-    const onVis = () => { if (document.visibilityState === 'visible') debouncedFetch() }
+    const onVis = () => {
+      if (document.visibilityState === 'visible') debouncedFetch()
+    }
 
     window.addEventListener('focus', onFocus)
     document.addEventListener('visibilitychange', onVis)
 
     return () => {
-      if (typeof unsub === 'function') unsub()
       window.removeEventListener('focus', onFocus)
       document.removeEventListener('visibilitychange', onVis)
       if (timer.current) window.clearTimeout(timer.current)

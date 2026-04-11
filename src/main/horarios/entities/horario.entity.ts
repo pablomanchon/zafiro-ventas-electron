@@ -6,10 +6,10 @@ export class Horario {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: "datetime", default: () => "CURRENT_TIMESTAMP" })
+  @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
   horaIngreso: Date;
 
-  @Column({ type: "datetime", nullable: true, default: () => "CURRENT_TIMESTAMP" })
+  @Column({ type: "timestamp", nullable: true, default: () => "CURRENT_TIMESTAMP" })
   horaEgreso: Date | null;
 
   @ManyToOne(() => Vendedor, (vendedor) => vendedor.horarios, { eager: true, nullable: true })

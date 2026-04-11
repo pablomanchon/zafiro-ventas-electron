@@ -1,94 +1,102 @@
-import axios from "axios"
+import { supabase } from './supabase'
 
-export const baseUrl = "http://localhost:3000/api"
+function normalizeError(error: unknown): never {
+  if (error instanceof Error) throw error
+  throw new Error(typeof error === 'string' ? error : 'Ocurrio un error inesperado')
+}
+
+async function runRpc<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.rpc(fn, args)
+  if (error) return normalizeError(error)
+  return data as T
+}
+
+export const baseUrl = ''
 
 export const getAllProducts = async () => {
-    try {
-        const respuesta = await axios.get(`${baseUrl}/productos`)
-        return respuesta.data;
-    } catch (error) {
-        console.log(error)
-        throw error;
-    }
+  const { data, error } = await supabase
+    .from('producto')
+    .select('*')
+    .eq('deleted', false)
+    .order('id', { ascending: true })
+
+  if (error) return normalizeError(error)
+  return data ?? []
 }
 
 export const getAllLotes = async () => {
-    try {
-        const res = await axios.get(`${baseUrl}/lote`)
-        return res.data;
-    } catch (error) {
-        console.log(error)
-        throw error;
-    }
+  return []
 }
 
 export const getAllSaldos = async () => {
-    try {
-        const res = await axios.get(`${baseUrl}/caja/saldos`)
-        return res.data
-    } catch (error) {
-        console.log(error)
-        throw error;
-    }
+  return runRpc<{ pesos: number; usd: number }>('caja_obtener_saldos')
 }
 
 export const aumentarSaldo = async (moneda: 'pesos' | 'usd', monto: number) => {
-    try {
-        await axios.post(`${baseUrl}/caja/ingresar`, { moneda, monto })
-    } catch (error) {
-        console.log(error)
-        throw error;
-    }
+  await runRpc('caja_aumentar_saldo', { p_moneda: moneda, p_monto: monto })
 }
+
 export const disminuirSaldo = async (moneda: 'pesos' | 'usd', monto: number) => {
-    try {
-        await axios.post(`${baseUrl}/caja/disminuir`, { moneda, monto })
-    } catch (error) {
-        console.log(error)
-        throw error;
-    }
+  await runRpc('caja_disminuir_saldo', { p_moneda: moneda, p_monto: monto })
 }
+
 export const getMoves = async () => {
-    try {
-        const res = await axios.get(`${baseUrl}/caja/moves`)
-        return res.data
-    } catch (error) {
-        console.log(error)
-        throw error;
-    }
+  return runRpc<any[]>('caja_listar_movimientos')
 }
 
 export const getSelledProductsByDate = async (from: string, to: string) => {
-    try {
-        const res = await axios.get(`${baseUrl}/ventas/reportes/productos-vendidos?from=${from}&to=${to}`)
-        return res.data
-    } catch (error) {
-        console.log(error)
-        throw error;
-    }
+  return runRpc<any[]>('ventas_productos_vendidos', { p_from: from, p_to: to })
 }
 
 export const getUser = async (id: string) => {
-    try {
-        const res = await axios.get(`${baseUrl}/users/${id}`)
-        return res.data;
-    } catch (error) {
-        console.log(error)
-        throw error;
-    }
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', id)
+    .eq('deleted', false)
+    .single()
+
+  if (error) return normalizeError(error)
+  return data
 }
 
-export type MetodoTotal = { tipo: string; total: number };
+export type MetodoTotal = { tipo: string; total: number }
 
 export async function getTotalesPorTipoPago(from?: string, to?: string): Promise<MetodoTotal[]> {
-    const params = new URLSearchParams();
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
+  const rows = await runRpc<Array<{ tipo: string; total: string | number }>>(
+    'ventas_totales_por_tipo_pago',
+    { p_from: from ?? null, p_to: to ?? null },
+  )
 
-    const res = await fetch(`${baseUrl}/ventas/totales/tipos?${params.toString()}`);
-    if (!res.ok) throw new Error(await res.text().catch(() => `HTTP ${res.status}`));
-
-    const rows = (await res.json()) as Array<{ tipo: string; total: string | number }>;
-    return (rows ?? []).map(r => ({ tipo: r.tipo, total: Number(r.total) }));
+  return (rows ?? []).map((r) => ({ tipo: r.tipo, total: Number(r.total) }))
 }
 
+export type VendedorHorario = {
+  id: number
+  nombre: string
+}
+
+export type HorarioDto = {
+  id: number
+  horaIngreso: string
+  horaEgreso: string | null
+  vendedor: VendedorHorario | null
+}
+
+export async function getHorarios(): Promise<HorarioDto[]> {
+  return runRpc<HorarioDto[]>('horarios_listar')
+}
+
+export async function crearHorario(vendedorId: number, horaIngreso?: string): Promise<HorarioDto> {
+  return runRpc<HorarioDto>('horarios_marcar_ingreso', {
+    p_vendedor_id: vendedorId,
+    p_hora_ingreso: horaIngreso ?? null,
+  })
+}
+
+export async function marcarEgresoHorario(vendedorId: number, horaEgreso?: string): Promise<HorarioDto> {
+  return runRpc<HorarioDto>('horarios_marcar_egreso', {
+    p_vendedor_id: vendedorId,
+    p_hora_egreso: horaEgreso ?? null,
+  })
+}

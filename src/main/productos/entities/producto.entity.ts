@@ -7,7 +7,7 @@ export class Producto {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'nvarchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100, unique: true })
   codigo: string;
 
   @Column()

@@ -1,8 +1,7 @@
-// src/hooks/useVendedores.ts
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getAll } from '../api/crud'
 
-export type Vendedor = { id: number; nombre: string; }
+export type Vendedor = { id: number; nombre: string }
 
 const DEBOUNCE_MS = 200
 
@@ -24,10 +23,10 @@ export function useVendedores() {
     }
   }, [])
 
-  // primera carga
-  useEffect(() => { refetch() }, [refetch])
+  useEffect(() => {
+    refetch()
+  }, [refetch])
 
-  // escuchar eventos + refresh al volver a foco (con debounce)
   const timer = useRef<number | null>(null)
   const debouncedRefetch = useCallback(() => {
     if (timer.current) window.clearTimeout(timer.current)
@@ -38,20 +37,21 @@ export function useVendedores() {
   }, [refetch])
 
   useEffect(() => {
-    const ee = (window as Window & { entityEvents?: Window['entityEvents'] }).entityEvents
-    const unsub = ee?.on?.('vendedores:changed', () => debouncedRefetch())
-
     const onFocus = () => debouncedRefetch()
+    const onVis = () => {
+      if (document.visibilityState === 'visible') debouncedRefetch()
+    }
+
     window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVis)
 
     return () => {
-      if (typeof unsub === 'function') unsub()
       window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVis)
       if (timer.current) window.clearTimeout(timer.current)
     }
   }, [debouncedRefetch])
 
-  // helpers
   const mapById = useMemo(() => {
     const m = new Map<number, Vendedor>()
     for (const v of items) m.set(v.id, v)

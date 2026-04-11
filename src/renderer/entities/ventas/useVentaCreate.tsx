@@ -1,12 +1,12 @@
-// useVentaCreateLogic.ts
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { create } from '../../api/crud'
 import { useProducts } from '../../hooks/useProducts'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { fetchSaleById, makeSelectVentaById, needsRefresh } from '../../store/salesReduce'
 import { toCents, formatCentsARS } from '../../utils/utils'
+import { getInitPayload } from '../../utils/init-data'
 import type { SaleItem } from '../item-venta/useSaleItems'
 import type { PaymentItem } from '../metodo-pago/PaymentMethodsTable'
 
@@ -35,16 +35,26 @@ const normalizeSaleItems = (raw?: unknown): SaleItem[] | undefined => {
 
       const cantidad = Number(item.cantidad ?? entry?.cantidad ?? 0) || 0
       const descuentoPct =
-        Number(item.descuentoPct ?? item.descuento ?? entry?.descuentoPct ?? entry?.descuento ?? 0) || 0
+        Number(
+          item.descuentoPct ??
+            item.descuento ??
+            entry?.descuentoPct ??
+            entry?.descuento ??
+            0
+        ) || 0
       const descuentoMonto = Number(item.descuentoMonto ?? entry?.descuentoMonto ?? 0) || 0
       const precio = Number(item.precio ?? entry?.precio ?? 0) || 0
 
       const precioFinalRaw = Number(item.precioFinal ?? entry?.precioFinal)
       const precioFinal = Number.isFinite(precioFinalRaw)
         ? Number(precioFinalRaw)
-        : Number(Math.max(0, precio * cantidad * (1 - descuentoPct / 100) - descuentoMonto).toFixed(2))
+        : Number(
+            Math.max(0, precio * cantidad * (1 - descuentoPct / 100) - descuentoMonto).toFixed(2)
+          )
 
-      const codigo = String(item.codigo ?? entry?.codigo ?? entry?.productoCodigo ?? entry?.productId ?? '')
+      const codigo = String(
+        item.codigo ?? entry?.codigo ?? entry?.productoCodigo ?? entry?.productId ?? ''
+      )
 
       return {
         productId: codigo,
@@ -65,13 +75,15 @@ const normalizePayments = (raw?: unknown): PaymentItem[] | undefined => {
     metodoId: coerceId(entry?.metodoId ?? entry?.metodo?.id ?? entry?.id) ?? '',
     nombre: entry?.metodo?.nombre ?? entry?.nombre ?? '',
     monto: String(entry?.monto ?? ''),
-    cuotas: entry?.cuotas !== undefined && entry?.cuotas !== null ? String(entry.cuotas) : '',
+    cuotas:
+      entry?.cuotas !== undefined && entry?.cuotas !== null ? String(entry.cuotas) : '',
   }))
 }
 
 export function useVentaCreateLogic() {
   const { products } = useProducts()
   const params = useParams<{ idVenta?: string }>()
+  const location = useLocation()
   const dispatch = useAppDispatch()
 
   const selectVentaById = useMemo(() => makeSelectVentaById(), [])
@@ -86,7 +98,10 @@ export function useVentaCreateLogic() {
   const [submitting, setSubmitting] = useState(false)
 
   const [itemsMirror, setItemsMirror] = useState<SaleItem[]>([])
-  const [totalDiscountMirror, setTotalDiscountMirror] = useState<TotalDiscount>({ pct: '', monto: '' })
+  const [totalDiscountMirror, setTotalDiscountMirror] = useState<TotalDiscount>({
+    pct: '',
+    monto: '',
+  })
 
   const [defaults, setDefaults] = useState<{
     vendedorId?: string
@@ -109,33 +124,13 @@ export function useVentaCreateLogic() {
     )
   }, [initPayload])
 
-  // INIT_DATA
   useEffect(() => {
-    const origin = window.location.origin
-
-    function handleMessage(event: MessageEvent) {
-      if (event.origin !== origin) return
-      if (event.data?.type !== 'INIT_DATA') return
-      setInitPayload((event.data.payload as VentaInitPayload) ?? null)
+    const fromLocation = getInitPayload<VentaInitPayload>(location.state)
+    if (fromLocation) {
+      setInitPayload(fromLocation)
     }
+  }, [location.state])
 
-    window.addEventListener('message', handleMessage)
-
-    try {
-      window.opener?.postMessage({ type: 'READY' }, origin)
-    } catch {}
-
-    const unsubscribe = (window as any).windowApi?.onInitData?.((payload: any) => {
-      setInitPayload((payload as VentaInitPayload) ?? null)
-    })
-
-    return () => {
-      window.removeEventListener('message', handleMessage)
-      unsubscribe?.()
-    }
-  }, [])
-
-  // editar sin initData: store
   useEffect(() => {
     if (!params.idVenta) return
     if (hasInitData) return
@@ -144,7 +139,6 @@ export function useVentaCreateLogic() {
     }
   }, [params.idVenta, hasInitData, ventaDesdeStore, ventaNecesitaFetch, dispatch])
 
-  // defaults desde init
   useEffect(() => {
     if (!hasInitData || !initPayload) return
     const payloadVenta = initPayload.venta ?? {}
@@ -153,8 +147,12 @@ export function useVentaCreateLogic() {
     const normalizedPagos = normalizePayments(initPayload.pagos ?? payloadVenta.pagos)
 
     setDefaults({
-      vendedorId: coerceId(initPayload.vendedorId ?? payloadVenta.vendedorId ?? payloadVenta.vendedor?.id),
-      clienteId: coerceId(initPayload.clienteId ?? payloadVenta.clienteId ?? payloadVenta.cliente?.id),
+      vendedorId: coerceId(
+        initPayload.vendedorId ?? payloadVenta.vendedorId ?? payloadVenta.vendedor?.id
+      ),
+      clienteId: coerceId(
+        initPayload.clienteId ?? payloadVenta.clienteId ?? payloadVenta.cliente?.id
+      ),
       items: normalizedItems,
       pagos: normalizedPagos,
       descuentoTotal: { pct: '', monto: '' },
@@ -165,7 +163,6 @@ export function useVentaCreateLogic() {
     setFormKey((k) => k + 1)
   }, [hasInitData, initPayload])
 
-  // defaults desde store
   useEffect(() => {
     if (!params.idVenta) return
     if (hasInitData) return
@@ -242,9 +239,9 @@ export function useVentaCreateLogic() {
 
         if (sumaPagosCents !== totalCDCents) {
           return toast.error(
-            `Los métodos de pago (${formatCentsARS(sumaPagosCents)}) no coinciden con el total (${formatCentsARS(
-              totalCDCents
-            )}).`
+            `Los métodos de pago (${formatCentsARS(
+              sumaPagosCents
+            )}) no coinciden con el total (${formatCentsARS(totalCDCents)}).`
           )
         }
 
@@ -297,7 +294,9 @@ export function useVentaCreateLogic() {
           .map((p) => {
             const cents = toCents((p as any).monto)
             const dto: Record<string, any> = { metodoId: p.metodoId, monto: cents / 100 }
-            if ((p as any).cuotas != null && (p as any).cuotas !== '') dto.cuotas = Number((p as any).cuotas) || 0
+            if ((p as any).cuotas != null && (p as any).cuotas !== '') {
+              dto.cuotas = Number((p as any).cuotas) || 0
+            }
             return dto
           })
 
@@ -308,10 +307,15 @@ export function useVentaCreateLogic() {
           pagos: pagosPayload,
         })
 
+        const channel = new BroadcastChannel('ventas')
+        channel.postMessage({ type: 'VENTA_CREADA', ventaId: venta.id })
+        channel.close()
+
         toast.success(`Venta ${venta.id} creada con éxito!`)
         resetForm()
       } catch (err: any) {
-        const msg = err?.response?.data?.message ?? err?.message ?? 'Ocurrió un error al crear la venta'
+        const msg =
+          err?.response?.data?.message ?? err?.message ?? 'Ocurrió un error al crear la venta'
         toast.error(`Error: ${msg}`)
       } finally {
         setSubmitting(false)
@@ -326,7 +330,6 @@ export function useVentaCreateLogic() {
     submitting,
     defaults,
     totalConDescuento,
-    // setters para que la UI actualice mirrors
     setItemsMirror,
     setTotalDiscountMirror,
     handleSubmit,
