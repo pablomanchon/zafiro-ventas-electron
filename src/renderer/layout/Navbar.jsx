@@ -1,5 +1,4 @@
 import {
-  Home,
   Users,
   Package,
   CreditCard,
@@ -18,17 +17,17 @@ import {
 } from 'lucide-react'
 import bgUrl from '/fondo-h.png'
 import React, { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import logo from '/zafiro_rounded.ico';
 import { useAuth } from '../hooks/useAuth';
 
 
 const navItems = [
-  { name: "Inicio", href: "/", icon: <Home size={20} /> },
   { name: "Ventas", href: "/ventas", icon: <Receipt size={20} /> },
   { name: "Productos", href: "/productos", icon: <Package size={20} /> },
   { name: "Caja", href: "/caja", icon: <Wallet size={20} /> },
   { name: "Resumenes", href: "/resumenes", icon: <BarChart3 size={20} /> },
+  { name: "Venta rápida", href: "/", icon: <ShoppingCart size={20} /> },
   { name: "Clientes", href: "/clientes", icon: <Users size={20} /> },
   { name: "Vendedores", href: "/vendedores", icon: <Users size={20} /> },
   { name: "Métodos de pago", href: "/metodos-pago", icon: <CreditCard size={20} /> },
@@ -39,7 +38,6 @@ const navItems = [
 ]
 
 export default function Navbar() {
-  const location = useLocation()
   const [isOpen, setIsOpen] = useState(false)
   const { profile, signOut } = useAuth()
 
@@ -70,7 +68,7 @@ export default function Navbar() {
     border-cyan-700
     fixed top-0 left-0 h-full w-[min(82vw,18rem)] flex flex-col 
     ${isOpen ? '' : 'hidden'}
-    md:block md:relative md:w-60 md:min-w-52 md:hover:border-r-cyan-600 md:hover:shadow-cyan-500 md:hover:shadow-md md:hover:transition-shadow transition-shadow overflow-y-auto`}
+    md:block md:relative md:h-screen md:w-60 md:min-w-52 md:flex-shrink-0 md:hover:border-r-cyan-600 md:hover:shadow-cyan-500 md:hover:shadow-md md:hover:transition-shadow transition-shadow overflow-y-auto`}
       >
         {/* Encabezado móvil con logo y botón de cerrar */}
         <div className="flex items-center justify-between p-4 md:hidden">
@@ -96,18 +94,22 @@ export default function Navbar() {
         {/* Navegación */}
         <ul className='flex flex-col gap-2 text-center p-2 md:p-1 pb-4'>
           {navItems.map((item) => (
-            <Link
+            <NavLink
               key={item.name}
               to={item.href}
+              end={item.href === '/'}
               onClick={() => setIsOpen(false)}
-              className={`rounded-lg p-2.5 transition-all flex items-center backgrou gap-2 z-10 hover:shadow-black shadow-inner shadow-black hover:shadow-inner
-                ${location.pathname === item.href
-                  ? ' shadow-black bg-stone-900 bg-opacity-70 font-extrabold shadow-inner'
-                  : 'bg-gay-900 hover:bg-sky-600 hover:bg-opacity-80 bg-opacity-70'}`}
+              className={({ isActive }) =>
+                `rounded-lg p-2.5 transition-all flex items-center gap-2 z-10 hover:shadow-black shadow-inner shadow-black hover:shadow-inner ${
+                  isActive
+                    ? 'shadow-black bg-stone-900 bg-opacity-70 font-extrabold shadow-inner'
+                    : 'bg-black/30 hover:bg-sky-600 hover:bg-opacity-80'
+                }`
+              }
             >
               {item.icon}
               <span className='font-bold text-sm md:text-base'>{item.name}</span>
-            </Link>
+            </NavLink>
           ))}
         </ul>
 

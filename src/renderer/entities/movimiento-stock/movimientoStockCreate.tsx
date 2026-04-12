@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 import type { FormInput } from '../../layout/DynamicForm'
 import DynamicForm from '../../layout/DynamicForm'
 import Main from '../../layout/Main'
@@ -146,7 +146,7 @@ export default function MovimientoStockCreate() {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
-      className="flex flex-col gap-4 md:mt-auto text-white"
+      className="flex flex-col gap-4 text-white"
     >
       <div className="flex items-center justify-between">
         <Title className="text-white pb-2">Crear Movimiento de Stock</Title>
@@ -154,6 +154,7 @@ export default function MovimientoStockCreate() {
 
       <DynamicForm
         key={formKey}
+        storageKey="draft:movimiento-stock:create"
         inputs={inputs}
         onSubmit={handleSubmit}
         titleBtn={submitting ? 'Guardando...' : 'Guardar Movimiento'}
@@ -161,3 +162,4 @@ export default function MovimientoStockCreate() {
     </Main>
   )
 }
+

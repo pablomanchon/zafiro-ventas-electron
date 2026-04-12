@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 import { create, getAll, getById, remove, update } from '../../api/crud'
 import type { CreatePlatoDto } from './types'
 import Wood from '../../layout/Steel'
@@ -204,3 +204,4 @@ export default function usePlato() {
 
   return { platos, loading, error, createPlato, modifyPlato, deletePlato }
 }
+

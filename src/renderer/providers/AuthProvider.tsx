@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -85,6 +86,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AppProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
+  const initializedRef = useRef(false)
+  const authUserRef = useRef<User | null>(null)
+  const profileRef = useRef<AppProfile | null>(null)
+
+  useEffect(() => {
+    authUserRef.current = authUser
+  }, [authUser])
+
+  useEffect(() => {
+    profileRef.current = profile
+  }, [profile])
 
   const refreshProfile = useCallback(async () => {
     const currentUser = authUser
@@ -131,19 +143,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (mounted) {
+        initializedRef.current = true
         setLoading(false)
       }
     })
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession ?? null)
       setAuthUser(nextSession?.user ?? null)
 
       if (!nextSession?.user) {
         setProfile(null)
+        initializedRef.current = true
         setLoading(false)
+        return
+      }
+
+      // Después de la carga inicial, no bloquees toda la app por eventos de sesión
+      // del mismo usuario (ej. refresh de token al volver foco).
+      if (
+        initializedRef.current &&
+        authUserRef.current?.id === nextSession.user.id
+      ) {
+        if (!profileRef.current) {
+          void fetchProfileWithRetry(nextSession.user.id)
+            .then((nextProfile) => {
+              setProfile(nextProfile)
+              setError(null)
+            })
+            .catch((e) => {
+              setError(e)
+            })
+        }
         return
       }
 
@@ -158,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setError(e)
         })
         .finally(() => {
+          initializedRef.current = true
           setLoading(false)
         })
     })

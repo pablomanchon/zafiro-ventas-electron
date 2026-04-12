@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { formatCurrencyARS } from "../utils/utils";
 import VentasPorMetodoChart from "./GraficoVentasPorMetodoChart";
 import { getTotalesPorTipoPago, type MetodoTotal } from "../api/db";
@@ -73,3 +73,4 @@ export default function VentasPorMetodoChartSmart({
     />
   );
 }
+

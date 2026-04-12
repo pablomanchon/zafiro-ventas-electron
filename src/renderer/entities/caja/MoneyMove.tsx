@@ -7,7 +7,7 @@ import DangerBtn from '../../components/DangerButton'
 import { aumentarSaldo, disminuirSaldo } from '../../api/db'
 import { useState } from 'react'
 import { useModal } from '../../providers/ModalProvider'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 
 type Moneda = 'pesos' | 'usd'
 
@@ -108,3 +108,4 @@ export default function MoneyMove({
     </Steel>
   )
 }
+

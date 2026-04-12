@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getAll, create } from '../api/crud'
 import type { StockItem } from '../entities/movimiento-stock/movimientoStockItemsTable'
 
@@ -21,8 +21,6 @@ export interface NormalizedLine {
   nombre: string
   quantity: number
 }
-
-const DEBOUNCE_MS = 200
 
 export function useStockMovements() {
   const [movimientos, setMovimientos] = useState<StockMove[]>([])
@@ -61,31 +59,6 @@ export function useStockMovements() {
       ch.close()
     }
   }, [load])
-
-  const timer = useRef<number | null>(null)
-  const debouncedLoad = useCallback(() => {
-    if (timer.current) window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => {
-      load()
-      timer.current = null
-    }, DEBOUNCE_MS)
-  }, [load])
-
-  useEffect(() => {
-    const onFocus = () => debouncedLoad()
-    const onVis = () => {
-      if (document.visibilityState === 'visible') debouncedLoad()
-    }
-
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', onVis)
-
-    return () => {
-      window.removeEventListener('focus', onFocus)
-      document.removeEventListener('visibilitychange', onVis)
-      if (timer.current) window.clearTimeout(timer.current)
-    }
-  }, [debouncedLoad])
 
   const getById = useCallback(
     (id: string | number) =>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 import { Store, LogIn, UserPlus } from 'lucide-react'
 import { useAuth } from '../providers/AuthProvider'
 
@@ -189,3 +189,4 @@ export default function PageAuth() {
     </div>
   )
 }
+

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 import { crearHorario, getHorarios, marcarEgresoHorario } from '../../api/db'
 
 export type Vendedor = {
@@ -207,3 +207,4 @@ export function useHorarios() {
     getHorasRango,
   }
 }
+

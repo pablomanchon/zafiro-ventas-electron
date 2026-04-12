@@ -1,4 +1,4 @@
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import DynamicForm, { type FormInput } from "../layout/DynamicForm";
 import { useMemo } from "react";
 
@@ -47,3 +47,4 @@ export default function Login() {
     />
   )
 }
+

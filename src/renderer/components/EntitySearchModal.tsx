@@ -5,7 +5,7 @@ import { useModal } from '../providers/ModalProvider';
 import TableAndSearch from './TableAndSearch';
 import PrimaryButton from './PrimaryButton';
 import Glass from '../layout/Glass';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { toSingular } from '../utils/utils';
 
 interface EntitySearchModalProps {
@@ -73,3 +73,4 @@ export default function EntitySearchModal<T extends { id: number }>({
         </div>
     );
 }
+

@@ -5,7 +5,7 @@ import Panel from '../components/Panel'
 
 export default function MainLayout() {
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
+    <div className="flex min-h-screen flex-col md:h-screen md:flex-row md:overflow-hidden">
       <Navbar />
       <Panel>
         <Outlet />

@@ -14,7 +14,7 @@ import { useModal } from '../providers/ModalProvider'
 import DynamicForm from '../layout/DynamicForm'
 import { create, update } from '../api/crud'
 import { toSingular } from '../utils/utils'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 
 function isEditableTarget(el: EventTarget | null) {
   const t = el as HTMLElement | null
@@ -98,6 +98,7 @@ export default function CrudPage<T extends { id: number | string }>({
         <Steel className='text-white max-h-[90vh] overflow-y-auto w-[min(96vw,900px)]'>
           <Title>Crear {toSingular(config.title)}</Title>
           <DynamicForm
+            storageKey={`draft:crud-modal:${config.entity}:create`}
             inputs={config.formInputs}
             columns={cols}
             onSubmit={async (values) => {
@@ -132,6 +133,7 @@ export default function CrudPage<T extends { id: number | string }>({
         <Steel className='text-white max-h-[90vh] overflow-y-auto w-[min(96vw,900px)]'>
           <Title>Editar {toSingular(config.title)}</Title>
           <DynamicForm
+            storageKey={`draft:crud-modal:${config.entity}:edit:${rowId}`}
             inputs={inputsWithValues}
             columns={cols}
             onSubmit={async (values) => {
@@ -153,7 +155,7 @@ export default function CrudPage<T extends { id: number | string }>({
   }
 
   return (
-    <Main className={`flex flex-col min-h-0 w-full mt-12 md:mt-auto bg-stone-800 p-3 sm:p-4 ${color ?? ''}`}>
+    <Main className={`flex flex-col min-h-0 w-full bg-stone-800 p-3 sm:p-4 ${color ?? ''}`}>
       <div
         ref={scopeRef}
         tabIndex={-1} // no queremos que el root reciba foco
@@ -202,3 +204,4 @@ export default function CrudPage<T extends { id: number | string }>({
     </Main>
   )
 }
+

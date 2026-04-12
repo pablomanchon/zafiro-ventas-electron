@@ -47,6 +47,8 @@ interface DynamicFormProps {
   submittingText?: string
   columns?: 1 | 2 | 3 | 4
   compact?: boolean
+  storageKey?: string
+  clearDraftOnSubmit?: boolean
 }
 
 /* =======================
@@ -80,6 +82,8 @@ export default function DynamicForm({
   submittingText = 'Guardando...',
   columns,
   compact = false,
+  storageKey,
+  clearDraftOnSubmit = true,
 }: DynamicFormProps) {
   const { openModal, closeModal, modalStack } = useModal()
   const openCount = modalStack.length
@@ -88,6 +92,24 @@ export default function DynamicForm({
   const [initialValues, setInitialValues] = useState(() => buildInitial(inputs))
   const [formValues, setFormValues] = useState(() => buildInitial(inputs))
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const loadDraft = (fallbackInitial: Record<string, any>) => {
+    if (!storageKey) return fallbackInitial
+
+    try {
+      const raw = window.localStorage.getItem(storageKey)
+      if (!raw) return fallbackInitial
+
+      const parsed = JSON.parse(raw) as Record<string, any>
+      return {
+        ...fallbackInitial,
+        ...parsed,
+      }
+    } catch {
+      window.localStorage.removeItem(storageKey)
+      return fallbackInitial
+    }
+  }
 
   useEffect(() => {
     if (baseOpenCountRef.current === null) {
@@ -102,8 +124,19 @@ export default function DynamicForm({
     if (resetOn === undefined) return
     const initial = buildInitial(inputs)
     setInitialValues(initial)
-    setFormValues(initial)
-  }, [resetOn, inputs])
+    setFormValues(loadDraft(initial))
+  }, [resetOn, inputs, storageKey])
+
+  useEffect(() => {
+    if (resetOn !== undefined) return
+    const initial = buildInitial(inputs)
+    setInitialValues(initial)
+    setFormValues(prev => {
+      const next = loadDraft(initial)
+      const hasPrev = Object.keys(prev).length > 0
+      return hasPrev ? prev : next
+    })
+  }, [inputs, resetOn, storageKey])
 
   /* =======================
      Focus primer input
@@ -127,6 +160,15 @@ export default function DynamicForm({
   useEffect(() => {
     isDirtyRef.current = isDirty
   }, [isDirty])
+
+  useEffect(() => {
+    if (!storageKey) return
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(formValues))
+    } catch {
+      // ignore quota / serialization issues
+    }
+  }, [formValues, storageKey])
 
   /* =======================
      Close confirm modal
@@ -239,6 +281,9 @@ export default function DynamicForm({
       }
 
       await Promise.resolve(onSubmit(payload))
+      if (storageKey && clearDraftOnSubmit) {
+        window.localStorage.removeItem(storageKey)
+      }
     } finally {
       setIsSubmitting(false)
     }

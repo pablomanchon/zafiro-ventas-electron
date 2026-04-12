@@ -111,6 +111,7 @@ export default function CrudFormPage<T extends { id: number }>() {
         ) : (
           <DynamicForm
             resetOn={mode === 'edit' ? id : undefined}
+            storageKey={`draft:crud-page:${entity}:${mode}:${id ?? 'new'}`}
             inputs={inputsWithValues}
             onSubmit={handleSubmit}
             titleBtn={mode === 'edit' ? 'Actualizar' : 'Crear'}

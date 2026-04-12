@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import useUser from "../hooks/useUser";
 import Main from "../layout/Main";
 
@@ -21,7 +21,7 @@ export default function PageLicencia() {
       toast.success("Licencia verificada");
       navigate("/", { replace: true });
     } else {
-      toast.warn("Sigue vencida");
+      toast.warning("Sigue vencida");
     }
   };
 
@@ -43,3 +43,4 @@ export default function PageLicencia() {
     </Main>
   );
 }
+

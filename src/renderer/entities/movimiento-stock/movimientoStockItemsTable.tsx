@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 import Table from '../../layout/Table'
 import { useProducts } from '../../hooks/useProducts'
 
@@ -195,3 +195,4 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
     </div>
   )
 }
+

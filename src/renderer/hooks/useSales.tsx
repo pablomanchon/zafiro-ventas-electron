@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useDateRange } from './useDate'
 import { useAppDispatch, useAppSelector } from '../store/hooks'
 import {
@@ -9,9 +9,6 @@ import {
   selectError,
   selectTotalGeneral,
 } from '../store/salesReduce'
-
-const DEBOUNCE_MS = 200
-
 export default function useSales(initialMode: 'day' | 'week' | 'month' = 'day') {
   const { range, filter, setFilter, shift, goToday, label } = useDateRange(initialMode)
 
@@ -27,31 +24,6 @@ export default function useSales(initialMode: 'day' | 'week' | 'month' = 'day') 
   useEffect(() => {
     reload()
   }, [reload, range?.from, range?.to])
-
-  const timer = useRef<number | null>(null)
-  const debouncedReload = useCallback(() => {
-    if (timer.current) window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => {
-      reload()
-      timer.current = null
-    }, DEBOUNCE_MS)
-  }, [reload])
-
-  useEffect(() => {
-    const onFocus = () => debouncedReload()
-    const onVis = () => {
-      if (document.visibilityState === 'visible') debouncedReload()
-    }
-
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', onVis)
-
-    return () => {
-      window.removeEventListener('focus', onFocus)
-      document.removeEventListener('visibilitychange', onVis)
-      if (timer.current) window.clearTimeout(timer.current)
-    }
-  }, [debouncedReload])
 
   return {
     ventas,

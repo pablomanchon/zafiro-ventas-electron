@@ -173,6 +173,7 @@ export default function VentaCreate({
 
       <DynamicForm
         key={formKey}
+        storageKey={embedded ? 'draft:venta-create:embedded' : 'draft:venta-create:page'}
         columns={2}
         compact={embedded}
         inputs={inputs}
@@ -203,7 +204,7 @@ export default function VentaCreate({
   return (
     <Main
       style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-      className="flex flex-col gap-4 md:mt-auto text-white"
+      className="flex flex-col gap-4 text-white"
     >
       {content}
     </Main>

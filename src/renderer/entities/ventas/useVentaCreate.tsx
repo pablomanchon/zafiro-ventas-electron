@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 import { create } from '../../api/crud'
 import { useProducts } from '../../hooks/useProducts'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
@@ -348,3 +348,4 @@ export function useVentaCreateLogic() {
     handleSubmit,
   }
 }
+

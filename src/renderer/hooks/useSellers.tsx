@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getAll } from '../api/crud'
 
 export type Vendedor = { id: number; nombre: string }
-
-const DEBOUNCE_MS = 200
 
 export function useVendedores() {
   const [items, setItems] = useState<Vendedor[]>([])
@@ -26,31 +24,6 @@ export function useVendedores() {
   useEffect(() => {
     refetch()
   }, [refetch])
-
-  const timer = useRef<number | null>(null)
-  const debouncedRefetch = useCallback(() => {
-    if (timer.current) window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => {
-      refetch()
-      timer.current = null
-    }, DEBOUNCE_MS)
-  }, [refetch])
-
-  useEffect(() => {
-    const onFocus = () => debouncedRefetch()
-    const onVis = () => {
-      if (document.visibilityState === 'visible') debouncedRefetch()
-    }
-
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', onVis)
-
-    return () => {
-      window.removeEventListener('focus', onFocus)
-      document.removeEventListener('visibilitychange', onVis)
-      if (timer.current) window.clearTimeout(timer.current)
-    }
-  }, [debouncedRefetch])
 
   const mapById = useMemo(() => {
     const m = new Map<number, Vendedor>()

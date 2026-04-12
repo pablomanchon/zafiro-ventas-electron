@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 import PrimaryButton from '../../components/PrimaryButton'
 import { useVendedores } from '../../hooks/useSellers'
 import Wood from '../../layout/Steel'
@@ -119,3 +119,4 @@ export default function PageHorarios() {
         </Main>
     )
 }
+

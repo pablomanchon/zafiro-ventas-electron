@@ -5,7 +5,7 @@ import type { FormInput } from '../layout/DynamicForm'
 import { getAll, create, update, remove } from '../api/crud'
 import { useModal } from '../providers/ModalProvider'
 import Confirmation from '../layout/Confirmation'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 
 /**
  * Hook genérico para operaciones CRUD con modal de formulario.
@@ -83,3 +83,4 @@ export function useCrud<T extends { id: number | string }>(
 
   return { items, selected, setSelected, showForm, handleDelete, fetchItems }
 }
+

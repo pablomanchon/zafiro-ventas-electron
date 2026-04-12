@@ -8,7 +8,7 @@ import { getAllSaldos } from '../../api/db'
 import { formatCurrencyARS } from '../../utils/utils'
 import { useModal } from '../../providers/ModalProvider'
 import MoneyMove from './MoneyMove'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 import PrimaryButton from '../../components/PrimaryButton'
 import MoneyMoves from './MoneyMoves'
 
@@ -66,3 +66,4 @@ export default function PageCaja() {
     </Main>
   )
 }
+

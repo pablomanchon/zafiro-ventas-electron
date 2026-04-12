@@ -1,8 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import 'react-toastify/dist/ReactToastify.css';
-import { ToastContainer } from 'react-toastify';
+import { Toaster } from 'sonner';
 import App from './App'
 import { HashRouter } from 'react-router-dom'
 import { Provider } from 'react-redux'
@@ -22,7 +21,16 @@ createRoot(document.getElementById('root')!).render(
               <HashRouter>
                 <App />
                 <Modal />
-                <ToastContainer />
+                <Toaster
+                  containerAriaLabel="Notificaciones"
+                  position="bottom-right"
+                  duration={2400}
+                  visibleToasts={3}
+                  closeButton
+                  swipeDirections={['right', 'left']}
+                  theme="dark"
+                  expand={false}
+                />
               </HashRouter>
             </SearchProvider>
         </ModalProvider>
@@ -30,3 +38,4 @@ createRoot(document.getElementById('root')!).render(
     </Provider>
   </StrictMode>,
 )
+

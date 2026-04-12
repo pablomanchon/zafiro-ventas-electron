@@ -4,8 +4,9 @@ import Steel from '../../layout/Steel'
 import useSales from '../../hooks/useSales'
 import TableAndSearch from '../../components/TableAndSearch'
 import ventasConfig from '../ventas/config'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 import { formatCurrencyARS } from '../../utils/utils'
+import DashboardInsights from '../../components/DashboardInsights'
 
 export default function PageResumen() {
   const { ventas, filter, setFilter, shift, goToday, label, error, totalGeneral, totales, loading } = useSales()
@@ -15,8 +16,8 @@ export default function PageResumen() {
 
 
   return (
-    <Main className='flex flex-col min-h-0 p-3 sm:p-4 gap-4 outline-n'>
-      <div className="flex flex-col h-full min-h-0 outline-none focus:outline-none">
+    <Main className='flex flex-col min-h-0 p-3 sm:p-4 gap-4 outline-n text-white'>
+      <div className="flex flex-col h-full min-h-0 outline-none focus:outline-none gap-4">
         <DateNavigator
           filter={filter}
           setFilter={setFilter}
@@ -49,7 +50,10 @@ export default function PageResumen() {
             <p className='text-xl font-bold'>{!loading && formatCurrencyARS(totalGeneral)}</p>
           </Steel>
         </div>
+
+        <DashboardInsights />
       </div>
     </Main>
   )
 }
+
