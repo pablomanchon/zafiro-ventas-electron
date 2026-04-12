@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import PrimaryButton from '../../components/PrimaryButton'
 import { useVendedores } from '../../hooks/useSellers'
@@ -9,114 +9,175 @@ import HorarioVendedor from './HorarioVendedor'
 import { useHorarios } from './useHorarios'
 import Main from '../../layout/Main'
 import Glass from '../../layout/Glass'
-import Confirmation from '../../layout/Confirmation'
 
-export default function PageHorarios() {
-    const { vendedores, loading: loadingVendedores, error } = useVendedores()
-    const { openModal, closeModal } = useModal()
+function formatDateTimeLocal(value?: string | null) {
+  const base = value ? new Date(value) : new Date()
+  if (Number.isNaN(base.getTime())) return ''
 
-    const {
-        horarios,
-        loading: loadingHorarios,
-        fetchAll,
-        marcarIngreso,
-        marcarEgreso,
-    } = useHorarios()
-
-    useEffect(() => {
-        fetchAll()
-    }, [fetchAll])
-
-    const horariosAbiertosPorVendedor = useMemo(() => {
-        const map = new Map<number, boolean>()
-
-        for (const horario of horarios) {
-            const vendedorId = horario.vendedor?.id
-            if (!vendedorId) continue
-
-            if (!horario.horaEgreso) {
-                map.set(vendedorId, true)
-            }
-        }
-
-        return map
-    }, [horarios])
-
-    const handleVerHorarios = (id: number) => {
-        openModal(<HorarioVendedor id={id} />)
-    }
-
-    const ejecutarToggleHorario = async (vendedorId: number) => {
-        try {
-            const estaAbierto = horariosAbiertosPorVendedor.get(vendedorId)
-
-            if (estaAbierto) {
-                await marcarEgreso(vendedorId)
-            } else {
-                await marcarIngreso({ vendedorId })
-            }
-
-            closeModal()
-        } catch (e) {
-            console.error(e)
-            toast.error('No se pudo actualizar el horario')
-        }
-    }
-
-    const handleToggleHorario = (vendedorId: number, nombre: string) => {
-        const estaAbierto = horariosAbiertosPorVendedor.get(vendedorId) ?? false
-
-        openModal(
-            <Confirmation
-                onConfirm={() => ejecutarToggleHorario(vendedorId)}
-                mensaje={estaAbierto
-                    ? `¿Seguro que quieres cerrar el horario de ${nombre}?`
-                    : `¿Seguro que quieres abrir el horario de ${nombre}?`}
-            />
-        )
-    }
-
-    if (loadingVendedores) return <div>Cargando vendedores...</div>
-    if (error) return <div>Error al cargar vendedores: {(error as Error).message}</div>
-
-    return (
-        <Main className="p-3 sm:p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 p-2 sm:p-4 text-center">
-                {vendedores.map((vendedor) => {
-                    const estaAbierto = horariosAbiertosPorVendedor.get(vendedor.id) ?? false
-
-                    return (
-                        <Wood className="font-bold" key={vendedor.id}>
-                            <Title>{vendedor.nombre}</Title>
-
-                            <h3 className="py-2 text-l">ID: {vendedor.id}</h3>
-
-                            <Glass className="my-2">
-                                <p>
-                                    Estado:{' '}
-                                    <span className={estaAbierto ? 'text-green-600' : 'text-red-600'}>
-                                        {estaAbierto ? 'Horario abierto' : 'Horario cerrado'}
-                                    </span>
-                                </p>
-                            </Glass>
-
-                            <div className="flex flex-col gap-2">
-                                <PrimaryButton
-                                    title="Ver Horarios"
-                                    functionClick={() => handleVerHorarios(vendedor.id)}
-                                />
-
-                                <PrimaryButton
-                                    title={estaAbierto ? 'Cerrar Horario' : 'Abrir Horario'}
-                                    functionClick={() => handleToggleHorario(vendedor.id, vendedor.nombre)}
-                                    disabled={loadingHorarios}
-                                />
-                            </div>
-                        </Wood>
-                    )
-                })}
-            </div>
-        </Main>
-    )
+  const year = base.getFullYear()
+  const month = String(base.getMonth() + 1).padStart(2, '0')
+  const day = String(base.getDate()).padStart(2, '0')
+  const hours = String(base.getHours()).padStart(2, '0')
+  const minutes = String(base.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
+export default function PageHorarios() {
+  const { vendedores, loading: loadingVendedores, error } = useVendedores()
+  const { openModal } = useModal()
+  const {
+    horarios,
+    loading: loadingHorarios,
+    fetchAll,
+    marcarIngreso,
+    marcarEgreso,
+    getHorasDia,
+    getHorasSemana,
+    getHorasMes,
+  } = useHorarios()
+
+  const [ingresos, setIngresos] = useState<Record<number, string>>({})
+  const [egresos, setEgresos] = useState<Record<number, string>>({})
+
+  useEffect(() => {
+    fetchAll()
+  }, [fetchAll])
+
+  const horariosAbiertosPorVendedor = useMemo(() => {
+    const map = new Map<number, (typeof horarios)[number]>()
+
+    for (const horario of horarios) {
+      const vendedorId = horario.vendedor?.id
+      if (!vendedorId || horario.horaEgreso) continue
+
+      const prev = map.get(vendedorId)
+      if (!prev || new Date(horario.horaIngreso).getTime() > new Date(prev.horaIngreso).getTime()) {
+        map.set(vendedorId, horario)
+      }
+    }
+
+    return map
+  }, [horarios])
+
+  useEffect(() => {
+    const nextIngresos: Record<number, string> = {}
+    const nextEgresos: Record<number, string> = {}
+
+    vendedores.forEach((vendedor) => {
+      const horarioAbierto = horariosAbiertosPorVendedor.get(vendedor.id)
+      nextIngresos[vendedor.id] = formatDateTimeLocal(horarioAbierto?.horaIngreso)
+      nextEgresos[vendedor.id] = formatDateTimeLocal()
+    })
+
+    setIngresos(nextIngresos)
+    setEgresos(nextEgresos)
+  }, [vendedores, horariosAbiertosPorVendedor])
+
+  const handleVerHorarios = (id: number) => {
+    openModal(<HorarioVendedor id={id} />)
+  }
+
+  const handleIngreso = async (vendedorId: number) => {
+    try {
+      const horaIngreso = ingresos[vendedorId]
+      await marcarIngreso({ vendedorId, horaIngreso })
+      await fetchAll()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleEgreso = async (vendedorId: number) => {
+    try {
+      const horaEgreso = egresos[vendedorId]
+      await marcarEgreso(vendedorId, { horaEgreso })
+      await fetchAll()
+    } catch (e) {
+      console.error(e)
+      toast.error('No se pudo registrar el egreso')
+    }
+  }
+
+  if (loadingVendedores) return <div>Cargando vendedores...</div>
+  if (error) return <div>Error al cargar vendedores: {(error as Error).message}</div>
+
+  return (
+    <Main className="p-3 sm:p-4">
+      <div className="grid grid-cols-1 gap-3 p-2 text-center md:grid-cols-2 sm:p-4 xl:grid-cols-3">
+        {vendedores.map((vendedor) => {
+          const horarioAbierto = horariosAbiertosPorVendedor.get(vendedor.id) ?? null
+          const estaAbierto = Boolean(horarioAbierto)
+
+          return (
+            <Wood className="font-bold text-white" key={vendedor.id}>
+              <Title>{vendedor.nombre}</Title>
+
+              <h3 className="py-2 text-l">ID: {vendedor.id}</h3>
+
+              <Glass className="my-2 text-left">
+                <p>
+                  Estado:{' '}
+                  <span className={estaAbierto ? 'text-green-600' : 'text-red-600'}>
+                    {estaAbierto ? 'Horario abierto' : 'Horario cerrado'}
+                  </span>
+                </p>
+                <p className="mt-1 text-sm opacity-80">Horas hoy: {getHorasDia(new Date(), vendedor.id)}</p>
+                <p className="text-sm opacity-80">Horas semana: {getHorasSemana(new Date(), vendedor.id)}</p>
+                <p className="text-sm opacity-80">Horas mes: {getHorasMes(new Date(), vendedor.id)}</p>
+                {horarioAbierto && (
+                  <p className="mt-1 text-sm opacity-80">
+                    Ingreso actual: {new Date(horarioAbierto.horaIngreso).toLocaleString('es-AR')}
+                  </p>
+                )}
+              </Glass>
+
+              <div className="flex flex-col gap-3 text-left">
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs uppercase tracking-[0.18em] text-white/80">Hora de ingreso</span>
+                  <input
+                    type="datetime-local"
+                    value={ingresos[vendedor.id] ?? ''}
+                    onChange={(e) =>
+                      setIngresos((prev) => ({ ...prev, [vendedor.id]: e.target.value }))
+                    }
+                    className="rounded-lg border border-white/20 bg-black/35 px-3 py-2 text-white outline-none focus:border-cyan-400"
+                  />
+                </label>
+
+                <PrimaryButton
+                  title={estaAbierto ? 'Actualizar ingreso sugerido' : 'Registrar ingreso'}
+                  functionClick={() => handleIngreso(vendedor.id)}
+                  disabled={loadingHorarios}
+                />
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs uppercase tracking-[0.18em] text-white/80">Hora de egreso</span>
+                  <input
+                    type="datetime-local"
+                    value={egresos[vendedor.id] ?? ''}
+                    onChange={(e) =>
+                      setEgresos((prev) => ({ ...prev, [vendedor.id]: e.target.value }))
+                    }
+                    className="rounded-lg border border-white/20 bg-black/35 px-3 py-2 text-white outline-none focus:border-cyan-400"
+                    disabled={!estaAbierto}
+                  />
+                </label>
+
+                <PrimaryButton
+                  title="Registrar egreso"
+                  functionClick={() => handleEgreso(vendedor.id)}
+                  disabled={loadingHorarios || !estaAbierto}
+                />
+
+                <PrimaryButton
+                  title="Ver horarios"
+                  functionClick={() => handleVerHorarios(vendedor.id)}
+                />
+              </div>
+            </Wood>
+          )
+        })}
+      </div>
+    </Main>
+  )
+}

@@ -53,7 +53,9 @@ export default function SalesPage() {
 
   const scopeRef = useRef<HTMLDivElement>(null)
   const tableRef = useRef<HTMLDivElement>(null)
-  useFocusBlocker(scopeRef)
+  useFocusBlocker(scopeRef, {
+    allowSelector: 'input, textarea, select, [contenteditable="true"], [role="textbox"]',
+  })
 
   useEffect(() => {
     const ch = new BroadcastChannel('ventas')
@@ -72,7 +74,7 @@ export default function SalesPage() {
       <div
         ref={scopeRef}
         tabIndex={0}
-        className="flex flex-col h-full outline-none focus:outline-none"
+        className="flex flex-col min-h-max outline-none focus:outline-none md:h-full"
       >
         <Title className="mb-2">Ventas</Title>
         <DateNavigator
@@ -89,7 +91,7 @@ export default function SalesPage() {
           </Steel>
         )}
 
-        <div className="flex-1 overflow-auto" ref={tableRef} tabIndex={-1}>
+        <div className="min-h-0 md:flex-1 md:overflow-auto" ref={tableRef} tabIndex={-1}>
           <TableAndSearch
             datos={loading ? [] : ventas}
             encabezados={columns}

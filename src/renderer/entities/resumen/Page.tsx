@@ -17,7 +17,7 @@ export default function PageResumen() {
 
   return (
     <Main className='flex flex-col min-h-0 p-3 sm:p-4 gap-4 outline-n text-white'>
-      <div className="flex flex-col h-full min-h-0 outline-none focus:outline-none gap-4">
+      <div className="flex flex-col min-h-max outline-none focus:outline-none gap-4 md:h-full md:min-h-0">
         <DateNavigator
           filter={filter}
           setFilter={setFilter}
@@ -27,7 +27,7 @@ export default function PageResumen() {
         />
 
         {/* 👇 clave: min-h-0 para que el scroll funcione */}
-        <div className="flex-1 min-h-0 overflow-auto">
+        <div className="min-h-0 md:flex-1 md:overflow-auto">
           <TableAndSearch
             datos={loading ? [] : ventas}
             encabezados={ventasConfig.columns}

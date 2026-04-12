@@ -251,6 +251,9 @@ export default function QuickSale() {
   }
 
   const clearSale = () => {
+    const confirmed = window.confirm('¿Seguro que quieres limpiar la venta actual?')
+    if (!confirmed) return
+
     skipPersistOnUnmountRef.current = true
     setItems([])
     setBarcode('')

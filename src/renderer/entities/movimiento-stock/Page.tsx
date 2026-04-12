@@ -41,7 +41,9 @@ export default function MovimientoStockPage() {
 
   const scopeRef = useRef<HTMLDivElement>(null)
   const tableRef = useRef<HTMLDivElement>(null)
-  useFocusBlocker(scopeRef)
+  useFocusBlocker(scopeRef, {
+    allowSelector: 'input, textarea, select, [contenteditable="true"], [role="textbox"]',
+  })
 
   return (
     <Main className="flex flex-col min-h-0 p-3 sm:p-4 gap-4">

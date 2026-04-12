@@ -17,9 +17,9 @@ export default function Confirmation({
   const { closeModal } = useModal();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Al montar, enfocamos el contenedor para capturar la tecla Enter
   useEffect(() => {
-    containerRef.current?.focus();
+    const confirmButton = containerRef.current?.querySelector('button:last-of-type') as HTMLButtonElement | null;
+    confirmButton?.focus();
   }, []);
 
   const confirmar = () => {
@@ -27,9 +27,24 @@ export default function Confirmation({
     closeModal();
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      e.stopPropagation();
+      confirmar();
+    };
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, []);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     e.stopPropagation()
     if (e.key === 'Enter') {
+      e.preventDefault()
       confirmar();
     }
   };

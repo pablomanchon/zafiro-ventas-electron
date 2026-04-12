@@ -25,7 +25,11 @@ type MarcarEgresoDto = {
 
 function toIso(v?: string | Date) {
   if (!v) return undefined
-  return v instanceof Date ? v.toISOString() : v
+  if (v instanceof Date) return v.toISOString()
+
+  const parsed = new Date(v)
+  if (Number.isNaN(parsed.getTime())) return v
+  return parsed.toISOString()
 }
 
 const MS_HOUR = 1000 * 60 * 60
