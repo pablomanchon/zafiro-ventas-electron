@@ -43,6 +43,27 @@ function overlapsRange(inicio: Date, fin: Date, from: Date, to: Date) {
   return inicio.getTime() <= to.getTime() && fin.getTime() >= from.getTime()
 }
 
+const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+
+function formatDia(iso: string) {
+  const d = new Date(iso)
+  return `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`
+}
+
+function formatHora(iso: string) {
+  const d = new Date(iso)
+  return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+}
+
+function formatDuration(hours: number) {
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  if (h === 0) return `${m} min`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}min`
+}
+
 function formatHours(hours: number) {
   return `${hours.toFixed(2)} h`
 }
@@ -209,16 +230,26 @@ export default function HorarioVendedor({ id }: { id: number }) {
         {listaFiltrada.length === 0 ? (
           <div className="p-3 opacity-70">No hay horarios para este vendedor en el filtro seleccionado.</div>
         ) : (
-          listaFiltrada.map((h) => (
-            <div key={h.id} className="border-b border-white/10 p-3 last:border-b-0">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm opacity-80">Horario #{h.id}</p>
-                <p className="text-sm font-semibold">{formatHours(getDurationHours(h.horaIngreso, h.horaEgreso))}</p>
+          listaFiltrada.map((h) => {
+            const duracion = getDurationHours(h.horaIngreso, h.horaEgreso)
+            const abierto = !h.horaEgreso
+            return (
+              <div key={h.id} className="border-b border-white/10 p-3 last:border-b-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-semibold capitalize">{formatDia(h.horaIngreso)}</p>
+                  {abierto
+                    ? <span className="text-xs text-yellow-300 font-semibold">En curso</span>
+                    : <span className="text-xs text-green-300 font-semibold">{formatDuration(duracion)} trabajadas</span>
+                  }
+                </div>
+                <p className="text-sm mt-1 opacity-90">
+                  de <span className="font-mono">{formatHora(h.horaIngreso)}</span>
+                  {' '}a{' '}
+                  <span className="font-mono">{abierto ? '—' : formatHora(h.horaEgreso!)}</span>
+                </p>
               </div>
-              <p>Ingreso: {new Date(h.horaIngreso).toLocaleString('es-AR')}</p>
-              <p>Egreso: {h.horaEgreso ? new Date(h.horaEgreso).toLocaleString('es-AR') : 'Abierto'}</p>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </Wood>
