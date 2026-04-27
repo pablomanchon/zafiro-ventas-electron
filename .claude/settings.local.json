@@ -6,7 +6,11 @@
       "Bash(ffmpeg -version)",
       "Bash(node -e \"require\\('sharp'\\)\")",
       "Bash(npx --yes sharp-cli --version)",
-      "Bash(npx sharp-cli *)"
+      "Bash(npx sharp-cli *)",
+      "Bash(node -e ' *)",
+      "Bash(identify src/renderer/assets/fondo-h.webp)",
+      "Bash(ffprobe -v error -select_streams v -show_entries stream=width,height -of csv=p=0 src/renderer/assets/fondo-h.webp)",
+      "Bash(node -e *)"
     ]
   }
 }
