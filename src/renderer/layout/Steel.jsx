@@ -1,7 +1,7 @@
 import React from 'react'
-import bgUrl from '../../../public/fondo-w.png'
-import bgUrl2 from '../../../public/fondo-h.png'
-import bgUrl3 from '../../../public/fondo-sq.png'
+import bgUrl from '../../../public/fondo-w.webp'
+import bgUrl2 from '../../../public/fondo-h.webp'
+import bgUrl3 from '../../../public/fondo-sq.webp'
 export default function Wood({ children, typeWood = 1, ...props }) {
     const getBg = () =>{
         switch (typeWood) {

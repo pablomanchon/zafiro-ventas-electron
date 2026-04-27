@@ -10,7 +10,7 @@ import Title from '../layout/Title'
 import Main from '../layout/Main'
 import { useModal } from '../providers/ModalProvider'
 import Confirmation from '../layout/Confirmation'
-import bgUrl from '../../../public/fondo-w.png'
+import bgUrl from '../../../public/fondo-w.webp'
 import { toSingular } from '../utils/utils'
 
 export default function CrudFormPage<T extends { id: number }>() {

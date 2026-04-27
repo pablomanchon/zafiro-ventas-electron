@@ -13,7 +13,7 @@ import {
   Salad,
   Clock,
 } from 'lucide-react'
-import bgUrl from '/fondo-h.png'
+import bgUrl from '/fondo-h.webp'
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import logo from '/zafiro_rounded.ico'

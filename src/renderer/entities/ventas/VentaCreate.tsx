@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react'
 import Main from '../../layout/Main'
 import Title from '../../layout/Title'
 import DynamicForm from '../../layout/DynamicForm'
-import bgUrl from '../../assets/fondo-w.png'
+import bgUrl from '../../assets/fondo-w.webp'
 import SecondaryBtn from '../../components/SecondaryButton'
 
 import type { FormInput } from '../../layout/DynamicForm'

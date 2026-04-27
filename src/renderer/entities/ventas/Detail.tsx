@@ -6,7 +6,7 @@ import type { Cliente } from '../../hooks/useClients'
 import type { SaleItem } from '../item-venta/useSaleItems'
 import type { PaymentItem } from '../metodo-pago/PaymentMethodsTable'
 import Table from '../../layout/Table'
-import bgUrl from '../../assets/fondo-h.png'
+import bgUrl from '../../assets/fondo-h.webp'
 import type { Vendedor } from '../../hooks/useSellers'
 
 export type TypeVenta = {

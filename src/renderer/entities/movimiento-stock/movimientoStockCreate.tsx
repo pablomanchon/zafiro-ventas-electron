@@ -6,7 +6,7 @@ import DynamicForm from '../../layout/DynamicForm'
 import Main from '../../layout/Main'
 import Title from '../../layout/Title'
 import MovimientoStockItemsTable, { type StockItem } from './movimientoStockItemsTable'
-import bgUrl from '../../assets/fondo-w.png'
+import bgUrl from '../../assets/fondo-w.webp'
 import { useStockMovements } from '../../hooks/useMovimientoStock'
 import { getInitPayload } from '../../utils/init-data'
 
