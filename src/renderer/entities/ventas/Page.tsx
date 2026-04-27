@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import type { CrudConfig } from '../CrudConfig'
 import { crudConfigs } from '..'
 import Main from '../../layout/Main'
@@ -13,9 +12,9 @@ import useSales from '../../hooks/useSales'
 import { formatCurrencyARS } from '../../utils/utils'
 import { useModal } from '../../providers/ModalProvider'
 import VentaCreate from './VentaCreate'
+import SaleDetail from './Detail'
 
 export default function SalesPage() {
-  const navigate = useNavigate()
   const { openModal, closeModal } = useModal()
   const config = crudConfigs['ventas'] as CrudConfig
   const { columns, searchFields } = config
@@ -29,14 +28,9 @@ export default function SalesPage() {
     filter, setFilter, shift, goToday, label, reload,
   } = useSales('day')
 
-  const openVenta = useCallback((id: number) => {
-    const venta = ventas.find(v => Number(v.id) === Number(id))
-    navigate(`/ventas/${id}`, { state: venta ? { venta, idVenta: id } : { idVenta: id } })
-  }, [navigate, ventas])
-
   const handleDobleClickFila = useCallback((id: number | string) => {
-    openVenta(Number(id))
-  }, [openVenta])
+    openModal(<SaleDetail idVenta={String(id)} />)
+  }, [openModal])
 
   const handleOpenCreate = useCallback(() => {
     openModal(
