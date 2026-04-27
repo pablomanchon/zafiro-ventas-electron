@@ -181,22 +181,24 @@ export default function CrudPage<T extends { id: number | string }>({
         {/* Barra de acciones */}
         <Steel className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mt-auto bg-gray-800 p-2">
           <PrimaryButton
+            className="w-full sm:w-auto"
             title="Crear"
             functionClick={openCreateModal}
           />
 
           {selected != null && (
             <>
-              <span
+              <div
+                className="w-full sm:w-auto"
                 tabIndex={-1}
                 onMouseDown={(e) => e.preventDefault()}
               >
-                <SecondaryButton title="Modificar" functionClick={() => openEditModal(selected)} />
-              </span>
+                <SecondaryButton className="w-full" title="Modificar" functionClick={() => openEditModal(selected)} />
+              </div>
 
-              <span tabIndex={-1} onMouseDown={(e) => e.preventDefault()}>
-                <DangerButton title="Eliminar" functionClick={() => { handleDelete(`${toSingular(config.title)} eliminado con éxito!`) }} />
-              </span>
+              <div className="w-full sm:w-auto" tabIndex={-1} onMouseDown={(e) => e.preventDefault()}>
+                <DangerButton className="w-full" title="Eliminar" functionClick={() => { handleDelete(`${toSingular(config.title)} eliminado con éxito!`) }} />
+              </div>
             </>
           )}
         </Steel>
