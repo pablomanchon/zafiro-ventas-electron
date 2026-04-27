@@ -47,31 +47,35 @@ export default function SaleDetail() {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
-      className="text-white"
+      className="flex items-start justify-center min-h-screen p-6"
     >
-      <Title>Detalle Venta {venta.id}</Title>
-      <div className="flex flex-col gap-2">
-        <h2 className="font-bold text-lg">
-          Cliente: {venta.cliente.nombre} {venta.cliente.apellido}
-        </h2>
-        <h2 className="font-bold text-lg">
-          Vendedor: {venta.vendedor.nombre}
-        </h2>
-        <h2 className="font-bold text-lg">Productos:</h2>
-        <Table
-          datos={venta.detalles}
-          encabezados={itemsColumns}
-          onDobleClickFila={() => {}}
-          onFilaSeleccionada={() => {}}
-        />
+      <div className="w-full max-w-2xl bg-black/70 backdrop-blur-sm text-white rounded-2xl shadow-2xl shadow-black border border-white/10 p-6 flex flex-col gap-4">
+        <Title>Detalle Venta {venta.id}</Title>
 
-        <h2 className="font-bold text-lg mt-5">Métodos de Pago:</h2>
-        <Table
-          datos={venta.pagos}
-          encabezados={salesColumns}
-          onDobleClickFila={() => {}}
-          onFilaSeleccionada={() => {}}
-        />
+        <div className="flex flex-col gap-1 border-b border-white/10 pb-4">
+          <p className="text-base"><span className="font-bold text-white/60">Cliente:</span> {venta.cliente.nombre} {venta.cliente.apellido}</p>
+          <p className="text-base"><span className="font-bold text-white/60">Vendedor:</span> {venta.vendedor.nombre}</p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <h2 className="font-bold text-white/60 uppercase text-xs tracking-widest">Productos</h2>
+          <Table
+            datos={venta.detalles}
+            encabezados={itemsColumns}
+            onDobleClickFila={() => {}}
+            onFilaSeleccionada={() => {}}
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <h2 className="font-bold text-white/60 uppercase text-xs tracking-widest">Métodos de Pago</h2>
+          <Table
+            datos={venta.pagos}
+            encabezados={salesColumns}
+            onDobleClickFila={() => {}}
+            onFilaSeleccionada={() => {}}
+          />
+        </div>
       </div>
     </Main>
   )
