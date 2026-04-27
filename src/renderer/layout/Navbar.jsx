@@ -40,14 +40,14 @@ export default function Navbar() {
 
   return (
     <>
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed top-3 left-3 z-40 rounded-xl bg-gray-800/90 p-2 shadow backdrop-blur md:hidden"
-        >
-          <Menu size={28} className="text-white" />
-        </button>
-      )}
+      <button
+        onClick={() => setIsOpen(true)}
+        className={`fixed top-3 left-3 z-40 rounded-xl bg-gray-800/90 p-2 shadow backdrop-blur md:hidden transition-all duration-300 ${
+          isOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+      >
+        <Menu size={28} className="text-white" />
+      </button>
 
       {isOpen && (
         <div
@@ -58,9 +58,9 @@ export default function Navbar() {
 
       <nav
         style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-        className={`fixed top-0 left-0 z-50 flex h-full w-[min(82vw,18rem)] flex-col overflow-y-auto border-r-2 border-cyan-700 text-white shadow shadow-black ${
-          isOpen ? '' : 'hidden'
-        } md:relative md:block md:h-screen md:w-60 md:min-w-52 md:flex-shrink-0 md:hover:border-r-cyan-600 md:hover:shadow-md md:hover:shadow-cyan-500 md:hover:transition-shadow transition-shadow`}
+        className={`fixed top-0 left-0 z-50 flex h-full w-[min(82vw,18rem)] flex-col overflow-y-auto border-r-2 border-cyan-700 text-white shadow shadow-black transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:animate-slide-in-left md:relative md:translate-x-0 md:h-screen md:w-60 md:min-w-52 md:flex-shrink-0 md:hover:border-r-cyan-600 md:hover:shadow-md md:hover:shadow-cyan-500 md:hover:transition-shadow`}
       >
         <div className="flex items-center justify-between p-4 md:hidden">
           <button onClick={() => setIsOpen(false)} className="text-white">
