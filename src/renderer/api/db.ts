@@ -50,7 +50,15 @@ export const disminuirSaldo = async (moneda: 'pesos' | 'usd', monto: number) => 
 }
 
 export const getMoves = async () => {
-  return runRpc<any[]>('caja_listar_movimientos')
+  const rows = await runRpc<Array<{ id: number; saldoPesos: string; saldoUsd: string; moveType: 'in' | 'out'; createdAt: string; updatedAt: string }>>('caja_listar_movimientos')
+  return rows.map(r => ({
+    id: r.id,
+    moneda: Number(r.saldoPesos) > 0 ? 'pesos' : 'usd' as 'pesos' | 'usd',
+    monto: Number(r.saldoPesos) > 0 ? r.saldoPesos : r.saldoUsd,
+    moveType: r.moveType,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  }))
 }
 
 export const getSelledProductsByDate = async (from: string, to: string) => {
