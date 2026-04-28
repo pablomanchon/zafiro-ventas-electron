@@ -29,16 +29,24 @@ export default function PageResumen() {
         {/* 👇 clave: min-h-0 para que el scroll funcione */}
         <div className="min-h-0 md:flex-1 md:overflow-auto">
           <TableAndSearch
-            datos={loading ? [] : ventas}
+            datos={ventas}
             encabezados={ventasConfig.columns}
             onDobleClickFila={() => null}
             onFilaSeleccionada={() => null}
             searchFilters={ventasConfig.searchFields}
+            loading={loading}
+            loadingTitle="Cargando resumen"
           />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-          {!loading && totales.map(p => (
+          {loading ? (
+            <>
+              <Steel className="h-12 loading-shimmer bg-white/10" />
+              <Steel className="h-12 loading-shimmer bg-white/10" />
+              <Steel className="h-12 loading-shimmer bg-white/10" />
+            </>
+          ) : totales.map(p => (
             <Steel key={p.tipo} className='flex justify-between w-full min-w-0'>
               <p className='capitalize font-bold text-lg'>{p.tipo}</p>
               <p className='text-xl font-bold'>{formatCurrencyARS(p.total)}</p>
@@ -46,7 +54,7 @@ export default function PageResumen() {
           ))}
           <Steel className='flex justify-between w-full min-w-0'>
             <p className='capitalize font-bold text-lg'>Total</p>
-            <p className='text-xl font-bold'>{!loading && formatCurrencyARS(totalGeneral)}</p>
+            <p className='text-xl font-bold'>{loading ? '...' : formatCurrencyARS(totalGeneral)}</p>
           </Steel>
         </div>
 

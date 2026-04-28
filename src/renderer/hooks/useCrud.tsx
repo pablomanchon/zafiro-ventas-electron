@@ -17,14 +17,18 @@ export function useCrud<T extends { id: number | string }>(
   const [items, setItems] = useState<T[]>([])
   const [selected, setSelected] = useState<number | string | null>(null)
   const [editing, setEditing] = useState<T | null>(null)
+  const [loading, setLoading] = useState(true)
   const { openModal, closeModal } = useModal()
 
   const fetchItems = async (): Promise<void> => {
+    setLoading(true)
     try {
       const data = await getAll<T>(entity)
       setItems(data)
     } catch (err) {
       console.error(err)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -81,6 +85,6 @@ export function useCrud<T extends { id: number | string }>(
     )
   }
 
-  return { items, selected, setSelected, showForm, handleDelete, fetchItems }
+  return { items, selected, setSelected, showForm, handleDelete, fetchItems, loading }
 }
 

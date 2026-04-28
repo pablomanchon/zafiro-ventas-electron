@@ -9,6 +9,7 @@ import HorarioVendedor from './HorarioVendedor'
 import { useHorarios } from './useHorarios'
 import Main from '../../layout/Main'
 import Glass from '../../layout/Glass'
+import LoadingState from '../../components/LoadingState'
 
 function formatDateTimeLocal(value?: string | null) {
   const base = value ? new Date(value) : new Date()
@@ -98,7 +99,7 @@ export default function PageHorarios() {
     }
   }
 
-  if (loadingVendedores) return <div>Cargando vendedores...</div>
+  if (loadingVendedores) return <LoadingState title="Cargando vendedores" message="Estamos preparando los horarios." className="m-3" />
   if (error) return <div>Error al cargar vendedores: {(error as Error).message}</div>
 
   return (

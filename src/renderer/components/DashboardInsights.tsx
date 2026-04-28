@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import Glass from "../layout/Glass";
 import VentasPorMetodoChartSmart from "./GraficoVtasPorMetodoSmart";
+import LoadingState, { LoadingRows } from "./LoadingState";
 
 type Vendido = {
   periodo: string;
@@ -232,7 +233,12 @@ export default function DashboardInsights() {
 
       <Glass className="h-96 shadow-inner shadow-cyan-700 border-cyan-700 border">
         {loading ? (
-          <div className="text-sm opacity-70 p-2">Cargando gráfico...</div>
+          <LoadingState
+            variant="table"
+            title="Cargando gráfico"
+            message="Calculando los productos más vendidos."
+            className="h-full rounded-none border-0"
+          />
         ) : err ? (
           <div className="text-sm text-red-500 p-2">{err}</div>
         ) : chartData.length === 0 ? (
@@ -291,7 +297,9 @@ export default function DashboardInsights() {
             </tr>
           </thead>
           <tbody>
-            {items.map((it, idx) => (
+            {loading ? (
+              <LoadingRows rows={5} columns={3} />
+            ) : items.map((it, idx) => (
               <tr key={idx} className="border-t border-white/10 hover:bg-white/5">
                 <td className="px-3 py-2">{it.nombre}</td>
                 <td className="px-3 py-2 text-right">{it.cantidad}</td>

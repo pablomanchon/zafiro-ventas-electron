@@ -12,6 +12,7 @@ import { useModal } from '../providers/ModalProvider'
 import Confirmation from '../layout/Confirmation'
 import bgUrl from '../../../public/fondo-w.webp'
 import { toSingular } from '../utils/utils'
+import LoadingState from '../components/LoadingState'
 
 export default function CrudFormPage<T extends { id: number }>() {
   const { entity, mode, id } = useParams<{
@@ -107,7 +108,7 @@ export default function CrudFormPage<T extends { id: number }>() {
         </Title>
 
         {mode === 'edit' && !ready ? (
-          <div className="p-4 text-white/80">Cargando...</div>
+          <LoadingState title="Cargando registro" message="Traemos los datos para que puedas editarlos." />
         ) : (
           <DynamicForm
             resetOn={mode === 'edit' ? id : undefined}

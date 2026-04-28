@@ -9,6 +9,7 @@ import type { PaymentItem } from '../metodo-pago/PaymentMethodsTable'
 import bgUrl from '../../assets/fondo-h.webp'
 import type { Vendedor } from '../../hooks/useSellers'
 import { formatCurrencyARS } from '../../utils/utils'
+import LoadingState from '../../components/LoadingState'
 
 export type TypeVenta = {
   id: number
@@ -26,7 +27,7 @@ export default function SaleDetail({ idVenta: idProp }: { idVenta?: string }) {
   const { venta, loading } = useSale(id)
 
   if (!id) return <div>No se encontró el ID de la venta</div>
-  if (loading) return <div className="p-6 text-white">Cargando venta...</div>
+  if (loading) return <LoadingState title="Cargando venta" message="Estamos buscando el detalle de la operación." className="m-3" />
   if (!venta) return <div className="p-6 text-white">Venta no encontrada</div>
 
   const fechaVenta = venta.fecha ? new Date(venta.fecha).toLocaleString('es-AR') : ''

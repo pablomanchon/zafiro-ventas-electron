@@ -4,6 +4,7 @@ import { useLocation, useParams } from 'react-router-dom'
 import Main from '../../layout/Main'
 import Title from '../../layout/Title'
 import Steel from '../../layout/Steel'
+import LoadingState from '../../components/LoadingState'
 
 import { useProducts } from '../../hooks/useProducts'
 import { useStockMovements, type StockMove } from '../../hooks/useMovimientoStock'
@@ -136,9 +137,7 @@ export default function MovimientoStockView({
       )}
 
       {loading && !movimiento && (
-        <Steel className="p-3 text-slate-300 bg-slate-800 border border-slate-600">
-          Cargando movimiento de stock...
-        </Steel>
+        <LoadingState title="Cargando movimiento de stock" message="Estamos armando el detalle del movimiento." />
       )}
 
       {!loading && !movimiento && (

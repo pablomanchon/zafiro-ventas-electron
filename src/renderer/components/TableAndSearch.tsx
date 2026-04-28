@@ -3,6 +3,7 @@ import { useSearch } from '../providers/SearchProvider';
 import Search from '../layout/Search';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
+import LoadingState from './LoadingState';
 
 interface TableAndSearchProps<T extends { id: number | string }> {
   datos: T[];
@@ -11,6 +12,9 @@ interface TableAndSearchProps<T extends { id: number | string }> {
   onFilaSeleccionada: (id: T['id'] | null) => void;
   searchFilters: string[];
   renderMobileItem?: (item: T) => ReactNode;
+  loading?: boolean;
+  loadingTitle?: string;
+  emptyMessage?: string;
 }
 
 export default function TableAndSearch<T extends { id: number | string }>({
@@ -20,6 +24,9 @@ export default function TableAndSearch<T extends { id: number | string }>({
   onFilaSeleccionada,
   searchFilters,
   renderMobileItem,
+  loading = false,
+  loadingTitle = 'Cargando datos',
+  emptyMessage = 'No hay datos para mostrar.',
 }: TableAndSearchProps<T>) {
   const { search, setSearch } = useSearch();
   useEffect(() => {
@@ -45,7 +52,13 @@ export default function TableAndSearch<T extends { id: number | string }>({
       <Search />
       {renderMobileItem && (
         <div className="flex flex-col gap-2 sm:hidden">
-          {filteredData.map((item) => (
+          {loading ? (
+            <LoadingState variant="table" title={loadingTitle} message="Esto va a tomar solo un momento." />
+          ) : filteredData.length === 0 ? (
+            <div className="rounded-xl border border-white/12 bg-slate-950/70 px-3 py-8 text-center text-sm text-white/65">
+              {emptyMessage}
+            </div>
+          ) : filteredData.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -64,6 +77,8 @@ export default function TableAndSearch<T extends { id: number | string }>({
           encabezados={encabezados}
           onDobleClickFila={onDobleClickFila}
           onFilaSeleccionada={onFilaSeleccionada}
+          loading={loading}
+          emptyMessage={emptyMessage}
         />
       </div>
     </div>

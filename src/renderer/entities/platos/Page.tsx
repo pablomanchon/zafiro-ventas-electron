@@ -1,13 +1,14 @@
 import PrimaryButton from '../../components/PrimaryButton'
 import Wood from '../../layout/Steel'
 import Steel from '../../layout/Steel'
+import LoadingState from '../../components/LoadingState'
 import Plato from './components/Plato'
 import usePlato from './usePlato'
 
 export default function PagePlatos() {
   const { error, loading, platos, deletePlato, modifyPlato, createPlato } = usePlato()
 
-  if (loading) return <div>Cargando platos...</div>
+  if (loading) return <LoadingState title="Cargando platos" message="Estamos preparando la carta." className="m-3" />
   if (error) return <div>Error al cargar platos: {error}</div>
 
   return (

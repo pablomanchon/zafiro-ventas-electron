@@ -35,7 +35,7 @@ export default function CrudPage<T extends { id: number | string }>({
   cols?: 1 | 2 | 3 | 4 | undefined
 }) {
   const { entity, title, columns, formInputs, searchFields } = config
-  const { items, selected, setSelected, handleDelete, fetchItems } = useCrud<T>(entity, formInputs)
+  const { items, selected, setSelected, handleDelete, fetchItems, loading } = useCrud<T>(entity, formInputs)
   const { openModal, closeModal, isModalOpen } = useModal()
 
   const scopeRef = useRef<HTMLDivElement>(null)
@@ -175,6 +175,8 @@ export default function CrudPage<T extends { id: number | string }>({
             searchFilters={searchFields}
             onFilaSeleccionada={setSelected}
             onDobleClickFila={(rowId) => openEditModal(rowId)} // editar en modal
+            loading={loading}
+            loadingTitle={`Cargando ${title.toLowerCase()}`}
           />
         </div>
 

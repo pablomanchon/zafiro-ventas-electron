@@ -94,6 +94,29 @@ select {
   }
 }
 
+@keyframes loading-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+.loading-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent);
+  animation: loading-shimmer 1.25s ease-in-out infinite;
+}
+
 .modal-overlay {
   display: grid;
   place-items: center;

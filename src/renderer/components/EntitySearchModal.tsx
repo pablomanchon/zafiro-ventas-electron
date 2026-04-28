@@ -7,6 +7,7 @@ import PrimaryButton from './PrimaryButton';
 import Glass from '../layout/Glass';
 import { toast } from 'sonner';
 import { toSingular } from '../utils/utils';
+import LoadingState from './LoadingState';
 
 interface EntitySearchModalProps {
     entity: string;
@@ -51,7 +52,7 @@ export default function EntitySearchModal<T extends { id: number }>({
     return (
         <div className="w-[min(96vw,980px)] p-3 sm:p-4 bg-cyan-800 text-white rounded max-h-[85vh] overflow-y-auto">
             {loading ? (
-                <div className="w-full sm:w-80 h-40">Cargando...</div>
+                <LoadingState title={`Cargando ${entity}`} message="Buscando opciones disponibles." />
             ) : (
                 <>
                     <h3 className="text-lg font-bold mb-2">Buscar {entity}</h3>

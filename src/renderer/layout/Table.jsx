@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { formatCurrencyARS, looksLikeMoneyKey } from "../utils/utils";
 import { useModal } from "../providers/ModalProvider";
+import { LoadingRows } from "../components/LoadingState";
 
 function isEditableTarget(t) {
   const el = t;
@@ -17,6 +18,8 @@ const Table = ({
   onFilaSeleccionada,
   onDobleClickFila,
   formatoFecha = "fecha-hora",
+  loading = false,
+  emptyMessage = "No hay datos para mostrar.",
 }) => {
   const [filaSeleccionada, setFilaSeleccionada] = useState(null);
   const { isModalOpen } = useModal();
@@ -176,7 +179,15 @@ const Table = ({
           </tr>
         </thead>
         <tbody>
-          {datos.map((fila, index) => (
+          {loading ? (
+            <LoadingRows rows={6} columns={encabezados.length} />
+          ) : datos.length === 0 ? (
+            <tr className="bg-gray-950">
+              <td colSpan={encabezados.length} className="px-3 py-8 text-center text-white/65">
+                {emptyMessage}
+              </td>
+            </tr>
+          ) : datos.map((fila, index) => (
             <tr
               key={index}
               onClick={() => manejarSeleccion(index)}

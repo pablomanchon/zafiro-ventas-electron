@@ -18,7 +18,7 @@ export default function MovimientoStockPage() {
   const { columns, searchFields } = config
   const { movimientos, loading, error } = useStockMovements()
 
-  const movimientosProcesados = (loading ? [] : movimientos).map((m: any) => ({
+  const movimientosProcesados = movimientos.map((m: any) => ({
     ...m,
     productsMoveStock: Array.isArray(m.productsMoveStock)
       ? m.productsMoveStock.map((p: any) => `${p.idProduct} x${p.quantity}`).join(', ')
@@ -71,6 +71,8 @@ export default function MovimientoStockPage() {
             searchFilters={searchFields}
             onDobleClickFila={handleDobleClickFila}
             onFilaSeleccionada={() => null}
+            loading={loading}
+            loadingTitle="Cargando movimientos"
           />
         </div>
 

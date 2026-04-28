@@ -98,11 +98,13 @@ export default function SalesPage() {
 
         <div className="min-h-0 md:flex-1 md:overflow-auto" ref={tableRef} tabIndex={-1}>
           <TableAndSearch
-            datos={loading ? [] : ventas}
+            datos={ventas}
             encabezados={columns}
             searchFilters={searchFields}
             onDobleClickFila={handleDobleClickFila}
             onFilaSeleccionada={() => null}
+            loading={loading}
+            loadingTitle="Cargando ventas"
             renderMobileItem={(venta: any) => (
               <div className="rounded border border-white/15 bg-slate-950/75 px-3 py-2 text-white shadow shadow-black/40 active:bg-cyan-900/50">
                 <div className="flex items-start justify-between gap-3">
@@ -127,7 +129,13 @@ export default function SalesPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 items-stretch my-1">
-          {!loading && totales.map((p) => (
+          {loading ? (
+            <>
+              <Steel className="h-12 loading-shimmer bg-white/10" />
+              <Steel className="h-12 loading-shimmer bg-white/10" />
+              <Steel className="h-12 loading-shimmer bg-white/10" />
+            </>
+          ) : totales.map((p) => (
             <Steel key={p.tipo} className="flex justify-between items-center w-full min-w-0">
               <p className="capitalize font-bold text-lg">{p.tipo}</p>
               <p className="text-xl font-bold">{formatCurrencyARS(p.total)}</p>
@@ -135,7 +143,7 @@ export default function SalesPage() {
           ))}
           <Steel className="flex justify-between items-center w-full min-w-0">
             <p className="uppercase font-bold text-lg">Total</p>
-            <p className="text-xl font-bold">{!loading && formatCurrencyARS(totalGeneral)}</p>
+            <p className="text-xl font-bold">{loading ? '...' : formatCurrencyARS(totalGeneral)}</p>
           </Steel>
         </div>
 
