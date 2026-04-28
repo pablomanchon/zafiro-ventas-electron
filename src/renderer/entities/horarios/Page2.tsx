@@ -109,70 +109,72 @@ export default function PageHorarios() {
           const estaAbierto = Boolean(horarioAbierto)
 
           return (
-            <Wood className="font-bold text-white" key={vendedor.id}>
-              <Title>{vendedor.nombre}</Title>
+            <Wood key={vendedor.id} typeWood={3} className="text-white">
+              <div className="bg-black/55 rounded p-3 flex flex-col gap-3">
+                <Title>{vendedor.nombre}</Title>
 
-              <h3 className="py-2 text-l">ID: {vendedor.id}</h3>
+                <h3 className="py-1 text-l font-bold text-center">ID: {vendedor.id}</h3>
 
-              <Glass className="my-2 text-left">
-                <p>
-                  Estado:{' '}
-                  <span className={estaAbierto ? 'text-green-600' : 'text-red-600'}>
-                    {estaAbierto ? 'Horario abierto' : 'Horario cerrado'}
-                  </span>
-                </p>
-                <p className="mt-1 text-sm opacity-80">Horas hoy: {getHorasDia(new Date(), vendedor.id)}</p>
-                <p className="text-sm opacity-80">Horas semana: {getHorasSemana(new Date(), vendedor.id)}</p>
-                <p className="text-sm opacity-80">Horas mes: {getHorasMes(new Date(), vendedor.id)}</p>
-                {horarioAbierto && (
-                  <p className="mt-1 text-sm opacity-80">
-                    Ingreso actual: {new Date(horarioAbierto.horaIngreso).toLocaleString('es-AR')}
+                <Glass className="text-left">
+                  <p>
+                    Estado:{' '}
+                    <span className={estaAbierto ? 'text-green-400' : 'text-red-400'}>
+                      {estaAbierto ? 'Horario abierto' : 'Horario cerrado'}
+                    </span>
                   </p>
-                )}
-              </Glass>
+                  <p className="mt-1 text-sm opacity-80">Horas hoy: {getHorasDia(new Date(), vendedor.id)}</p>
+                  <p className="text-sm opacity-80">Horas semana: {getHorasSemana(new Date(), vendedor.id)}</p>
+                  <p className="text-sm opacity-80">Horas mes: {getHorasMes(new Date(), vendedor.id)}</p>
+                  {horarioAbierto && (
+                    <p className="mt-1 text-sm opacity-80">
+                      Ingreso actual: {new Date(horarioAbierto.horaIngreso).toLocaleString('es-AR')}
+                    </p>
+                  )}
+                </Glass>
 
-              <div className="flex flex-col gap-3 text-left">
-                <label className="flex flex-col gap-1">
-                  <span className="text-xs uppercase tracking-[0.18em] text-white/80">Hora de ingreso</span>
-                  <input
-                    type="datetime-local"
-                    value={ingresos[vendedor.id] ?? ''}
-                    onChange={(e) =>
-                      setIngresos((prev) => ({ ...prev, [vendedor.id]: e.target.value }))
-                    }
-                    className="rounded-lg border border-white/20 bg-black/35 px-3 py-2 text-white outline-none focus:border-cyan-400"
+                <div className="flex flex-col gap-3 text-left">
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs uppercase tracking-[0.18em] text-white/80">Hora de ingreso</span>
+                    <input
+                      type="datetime-local"
+                      value={ingresos[vendedor.id] ?? ''}
+                      onChange={(e) =>
+                        setIngresos((prev) => ({ ...prev, [vendedor.id]: e.target.value }))
+                      }
+                      className="rounded-lg border border-white/20 bg-black/35 px-3 py-2 text-white outline-none focus:border-cyan-400"
+                    />
+                  </label>
+
+                  <PrimaryButton
+                    title={estaAbierto ? 'Actualizar ingreso sugerido' : 'Registrar ingreso'}
+                    functionClick={() => handleIngreso(vendedor.id)}
+                    disabled={loadingHorarios}
                   />
-                </label>
 
-                <PrimaryButton
-                  title={estaAbierto ? 'Actualizar ingreso sugerido' : 'Registrar ingreso'}
-                  functionClick={() => handleIngreso(vendedor.id)}
-                  disabled={loadingHorarios}
-                />
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs uppercase tracking-[0.18em] text-white/80">Hora de egreso</span>
+                    <input
+                      type="datetime-local"
+                      value={egresos[vendedor.id] ?? ''}
+                      onChange={(e) =>
+                        setEgresos((prev) => ({ ...prev, [vendedor.id]: e.target.value }))
+                      }
+                      className="rounded-lg border border-white/20 bg-black/35 px-3 py-2 text-white outline-none focus:border-cyan-400"
+                      disabled={!estaAbierto}
+                    />
+                  </label>
 
-                <label className="flex flex-col gap-1">
-                  <span className="text-xs uppercase tracking-[0.18em] text-white/80">Hora de egreso</span>
-                  <input
-                    type="datetime-local"
-                    value={egresos[vendedor.id] ?? ''}
-                    onChange={(e) =>
-                      setEgresos((prev) => ({ ...prev, [vendedor.id]: e.target.value }))
-                    }
-                    className="rounded-lg border border-white/20 bg-black/35 px-3 py-2 text-white outline-none focus:border-cyan-400"
-                    disabled={!estaAbierto}
+                  <PrimaryButton
+                    title="Registrar egreso"
+                    functionClick={() => handleEgreso(vendedor.id)}
+                    disabled={loadingHorarios || !estaAbierto}
                   />
-                </label>
 
-                <PrimaryButton
-                  title="Registrar egreso"
-                  functionClick={() => handleEgreso(vendedor.id)}
-                  disabled={loadingHorarios || !estaAbierto}
-                />
-
-                <PrimaryButton
-                  title="Ver horarios"
-                  functionClick={() => handleVerHorarios(vendedor.id)}
-                />
+                  <PrimaryButton
+                    title="Ver horarios"
+                    functionClick={() => handleVerHorarios(vendedor.id)}
+                  />
+                </div>
               </div>
             </Wood>
           )

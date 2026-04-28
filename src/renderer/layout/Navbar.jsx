@@ -68,21 +68,21 @@ export default function Navbar() {
           </button>
         </div>
 
-        <div className="m-3 rounded-xl border border-black bg-black bg-opacity-50 p-4 shadow-inner shadow-black md:m-5 md:p-5">
-          <img src={logo} alt="Logo" className="m-auto max-w-24 animate-spin-slower p-2 md:max-w-full" />
+        <div className="m-2 rounded-xl border border-black bg-black bg-opacity-50 p-2 shadow-inner shadow-black">
+          <img src={logo} alt="Logo" className="m-auto max-w-16 animate-spin-slower p-1 md:max-w-20" />
         </div>
 
-        <div className="px-3 pb-2 md:px-4">
-          <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-left">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-white/45">Kiosco</p>
-            <p className="mt-1 break-words text-sm font-semibold md:text-base">
+        <div className="px-2 pb-1">
+          <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-left">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-white/45">Kiosco</p>
+            <p className="mt-0.5 break-words text-sm font-semibold">
               {profile?.kioscoNombre ?? 'Sin kiosco'}
             </p>
-            <p className="mt-1 break-all text-xs text-white/60">{profile?.email ?? ''}</p>
+            <p className="break-all text-xs text-white/60">{profile?.email ?? ''}</p>
           </div>
         </div>
 
-        <ul className="flex flex-col gap-2 p-2 pb-4 text-center md:p-1">
+        <ul className="flex flex-col gap-1 p-2 pb-3 text-center">
           {navItems.map((item) => (
             <NavLink
               key={item.name}
@@ -90,7 +90,7 @@ export default function Navbar() {
               end={item.href === '/'}
               onClick={() => setIsOpen(false)}
               className={({ isActive }) =>
-                `z-10 flex items-center gap-2 rounded-lg p-2.5 shadow-inner shadow-black transition-all hover:shadow-black hover:shadow-inner ${
+                `z-10 flex items-center gap-2 rounded-lg px-3 py-3 md:py-2 shadow-inner shadow-black transition-all hover:shadow-black hover:shadow-inner ${
                   isActive
                     ? 'bg-stone-900 bg-opacity-70 font-extrabold shadow-inner shadow-black'
                     : 'bg-black/30 hover:bg-sky-600 hover:bg-opacity-80'
@@ -98,7 +98,7 @@ export default function Navbar() {
               }
             >
               {item.icon}
-              <span className="text-sm font-bold md:text-base">{item.name}</span>
+              <span className="text-sm font-bold">{item.name}</span>
             </NavLink>
           ))}
         </ul>

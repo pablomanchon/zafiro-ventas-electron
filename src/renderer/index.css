@@ -59,8 +59,12 @@ body {
 
 
 * {
-  scrollbar-width: thin;  
+  scrollbar-width: thin;
   /* “auto” es el tamaño normal, “none” la oculta */
+}
+
+select {
+  padding-right: 2rem;
 }
 
 /* Color del thumb y del track */

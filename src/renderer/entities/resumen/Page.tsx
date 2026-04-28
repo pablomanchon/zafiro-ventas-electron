@@ -37,8 +37,7 @@ export default function PageResumen() {
           />
         </div>
 
-        <div className="focus:outline-none grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-          {/* Tarjetas de totales */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
           {!loading && totales.map(p => (
             <Steel key={p.tipo} className='flex justify-between w-full min-w-0'>
               <p className='capitalize font-bold text-lg'>{p.tipo}</p>
