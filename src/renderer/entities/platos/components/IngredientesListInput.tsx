@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getAll } from '../../../api/crud';
+import { toast } from 'sonner';
+import { getAll, create } from '../../../api/crud';
 import Steel from '../../../layout/Steel';
+import DynamicForm from '../../../layout/DynamicForm';
+import { useModal } from '../../../providers/ModalProvider';
 import { formatARS } from '../../../utils/utils';
+import ingredientesConfig from '../../ingredientes/config';
 
 interface IngredienteOption {
   id: string;
@@ -50,6 +54,16 @@ export default function IngredientesListInput({
 }) {
   const [ingredientes, setIngredientes] = useState<IngredienteOption[]>([]);
   const [rows, setRows] = useState<IngredienteRow[]>([]);
+  const { openModal, closeModal } = useModal();
+
+  const loadIngredientes = async () => {
+    try {
+      const data = await getAll<IngredienteOption>('ingredientes');
+      setIngredientes(data);
+    } catch (error) {
+      console.error('No se pudieron cargar ingredientes', error);
+    }
+  };
 
   useEffect(() => {
     const normalized = normalizeValue(value);
@@ -57,14 +71,7 @@ export default function IngredientesListInput({
   }, [value]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await getAll<IngredienteOption>('ingredientes');
-        setIngredientes(data);
-      } catch (error) {
-        console.error('No se pudieron cargar ingredientes', error);
-      }
-    })();
+    loadIngredientes();
   }, []);
 
   const options = useMemo(() => ingredientes ?? [], [ingredientes]);
@@ -72,15 +79,11 @@ export default function IngredientesListInput({
   const updateRows = (updater: (prev: IngredienteRow[]) => IngredienteRow[]) => {
     setRows(prev => {
       const next = updater(prev);
-
-      // ✅ mandamos al padre lo que el usuario realmente tiene (con ingredienteId)
       const withId = next.filter(r => r.ingredienteId);
-
       onChange(withId as any);
       return next;
     });
   };
-
 
   const handleAddRow = () => {
     const defaultId = options[0]?.id ?? '';
@@ -95,6 +98,25 @@ export default function IngredientesListInput({
 
   const handleRemove = (index: number) => {
     updateRows((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleCreateIngrediente = () => {
+    openModal(
+      <div className="p-4 w-80">
+        <h2 className="text-white font-bold text-lg mb-3">Nuevo ingrediente</h2>
+        <DynamicForm
+          inputs={ingredientesConfig.formInputs as any}
+          titleBtn="Crear"
+          onRequestClose={closeModal}
+          onSubmit={async (values) => {
+            await create('ingredientes', values);
+            toast.success('Ingrediente creado');
+            await loadIngredientes();
+            closeModal();
+          }}
+        />
+      </div>
+    );
   };
 
   return (
@@ -122,7 +144,8 @@ export default function IngredientesListInput({
                         {opt.nombre}
                       </option>
                     ))}
-                  </select> {unidad && (
+                  </select>
+                  {unidad && (
                     <span className="text-[11px] text-gray-300 mt-1">{unidad}</span>
                   )}
                 </div>
@@ -136,8 +159,8 @@ export default function IngredientesListInput({
                     className="mt-1 rounded bg-white/80 text-black px-2 py-1"
                     value={row.cantidadUsada}
                     onChange={(e) => {
-                      const v = e.target.value
-                      handleRowChange(index, { cantidadUsada: v === '' ? '' : Number(v) })
+                      const v = e.target.value;
+                      handleRowChange(index, { cantidadUsada: v === '' ? '' : Number(v) });
                     }}
                     disabled={disabled}
                   />
@@ -160,14 +183,24 @@ export default function IngredientesListInput({
         })}
       </div>
 
-      <button
-        type="button"
-        className="px-3 py-2 rounded bg-cyan-700 hover:bg-cyan-600 disabled:opacity-60"
-        onClick={handleAddRow}
-        disabled={disabled || options.length === 0}
-      >
-        Agregar ingrediente
-      </button>
+      <div className="flex gap-2 flex-wrap">
+        <button
+          type="button"
+          className="px-3 py-2 rounded bg-cyan-700 hover:bg-cyan-600 disabled:opacity-60"
+          onClick={handleAddRow}
+          disabled={disabled || options.length === 0}
+        >
+          Agregar ingrediente
+        </button>
+        <button
+          type="button"
+          className="px-3 py-2 rounded bg-emerald-700 hover:bg-emerald-600 disabled:opacity-60"
+          onClick={handleCreateIngrediente}
+          disabled={disabled}
+        >
+          + Nuevo ingrediente
+        </button>
+      </div>
     </div>
   );
 }
