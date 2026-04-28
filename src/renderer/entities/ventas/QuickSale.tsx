@@ -350,8 +350,8 @@ export default function QuickSale() {
 
   return (
     <Main className="flex flex-col gap-4 p-3 sm:p-4 text-white">
-      <Steel className="text-white">
-        <div className="flex flex-col gap-4 rounded-2xl bg-black/38 px-3 py-4 sm:px-4">
+      <Steel className="flex flex-col gap-4 text-white">
+        <div className="flex flex-col gap-4 px-3 py-4 sm:px-4">
           <div className="flex flex-col gap-2">
             <p className="text-[11px] uppercase tracking-[0.22em] text-white/70">Dashboard</p>
             <Title className="border-b-0 pb-0 text-left">Venta rapida</Title>
@@ -460,127 +460,125 @@ export default function QuickSale() {
               )}
             </div>
           </div>
-        </div>
-      </Steel>
 
-      <Steel className="text-white">
-        <div className="overflow-x-auto rounded-2xl bg-black/34 px-2 py-3 sm:px-3">
-          <div className="min-w-[900px]">
-            <table className="w-full text-sm">
-              <thead className="border-b border-white/16 text-white/88">
-                <tr>
-                  <th className="px-3 py-2 text-left"><span className="rounded-md bg-black/22 px-2 py-1">Codigo</span></th>
-                  <th className="px-3 py-2 text-left"><span className="rounded-md bg-black/22 px-2 py-1">Producto</span></th>
-                  <th className="px-3 py-2 text-right"><span className="rounded-md bg-black/22 px-2 py-1">Precio</span></th>
-                  <th className="px-3 py-2 text-center"><span className="rounded-md bg-black/22 px-2 py-1">Cant.</span></th>
-                  <th className="px-3 py-2 text-center"><span className="rounded-md bg-black/22 px-2 py-1">Desc. %</span></th>
-                  <th className="px-3 py-2 text-right"><span className="rounded-md bg-black/22 px-2 py-1">Desc. $</span></th>
-                  <th className="px-3 py-2 text-right"><span className="rounded-md bg-black/22 px-2 py-1">Total</span></th>
-                  <th className="px-3 py-2 text-center"><span className="rounded-md bg-black/22 px-2 py-1">Accion</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.length === 0 ? (
+          <div className="overflow-x-auto border-t border-white/10 pt-3">
+            <div className="min-w-[900px]">
+              <table className="w-full text-sm">
+                <thead className="border-b border-white/16 text-white/88">
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center">
-                      <div className="mx-auto inline-flex rounded-xl bg-black/35 px-4 py-2 text-white/88">
-                        Aun no hay productos cargados. Escanea el primer codigo para empezar.
-                      </div>
-                    </td>
+                    <th className="px-3 py-2 text-left"><span className="rounded-md bg-black/22 px-2 py-1">Codigo</span></th>
+                    <th className="px-3 py-2 text-left"><span className="rounded-md bg-black/22 px-2 py-1">Producto</span></th>
+                    <th className="px-3 py-2 text-right"><span className="rounded-md bg-black/22 px-2 py-1">Precio</span></th>
+                    <th className="px-3 py-2 text-center"><span className="rounded-md bg-black/22 px-2 py-1">Cant.</span></th>
+                    <th className="px-3 py-2 text-center"><span className="rounded-md bg-black/22 px-2 py-1">Desc. %</span></th>
+                    <th className="px-3 py-2 text-right"><span className="rounded-md bg-black/22 px-2 py-1">Desc. $</span></th>
+                    <th className="px-3 py-2 text-right"><span className="rounded-md bg-black/22 px-2 py-1">Total</span></th>
+                    <th className="px-3 py-2 text-center"><span className="rounded-md bg-black/22 px-2 py-1">Accion</span></th>
                   </tr>
-                ) : (
-                  items.map((item) => (
-                    <tr key={item.id} className="border-b border-white/10 hover:bg-black/18">
-                      <td className="px-3 py-3">{item.codigo}</td>
-                      <td className="px-3 py-3 font-semibold text-white">{item.nombre}</td>
-                      <td className="px-3 py-3 text-right">{formatCurrencyARS(item.precio)}</td>
-                      <td className="px-3 py-3">
-                        <input
-                          type="number"
-                          min={1}
-                          value={item.cantidad}
-                          onChange={(e) =>
-                            updateItem(item.id, {
-                              cantidad: Math.max(1, Number(e.target.value) || 1),
-                            })
-                          }
-                          className="w-20 rounded-lg border border-white/18 bg-black/42 px-2 py-2 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
-                        />
-                      </td>
-                      <td className="px-3 py-3">
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={item.descuentoPct}
-                          onChange={(e) =>
-                            updateItem(item.id, {
-                              descuentoPct:
-                                e.target.value === ''
-                                  ? ''
-                                  : clamp(Number(e.target.value) || 0, 0, 100),
-                            })
-                          }
-                          className="w-20 rounded-lg border border-white/18 bg-black/42 px-2 py-2 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
-                        />
-                      </td>
-                      <td className="px-3 py-3">
-                        <input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={item.descuentoMonto}
-                          onChange={(e) =>
-                            updateItem(item.id, {
-                              descuentoMonto: e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0),
-                            })
-                          }
-                          className="w-28 rounded-lg border border-white/18 bg-black/42 px-2 py-2 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
-                        />
-                      </td>
-                      <td className="px-3 py-3 text-right font-semibold">{formatCurrencyARS(lineTotal(item))}</td>
-                      <td className="px-3 py-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.id)}
-                          className="rounded-lg border border-black bg-red-900 px-3 py-2 font-semibold shadow-inner shadow-black hover:bg-orange-700"
-                        >
-                          Eliminar
-                        </button>
+                </thead>
+                <tbody>
+                  {items.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-8 text-center">
+                        <div className="mx-auto inline-flex rounded-xl bg-black/35 px-4 py-2 text-white/88">
+                          Aun no hay productos cargados. Escanea el primer codigo para empezar.
+                        </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    items.map((item) => (
+                      <tr key={item.id} className="border-b border-white/10 hover:bg-black/18">
+                        <td className="px-3 py-3">{item.codigo}</td>
+                        <td className="px-3 py-3 font-semibold text-white">{item.nombre}</td>
+                        <td className="px-3 py-3 text-right">{formatCurrencyARS(item.precio)}</td>
+                        <td className="px-3 py-3">
+                          <input
+                            type="number"
+                            min={1}
+                            value={item.cantidad}
+                            onChange={(e) =>
+                              updateItem(item.id, {
+                                cantidad: Math.max(1, Number(e.target.value) || 1),
+                              })
+                            }
+                            className="w-20 rounded-lg border border-white/18 bg-black/42 px-2 py-2 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
+                          />
+                        </td>
+                        <td className="px-3 py-3">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={item.descuentoPct}
+                            onChange={(e) =>
+                              updateItem(item.id, {
+                                descuentoPct:
+                                  e.target.value === ''
+                                    ? ''
+                                    : clamp(Number(e.target.value) || 0, 0, 100),
+                              })
+                            }
+                            className="w-20 rounded-lg border border-white/18 bg-black/42 px-2 py-2 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
+                          />
+                        </td>
+                        <td className="px-3 py-3">
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={item.descuentoMonto}
+                            onChange={(e) =>
+                              updateItem(item.id, {
+                                descuentoMonto: e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0),
+                              })
+                            }
+                            className="w-28 rounded-lg border border-white/18 bg-black/42 px-2 py-2 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
+                          />
+                        </td>
+                        <td className="px-3 py-3 text-right font-semibold">{formatCurrencyARS(lineTotal(item))}</td>
+                        <td className="px-3 py-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.id)}
+                            className="rounded-lg border border-black bg-red-900 px-3 py-2 font-semibold shadow-inner shadow-black hover:bg-orange-700"
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2 justify-end border-t border-white/10 pt-2">
+            <button
+              type="button"
+              onClick={clearSale}
+              className="rounded-xl border border-white/18 bg-black/45 px-4 py-3 font-semibold text-white hover:bg-white/12"
+              disabled={saving}
+            >
+              Limpiar venta
+            </button>
+            <button
+              type="button"
+              onClick={saveSale}
+              className="rounded-xl border border-black bg-emerald-700 px-5 py-3 font-bold text-white shadow-inner shadow-black hover:bg-emerald-600 disabled:opacity-80 disabled:text-white/80"
+              disabled={
+                saving ||
+                loadingClients ||
+                loadingVendedores ||
+                !items.length ||
+                !selectedSellerId ||
+                !selectedMethodId
+              }
+            >
+              {saving ? 'Guardando...' : `Cobrar ${formatCurrencyARS(totals.total)}`}
+            </button>
           </div>
         </div>
-      </Steel>
-
-      <Steel className="flex flex-col sm:flex-row gap-2 justify-end bg-gray-800 p-2 text-white">
-        <button
-          type="button"
-          onClick={clearSale}
-          className="rounded-xl border border-white/18 bg-black/45 px-4 py-3 font-semibold text-white hover:bg-white/12"
-          disabled={saving}
-        >
-          Limpiar venta
-        </button>
-        <button
-          type="button"
-          onClick={saveSale}
-          className="rounded-xl border border-black bg-emerald-700 px-5 py-3 font-bold text-white shadow-inner shadow-black hover:bg-emerald-600 disabled:opacity-80 disabled:text-white/80"
-          disabled={
-            saving ||
-            loadingClients ||
-            loadingVendedores ||
-            !items.length ||
-            !selectedSellerId ||
-            !selectedMethodId
-          }
-        >
-          {saving ? 'Guardando...' : `Cobrar ${formatCurrencyARS(totals.total)}`}
-        </button>
       </Steel>
     </Main>
   )

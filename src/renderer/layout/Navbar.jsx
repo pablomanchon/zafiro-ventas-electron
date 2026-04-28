@@ -22,15 +22,15 @@ import { useAuth } from '../hooks/useAuth'
 const navItems = [
   { name: 'Dashboard', href: '/', icon: <LayoutDashboard size={20} /> },
   { name: 'Ventas', href: '/ventas', icon: <Receipt size={20} /> },
-  { name: 'Productos', href: '/productos', icon: <Package size={20} /> },
   { name: 'Caja', href: '/caja', icon: <Wallet size={20} /> },
-  { name: 'Resumenes', href: '/resumenes', icon: <BarChart3 size={20} /> },
-  { name: 'Clientes', href: '/clientes', icon: <Users size={20} /> },
-  { name: 'Vendedores', href: '/vendedores', icon: <Users size={20} /> },
-  { name: 'Metodos de pago', href: '/metodos-pago', icon: <CreditCard size={20} /> },
+  { name: 'Productos', href: '/productos', icon: <Package size={20} /> },
   { name: 'Stock', href: '/movimientos-stock', icon: <ArrowUpDown size={20} /> },
   { name: 'Ingredientes', href: '/ingredientes', icon: <Salad size={20} /> },
   { name: 'Platos', href: '/platos', icon: <ChefHat size={20} /> },
+  { name: 'Clientes', href: '/clientes', icon: <Users size={20} /> },
+  { name: 'Vendedores', href: '/vendedores', icon: <Users size={20} /> },
+  { name: 'Metodos de pago', href: '/metodos-pago', icon: <CreditCard size={20} /> },
+  { name: 'Resumenes', href: '/resumenes', icon: <BarChart3 size={20} /> },
   { name: 'Horarios', href: '/horarios', icon: <Clock size={20} /> },
 ]
 
