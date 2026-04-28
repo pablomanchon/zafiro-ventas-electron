@@ -41,12 +41,12 @@ export const getAllSaldos = async () => {
   return runRpc<{ pesos: number; usd: number }>('caja_obtener_saldos')
 }
 
-export const aumentarSaldo = async (moneda: 'pesos' | 'usd', monto: number) => {
-  await runRpc('caja_aumentar_saldo', { p_moneda: moneda, p_monto: monto })
+export const aumentarSaldo = async (moneda: 'pesos' | 'usd', monto: number, vendedorId?: number | null) => {
+  await runRpc('caja_aumentar_saldo', { p_moneda: moneda, p_monto: monto, p_vendedor_id: vendedorId ?? null })
 }
 
-export const disminuirSaldo = async (moneda: 'pesos' | 'usd', monto: number) => {
-  await runRpc('caja_disminuir_saldo', { p_moneda: moneda, p_monto: monto })
+export const disminuirSaldo = async (moneda: 'pesos' | 'usd', monto: number, vendedorId?: number | null) => {
+  await runRpc('caja_disminuir_saldo', { p_moneda: moneda, p_monto: monto, p_vendedor_id: vendedorId ?? null })
 }
 
 export const getMoves = async () => {

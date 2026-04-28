@@ -9,9 +9,12 @@ import PrimaryButton from '../../components/PrimaryButton'
 import TableAndSearch from '../../components/TableAndSearch'
 import { useFocusBlocker } from '../../hooks/useFocusBlocker'
 import { useStockMovements } from '../../hooks/useMovimientoStock'
+import { useModal } from '../../providers/ModalProvider'
+import MovimientoStockCreate from './movimientoStockCreate'
 
 export default function MovimientoStockPage() {
   const navigate = useNavigate()
+  const { openModal, closeModal } = useModal()
   const config = crudConfigs['movimiento-stock'] as CrudConfig
   const { columns, searchFields } = config
   const { movimientos, loading, error } = useStockMovements()
@@ -36,8 +39,8 @@ export default function MovimientoStockPage() {
   }, [openMovimiento])
 
   const handleOpenCreate = useCallback(() => {
-    navigate('/movimiento-stock/create', { state: { from: 'movimiento-stock' } })
-  }, [navigate])
+    openModal(<MovimientoStockCreate onSuccess={closeModal} />)
+  }, [openModal, closeModal])
 
   const scopeRef = useRef<HTMLDivElement>(null)
   const tableRef = useRef<HTMLDivElement>(null)

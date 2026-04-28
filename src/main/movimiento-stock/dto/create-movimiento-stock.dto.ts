@@ -3,6 +3,7 @@ import { MovimientoStock } from "../entities/movimiento-stock.entity";
 export class CreateMovimientoStockDto {
     moveType: 'in' | 'out'
     products: ProductMoveStock[]
+    detalle?: string | null
 }
 
 export type ProductMoveStock = {
@@ -18,5 +19,6 @@ export function toDto(entity: MovimientoStock): CreateMovimientoStockDto {
     return {
         moveType: entity.moveType,
         products: entity.productsMoveStock,
+        detalle: entity.detalle ?? null,
     };
 }

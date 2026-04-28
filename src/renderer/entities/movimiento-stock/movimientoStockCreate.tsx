@@ -1,20 +1,13 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import type { FormInput } from '../../layout/DynamicForm'
 import DynamicForm from '../../layout/DynamicForm'
-import Main from '../../layout/Main'
 import Title from '../../layout/Title'
 import MovimientoStockItemsTable, { type StockItem } from './movimientoStockItemsTable'
-import bgUrl from '../../assets/fondo-w.webp'
 import { useStockMovements } from '../../hooks/useMovimientoStock'
-import { getInitPayload } from '../../utils/init-data'
+import VendedorSelectInput from '../sellers/VendedorSelectInput'
 
-type MovimientoInitPayload = {
-  moveType?: 'in' | 'out'
-  items?: StockItem[]
-  [key: string]: unknown
-}
+const DRAFT_VENDEDOR_KEY = 'draft:movimiento-stock:vendedorId'
 
 const EMPTY_ROWS: StockItem[] = [
   { productId: '', nombre: '', cantidad: 1 },
@@ -23,50 +16,29 @@ const EMPTY_ROWS: StockItem[] = [
   { productId: '', nombre: '', cantidad: 1 },
 ]
 
-export default function MovimientoStockCreate() {
-  const location = useLocation()
+interface Props {
+  onSuccess?: () => void
+}
+
+export default function MovimientoStockCreate({ onSuccess }: Props) {
   const { createMove } = useStockMovements()
 
   const [formKey, setFormKey] = useState(0)
   const [submitting, setSubmitting] = useState(false)
-  const [defaults, setDefaults] = useState<{
-    moveType?: 'in' | 'out'
-    items?: StockItem[]
-  }>({
-    moveType: undefined,
-    items: EMPTY_ROWS,
+  const [vendedorId, setVendedorId] = useState<number | null>(() => {
+    const stored = localStorage.getItem(DRAFT_VENDEDOR_KEY)
+    if (!stored) return null
+    const parsed = Number(stored)
+    return isNaN(parsed) ? null : parsed
   })
 
-  const [initPayload, setInitPayload] = useState<MovimientoInitPayload | null>(null)
-
-  const hasInitData = useMemo(() => {
-    if (!initPayload) return false
-    return Boolean(
-      initPayload.moveType ||
-        (Array.isArray(initPayload.items) && initPayload.items.length > 0)
-    )
-  }, [initPayload])
-
   useEffect(() => {
-    const fromLocation = getInitPayload<MovimientoInitPayload>(location.state)
-    if (fromLocation) {
-      setInitPayload(fromLocation)
+    if (vendedorId !== null) {
+      localStorage.setItem(DRAFT_VENDEDOR_KEY, String(vendedorId))
+    } else {
+      localStorage.removeItem(DRAFT_VENDEDOR_KEY)
     }
-  }, [location.state])
-
-  useEffect(() => {
-    if (!hasInitData || !initPayload) return
-
-    setDefaults({
-      moveType: initPayload.moveType,
-      items:
-        initPayload.items && initPayload.items.length > 0
-          ? initPayload.items
-          : EMPTY_ROWS,
-    })
-
-    setFormKey((k) => k + 1)
-  }, [hasInitData, initPayload])
+  }, [vendedorId])
 
   const ItemsProxy = useCallback(
     ({ value, onChange }: { value?: StockItem[]; onChange?: (v: StockItem[]) => void }) => (
@@ -85,17 +57,21 @@ export default function MovimientoStockCreate() {
           { label: 'Entrada (+ stock)', value: 'in' },
           { label: 'Salida (- stock)', value: 'out' },
         ],
-        value: defaults.moveType,
       },
       {
         name: 'items',
         label: 'Productos',
         type: 'component',
         Component: ItemsProxy,
-        value: defaults.items,
+        value: EMPTY_ROWS,
+      },
+      {
+        name: 'detalle',
+        label: 'Detalle (opcional)',
+        type: 'textarea',
       },
     ],
-    [defaults, ItemsProxy]
+    [ItemsProxy]
   )
 
   const handleSubmit = async (values: Record<string, any>) => {
@@ -107,7 +83,11 @@ export default function MovimientoStockCreate() {
 
       if (moveType !== 'in' && moveType !== 'out') {
         toast.error('Debes seleccionar un tipo de movimiento.')
-        setSubmitting(false)
+        return
+      }
+
+      if (!vendedorId) {
+        toast.error('Debes seleccionar un vendedor.')
         return
       }
 
@@ -117,19 +97,18 @@ export default function MovimientoStockCreate() {
 
       if (productosValidos.length === 0) {
         toast.error('Agrega al menos un producto.')
-        setSubmitting(false)
         return
       }
 
-      const movimiento = await createMove(moveType, items)
+      const detalle = (values.detalle as string | undefined)?.trim() || null
+      const movimiento = await createMove(moveType, productosValidos, vendedorId, detalle)
 
       toast.success(`Movimiento ${movimiento.movimientoId} creado con éxito`)
 
-      setDefaults({
-        moveType: undefined,
-        items: EMPTY_ROWS,
-      })
+      localStorage.removeItem(DRAFT_VENDEDOR_KEY)
+      setVendedorId(null)
       setFormKey((k) => k + 1)
+      onSuccess?.()
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message ?? err?.message ?? 'Error al crear movimiento'
@@ -140,16 +119,12 @@ export default function MovimientoStockCreate() {
   }
 
   return (
-    <Main
-      style={{
-        backgroundImage: `url(${bgUrl})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-      className="flex flex-col gap-4 text-white"
-    >
-      <div className="flex items-center justify-between">
-        <Title className="text-white pb-2">Crear Movimiento de Stock</Title>
+    <div className="flex flex-col gap-4 text-white p-5 w-[600px] max-w-[90vw] max-h-[85vh] overflow-y-auto">
+      <Title className="text-white pb-1">Crear Movimiento de Stock</Title>
+
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-semibold text-white">Vendedor</label>
+        <VendedorSelectInput value={vendedorId} onChange={setVendedorId} />
       </div>
 
       <DynamicForm
@@ -158,8 +133,8 @@ export default function MovimientoStockCreate() {
         inputs={inputs}
         onSubmit={handleSubmit}
         titleBtn={submitting ? 'Guardando...' : 'Guardar Movimiento'}
+        preventEnterSubmit
       />
-    </Main>
+    </div>
   )
 }
-

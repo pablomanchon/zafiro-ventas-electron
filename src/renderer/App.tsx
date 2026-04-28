@@ -15,7 +15,6 @@ import PageVendedores from "./entities/sellers/Page";
 import useUser from "./hooks/useUser";
 import PageLicencia from "./pages/PageLicencia";
 import PageMoveStock from './entities/movimiento-stock/Page'
-import MovimientoStockCreate from "./entities/movimiento-stock/movimientoStockCreate";
 import MovimientoStockView from "./entities/movimiento-stock/movimientoStockView";
 import PageIngredientes from "./entities/ingredientes/Page";
 import PagePlatos from "./entities/platos/Page";
@@ -43,7 +42,6 @@ export default function App() {
       <Route path="/ventas/create" element={<VentaCreate />} />
       <Route path="/ventas/create2" element={<VentaCreate2 />} />
       <Route path="/ventas/:idVenta" element={<SaleDetail />} />
-      <Route path="/movimiento-stock/create" element={<MovimientoStockCreate />} />
       <Route path="/movimiento-stock/:id" element={<MovimientoStockView />} />
 
       <Route element={<MainLayout />}>

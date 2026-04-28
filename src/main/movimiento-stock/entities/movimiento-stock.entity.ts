@@ -11,6 +11,8 @@ export class MovimientoStock {
   fecha: Date
   @Column()
   moveType: 'in' | 'out'
+  @Column({ nullable: true, type: 'text', default: null })
+  detalle: string | null;
   @Column({ default: false })
   deleted: boolean;
 }
@@ -18,6 +20,7 @@ export function toEntity(dto: CreateMovimientoStockDto): MovimientoStock {
   const entity = new MovimientoStock();
   entity.productsMoveStock = dto.products;
   entity.moveType = dto.moveType;
+  entity.detalle = dto.detalle ?? null;
 
   return entity;
 }

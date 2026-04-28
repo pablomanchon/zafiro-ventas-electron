@@ -80,7 +80,7 @@ export function useStockMovements() {
     })
   }, [])
 
-  const createMove = useCallback(async (moveType: StockMoveType, items: StockItem[]) => {
+  const createMove = useCallback(async (moveType: StockMoveType, items: StockItem[], vendedorId?: number | null, detalle?: string | null) => {
     const productosValidos = items
       .filter((it) => it.productId && Number(it.cantidad) > 0)
       .map((it) => ({
@@ -91,6 +91,8 @@ export function useStockMovements() {
     const result = await create('movimiento-stock', {
       moveType,
       products: productosValidos,
+      vendedorId: vendedorId ?? null,
+      detalle: detalle ?? null,
     })
 
     try {

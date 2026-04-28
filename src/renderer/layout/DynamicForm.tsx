@@ -49,6 +49,7 @@ interface DynamicFormProps {
   compact?: boolean
   storageKey?: string
   clearDraftOnSubmit?: boolean
+  preventEnterSubmit?: boolean
 }
 
 /* =======================
@@ -84,8 +85,9 @@ export default function DynamicForm({
   compact = false,
   storageKey,
   clearDraftOnSubmit = true,
+  preventEnterSubmit = false,
 }: DynamicFormProps) {
-  const { openModal, closeModal, modalStack } = useModal()
+  const { openModal, closeModal, modalStack, setFormDirty } = useModal()
   const openCount = modalStack.length
   const baseOpenCountRef = useRef<number | null>(null)
 
@@ -159,7 +161,12 @@ export default function DynamicForm({
   const isDirtyRef = useRef(false)
   useEffect(() => {
     isDirtyRef.current = isDirty
+    setFormDirty(isDirty)
   }, [isDirty])
+
+  useEffect(() => {
+    return () => setFormDirty(false)
+  }, [])
 
   useEffect(() => {
     if (!storageKey) return
@@ -302,7 +309,15 @@ export default function DynamicForm({
           : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4'
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col py-2">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col py-2"
+      onKeyDown={preventEnterSubmit ? (e) => {
+        if (e.key === 'Enter' && !(e.target as HTMLElement).matches('button[type="submit"], textarea')) {
+          e.preventDefault()
+        }
+      } : undefined}
+    >
       <div className={`grid ${gridColsClass} ${compact ? 'gap-y-2 gap-x-4' : 'gap-y-3 gap-x-6'}`}>
         {inputs.map((input, idx) => {
           const span = Math.min(input.colSpan ?? 1, cols)

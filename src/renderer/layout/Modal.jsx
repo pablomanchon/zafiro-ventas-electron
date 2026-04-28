@@ -4,10 +4,15 @@ import { useModal } from '../providers/ModalProvider'
 import Confirmation from './Confirmation'
 
 export default function Modal() {
-  const { isModalOpen, modalStack, openModal, closeModal } = useModal()
+  const { isModalOpen, modalStack, openModal, closeModal, isFormDirty } = useModal()
   const closeConfirmOpenRef = useRef(false)
 
   const requestClose = () => {
+    if (!isFormDirty()) {
+      closeModal()
+      return
+    }
+
     if (closeConfirmOpenRef.current) {
       closeConfirmOpenRef.current = false
       closeModal()
@@ -17,7 +22,7 @@ export default function Modal() {
     closeConfirmOpenRef.current = true
     openModal(
       <Confirmation
-        mensaje="¿Seguro que querés salir del modal?"
+        mensaje="Hay cambios sin guardar. ¿Seguro que querés salir?"
         onConfirm={() => {
           closeConfirmOpenRef.current = false
           closeModal()

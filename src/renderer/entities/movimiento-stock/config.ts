@@ -9,6 +9,7 @@ const movimientoStockConfig: CrudConfig = {
     { titulo: 'ID', clave: 'id' },
     { titulo: 'Tipo', clave: 'moveType' },
     { titulo: 'Productos', clave: 'productsMoveStock' },
+    { titulo: 'Detalle', clave: 'detalle' },
     { titulo: 'Fecha', clave: 'fecha' },
   ],
 

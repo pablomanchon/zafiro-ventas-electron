@@ -310,10 +310,12 @@ async function createWindow() {
     const isHashRoute = u.hash?.startsWith('#/')
 
     if ((isSameOriginDev || isSameOriginProd) && isHashRoute) {
+      const ROUTE_SIZES: Array<[string, { width: number; height: number }]> = [
+        ['#/ventas/create', { width: 900, height: 750 }],
+      ]
       const isCreateOrEdit = /\/(create|edit)/.test(u.hash)
-      const isVentaCreate = u.hash.includes('#/ventas/create')
-      const width = isVentaCreate ? 900 : isCreateOrEdit ? 500 : 800
-      const height = isVentaCreate ? 750 : 600
+      const defaultSize = isCreateOrEdit ? { width: 500, height: 600 } : { width: 800, height: 600 }
+      const { width, height } = ROUTE_SIZES.find(([p]) => u.hash.includes(p))?.[1] ?? defaultSize
 
       const overrideOptions = buildChildWindowOptions()
       overrideOptions.width = width

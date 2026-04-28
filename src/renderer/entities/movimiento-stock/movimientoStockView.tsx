@@ -149,6 +149,13 @@ export default function MovimientoStockView() {
             </div>
           </Steel>
 
+          {movimiento.detalle && (
+            <Steel className="p-3 bg-slate-900/80 border border-slate-700">
+              <h2 className="text-sm font-semibold text-slate-100 mb-1">Detalle</h2>
+              <p className="text-sm text-slate-300 whitespace-pre-wrap">{movimiento.detalle}</p>
+            </Steel>
+          )}
+
           <Steel className="p-3 bg-slate-900/80 border border-slate-700">
             <h2 className="text-sm font-semibold text-slate-100 mb-2">
               Productos del movimiento

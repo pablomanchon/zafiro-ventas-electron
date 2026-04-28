@@ -83,9 +83,9 @@ export class MovimientoStockService {
       // Guardar movimiento (snapshot)
       const movimiento = movRepo.create({
         moveType,
-        productsMoveStock: products, // guardás el snapshot tal como viene
+        productsMoveStock: products,
+        detalle: dto.detalle?.trim() || null,
         deleted: false,
-        // fecha la setea @CreateDateColumn en la entidad
       });
 
       await movRepo.save(movimiento);
@@ -129,6 +129,7 @@ export class MovimientoStockService {
     const next = this.movimientoRepo.merge(mov, {
       moveType: dto.moveType ?? mov.moveType,
       productsMoveStock: dto.products ?? mov.productsMoveStock,
+      detalle: dto.detalle !== undefined ? (dto.detalle?.trim() || null) : mov.detalle,
     });
 
     return await this.movimientoRepo.save(next);

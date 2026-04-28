@@ -8,6 +8,7 @@ import { aumentarSaldo, disminuirSaldo } from '../../api/db'
 import { useState } from 'react'
 import { useModal } from '../../providers/ModalProvider'
 import { toast } from 'sonner'
+import VendedorSelectInput from '../sellers/VendedorSelectInput'
 
 type Moneda = 'pesos' | 'usd'
 
@@ -20,6 +21,7 @@ export default function MoneyMove({
 }) {
   const [monto, setMonto] = useState<string>('')
   const [moneda, setMoneda] = useState<Moneda>('pesos')
+  const [vendedorId, setVendedorId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const { closeModal } = useModal()
 
@@ -29,16 +31,16 @@ export default function MoneyMove({
     return Number(normalized)
   })()
 
-  const disabled = loading || isNaN(montoNumber) || montoNumber <= 0
+  const disabled = loading || isNaN(montoNumber) || montoNumber <= 0 || vendedorId === null
 
   const handleSubmit = async () => {
     if (disabled) return
     try {
       setLoading(true)
       if (moveType === 'in') {
-        await aumentarSaldo(moneda, Number(montoNumber.toFixed(2)))
+        await aumentarSaldo(moneda, Number(montoNumber.toFixed(2)), vendedorId)
       } else {
-        await disminuirSaldo(moneda, Number(montoNumber.toFixed(2)))
+        await disminuirSaldo(moneda, Number(montoNumber.toFixed(2)), vendedorId)
       }
       closeModal()
       handleEndMove(moveType)
@@ -57,6 +59,14 @@ export default function MoneyMove({
         <Title className="mb-2">
           {moveType === 'in' ? 'Ingreso' : 'Egreso'} de Dinero
         </Title>
+
+        <label className="flex flex-col gap-1">
+          Vendedor:
+          <VendedorSelectInput
+            value={vendedorId}
+            onChange={setVendedorId}
+          />
+        </label>
 
         <label className="flex flex-col gap-1">
           Monto:
