@@ -53,6 +53,7 @@ export default function MovimientoStockCreate({ onSuccess }: Props) {
         name: 'moveType',
         label: 'Tipo de movimiento',
         type: 'select',
+        value: 'in',
         options: [
           { label: 'Entrada (+ stock)', value: 'in' },
           { label: 'Salida (- stock)', value: 'out' },

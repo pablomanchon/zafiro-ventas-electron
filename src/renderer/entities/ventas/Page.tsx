@@ -14,6 +14,17 @@ import { useModal } from '../../providers/ModalProvider'
 import VentaCreate from './VentaCreate'
 import SaleDetail from './Detail'
 
+function formatSaleDate(raw: unknown) {
+  if (!raw) return ''
+  const date = new Date(raw as string)
+  if (isNaN(date.getTime())) return String(raw)
+  return date.toLocaleDateString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+  })
+}
+
 export default function SalesPage() {
   const { openModal, closeModal } = useModal()
   const config = crudConfigs['ventas'] as CrudConfig
@@ -92,6 +103,26 @@ export default function SalesPage() {
             searchFilters={searchFields}
             onDobleClickFila={handleDobleClickFila}
             onFilaSeleccionada={() => null}
+            renderMobileItem={(venta: any) => (
+              <div className="rounded border border-white/15 bg-slate-950/75 px-3 py-2 text-white shadow shadow-black/40 active:bg-cyan-900/50">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-white/55">Venta #{venta.id}</p>
+                    <p className="truncate text-base font-semibold">
+                      {venta.cliente?.nombre ?? 'Sin cliente'} {venta.cliente?.apellido ?? ''}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-base font-bold text-emerald-100">
+                    {formatCurrencyARS(venta.total)}
+                  </p>
+                </div>
+
+                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-white/70">
+                  <span className="truncate">Vendedor: {venta.vendedor?.nombre ?? '-'}</span>
+                  <span className="shrink-0">{formatSaleDate(venta.fecha)}</span>
+                </div>
+              </div>
+            )}
           />
         </div>
 

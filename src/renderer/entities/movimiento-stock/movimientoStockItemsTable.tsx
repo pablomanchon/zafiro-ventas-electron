@@ -21,6 +21,12 @@ interface Props {
   onChange?: (items: StockItem[]) => void
 }
 
+const createEmptyItem = (): StockItem => ({
+  productId: '',
+  nombre: '',
+  cantidad: 1,
+})
+
 export default function MovimientoStockItemsTable({ value, onChange }: Props) {
   const { products } = useProducts()
   const items: StockItem[] = value ?? []
@@ -32,14 +38,7 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
   }
 
   const handleAdd = () => {
-    setItems([
-      ...items,
-      {
-        productId: '',
-        nombre: '',
-        cantidad: 1,
-      },
-    ])
+    setItems([...items, createEmptyItem()])
   }
 
   const handleRemove = (index: number) => {
@@ -55,36 +54,31 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
   const focusCell = (rowIndex: number, col: 'productId' | 'cantidad') => {
     const root = containerRef.current
     if (!root) return
+
     const target: HTMLInputElement | null = root.querySelector(
       `input[data-col="${col}"][data-row="${rowIndex}"]`
     )
-    if (target) {
-      target.focus()
-      target.select?.()
-      return
-    }
 
-    if (rowIndex === items.length) {
-      handleAdd()
-      requestAnimationFrame(() => {
-        const again: HTMLInputElement | null = root.querySelector(
-          `input[data-col="${col}"][data-row="${rowIndex}"]`
-        )
-        again?.focus()
-        again?.select?.()
-      })
-    }
+    target?.focus()
+    target?.select()
   }
 
   const focusBelow = (rowIndex: number, col: 'productId' | 'cantidad') => {
-    focusCell(rowIndex + 1, col)
+    const nextIndex = rowIndex + 1
+
+    if (nextIndex >= items.length) {
+      setItems([...items, createEmptyItem()])
+      requestAnimationFrame(() => focusCell(nextIndex, col))
+      return
+    }
+
+    focusCell(nextIndex, col)
   }
 
-  const onProductIdChange = (index: number, raw: string) => {
+  const getProductPatch = (raw: string): Partial<StockItem> => {
     const lookup = raw.trim()
     if (!lookup) {
-      updateRow(index, { productId: '', nombre: '' })
-      return
+      return { productId: '', nombre: '' }
     }
 
     const prod = (products as Product[]).find(
@@ -93,21 +87,36 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
 
     if (!prod) {
       toast.error(`No se encontró producto con código o ID ${lookup}`)
-      updateRow(index, { productId: lookup, nombre: '' })
-      return
+      return { productId: lookup, nombre: '' }
     }
 
-    updateRow(index, {
+    return {
       productId: String(prod.codigo ?? lookup),
       nombre: prod.nombre ?? '',
-    })
+    }
+  }
+
+  const onProductIdChange = (index: number, raw: string) => {
+    updateRow(index, getProductPatch(raw))
+  }
+
+  const confirmProductAndFocusBelow = (index: number, raw: string) => {
+    const nextIndex = index + 1
+    const next = items.map((row, i) => (i === index ? { ...row, ...getProductPatch(raw) } : row))
+
+    if (nextIndex >= next.length) {
+      next.push(createEmptyItem())
+    }
+
+    setItems(next)
+    requestAnimationFrame(() => focusCell(nextIndex, 'productId'))
   }
 
   const renderNumberCell = (
     idx: number,
     field: 'cantidad',
     parser: (raw: string) => number | '',
-    attrs: Omit<JSX.IntrinsicElements['input'], 'value' | 'onChange' | 'type'>
+    attrs: Omit<JSX.IntrinsicElements['input'], 'value' | 'onChange' | 'type' | 'ref'>
   ) => (
     <input
       type="number"
@@ -121,6 +130,7 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           e.preventDefault()
+          e.stopPropagation()
           focusBelow(idx, field)
         }
       }}
@@ -148,8 +158,10 @@ export default function MovimientoStockItemsTable({ value, onChange }: Props) {
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault()
-            onProductIdChange(i, e.currentTarget.value)
-            queueMicrotask(() => focusBelow(i, 'productId'))
+            e.stopPropagation()
+            const val = e.currentTarget.value
+            const idx = i
+            confirmProductAndFocusBelow(idx, val)
           }
         }}
         className="w-full bg-inherit outline-none text-white px-1"

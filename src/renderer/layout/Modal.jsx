@@ -38,8 +38,8 @@ export default function Modal() {
     }
 
     const handleKeyDown = (e) => {
-      e.stopPropagation()
       if (e.key !== 'Escape') return
+      e.stopPropagation()
       e.preventDefault()
       requestClose()
     }

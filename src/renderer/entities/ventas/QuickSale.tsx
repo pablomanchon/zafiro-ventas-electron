@@ -7,7 +7,7 @@ import { useVendedores } from '../../hooks/useSellers'
 import Main from '../../layout/Main'
 import Steel from '../../layout/Steel'
 import Title from '../../layout/Title'
-import { formatCurrencyARS } from '../../utils/utils'
+import { centsToInput, cleanMoneyInput, formatCentsARS, formatCurrencyARS, toCents } from '../../utils/utils'
 
 type ProductRow = {
   id: number
@@ -25,14 +25,27 @@ type MetodoPago = {
   tipo: string
 }
 
+type QuickPayment = {
+  metodoId: string
+  monto: string
+  cuotas: string
+}
+
 type QuickSaleDraft = {
   barcode: string
   items: ProductRow[]
   selectedSellerId: string
-  selectedMethodId: string
+  selectedMethodId?: string
+  payments: QuickPayment[]
 }
 
 const QUICK_SALE_DRAFT_KEY = 'quick-sale-draft'
+
+const emptyPayment = (metodoId = '', monto = ''): QuickPayment => ({
+  metodoId,
+  monto,
+  cuotas: '',
+})
 
 const normalizeText = (value: unknown) =>
   String(value ?? '')
@@ -59,7 +72,8 @@ export default function QuickSale() {
   const [items, setItems] = useState<ProductRow[]>([])
   const [methods, setMethods] = useState<MetodoPago[]>([])
   const [selectedSellerId, setSelectedSellerId] = useState<string>('')
-  const [selectedMethodId, setSelectedMethodId] = useState<string>('')
+  const [payments, setPayments] = useState<QuickPayment[]>([])
+  const [paymentDraft, setPaymentDraft] = useState<QuickPayment>(() => emptyPayment())
   const [saving, setSaving] = useState(false)
 
   const barcodeRef = useRef<HTMLInputElement>(null)
@@ -69,7 +83,7 @@ export default function QuickSale() {
     barcode: '',
     items: [],
     selectedSellerId: '',
-    selectedMethodId: '',
+    payments: [],
   })
 
   const persistDraft = (draft: QuickSaleDraft) => {
@@ -106,12 +120,21 @@ export default function QuickSale() {
         items: Array.isArray(draft.items) ? draft.items : [],
         selectedSellerId: typeof draft.selectedSellerId === 'string' ? draft.selectedSellerId : '',
         selectedMethodId: typeof draft.selectedMethodId === 'string' ? draft.selectedMethodId : '',
+        payments: Array.isArray(draft.payments)
+          ? draft.payments.map((payment) => ({
+              metodoId: String(payment?.metodoId ?? ''),
+              monto: cleanMoneyInput(String(payment?.monto ?? '')),
+              cuotas: String(payment?.cuotas ?? ''),
+            }))
+          : typeof draft.selectedMethodId === 'string' && draft.selectedMethodId
+          ? [emptyPayment(draft.selectedMethodId)]
+          : [],
       }
       latestDraftRef.current = hydratedDraft
       setBarcode(hydratedDraft.barcode)
       setItems(hydratedDraft.items)
       setSelectedSellerId(hydratedDraft.selectedSellerId)
-      setSelectedMethodId(hydratedDraft.selectedMethodId)
+      setPayments(hydratedDraft.payments)
     } catch {
       window.localStorage.removeItem(QUICK_SALE_DRAFT_KEY)
     } finally {
@@ -146,14 +169,11 @@ export default function QuickSale() {
   }, [selectedSellerId, vendedores])
 
   useEffect(() => {
-    const hasValidMethod = methods.some((method) => method.id === selectedMethodId)
-    if ((!selectedMethodId || !hasValidMethod) && methods.length > 0) {
+    if (!paymentDraft.metodoId && methods.length > 0) {
       const efectivo = methods.find((method) => normalizeText(method.tipo) === 'efectivo')
-      const nextMethodId = efectivo?.id ?? methods[0].id
-      setSelectedMethodId(nextMethodId)
-      updateDraft({ selectedMethodId: nextMethodId })
+      setPaymentDraft((prev) => ({ ...prev, metodoId: efectivo?.id ?? methods[0].id }))
     }
-  }, [selectedMethodId, methods])
+  }, [methods, paymentDraft.metodoId])
 
   const consumidorFinal = useMemo(() => {
     return (
@@ -162,11 +182,6 @@ export default function QuickSale() {
       null
     )
   }, [clients])
-
-  const selectedMethod = useMemo(
-    () => methods.find((method) => method.id === selectedMethodId) ?? null,
-    [methods, selectedMethodId]
-  )
 
   const totals = useMemo(() => {
     const subtotal = items.reduce((acc, item) => acc + Number(item.precio) * Number(item.cantidad), 0)
@@ -178,6 +193,57 @@ export default function QuickSale() {
       total: Number(total.toFixed(2)),
     }
   }, [items])
+
+  const totalCents = Math.trunc(totals.total * 100)
+  const paidCents = useMemo(
+    () => payments.reduce((acc, payment) => acc + toCents(payment.monto), 0),
+    [payments]
+  )
+  const remainingCents = Math.max(0, totalCents - paidCents)
+  const excessCents = Math.max(0, paidCents - totalCents)
+
+  const updatePayments = (updater: (prev: QuickPayment[]) => QuickPayment[]) => {
+    setPayments((prev) => {
+      const nextPayments = updater(prev)
+      updateDraft({ payments: nextPayments })
+      return nextPayments
+    })
+  }
+
+  const addPaymentFromDraft = () => {
+    const monto = paymentDraft.monto || (remainingCents ? centsToInput(remainingCents) : '')
+    const montoCents = toCents(monto)
+
+    if (!paymentDraft.metodoId) {
+      toast.error('Selecciona un metodo de pago')
+      return
+    }
+
+    if (montoCents <= 0) {
+      toast.error('Ingresa un monto para el pago')
+      return
+    }
+
+    updatePayments((prev) => [
+      ...prev,
+      {
+        metodoId: paymentDraft.metodoId,
+        monto,
+        cuotas: paymentDraft.cuotas,
+      },
+    ])
+
+    setPaymentDraft((prev) => ({
+      metodoId: prev.metodoId,
+      monto: '',
+      cuotas: prev.cuotas,
+    }))
+  }
+
+  const selectedPaymentMethods = payments
+    .map((payment) => methods.find((method) => method.id === payment.metodoId)?.nombre)
+    .filter(Boolean)
+    .join(', ')
 
   const focusScanner = () => {
     requestAnimationFrame(() => {
@@ -261,7 +327,7 @@ export default function QuickSale() {
       barcode: '',
       items: [],
       selectedSellerId: '',
-      selectedMethodId: '',
+      payments: [],
     }
     clearDraft()
     focusScanner()
@@ -293,12 +359,37 @@ export default function QuickSale() {
       return
     }
 
-    const metodoPagoId = methods.some((method) => method.id === selectedMethodId)
-      ? selectedMethodId
-      : selectedMethod?.id ?? ''
+    const validPayments = payments
+      .map((payment) => ({
+        ...payment,
+        montoCents: toCents(payment.monto),
+      }))
+      .filter((payment) => payment.metodoId && payment.montoCents > 0)
 
-    if (!metodoPagoId) {
-      toast.error('Selecciona un metodo de pago valido')
+    if (validPayments.length === 0) {
+      toast.error('Selecciona al menos un metodo de pago valido')
+      return
+    }
+
+    const invalidMethod = validPayments.find(
+      (payment) => !methods.some((method) => method.id === payment.metodoId)
+    )
+    if (invalidMethod) {
+      toast.error('Hay un metodo de pago invalido')
+      return
+    }
+
+    const validPaymentsTotalCents = validPayments.reduce(
+      (acc, payment) => acc + payment.montoCents,
+      0
+    )
+    if (validPaymentsTotalCents !== totalCents) {
+      const diffCents = totalCents - validPaymentsTotalCents
+      toast.error(
+        diffCents > 0
+          ? `La suma de pagos debe ser ${formatCentsARS(totalCents)}. Falta ${formatCentsARS(diffCents)}`
+          : `La suma de pagos debe ser ${formatCentsARS(totalCents)}. Sobra ${formatCentsARS(Math.abs(diffCents))}`
+      )
       return
     }
 
@@ -327,12 +418,11 @@ export default function QuickSale() {
         clienteId: clienteVenta.id,
         vendedorId: Number(selectedSellerId),
         detalles,
-        pagos: [
-          {
-            metodoId: metodoPagoId,
-            monto: totals.total,
-          },
-        ],
+        pagos: validPayments.map((payment) => ({
+          metodoId: payment.metodoId,
+          monto: payment.montoCents / 100,
+          ...(payment.cuotas ? { cuotas: Number(payment.cuotas) || 0 } : {}),
+        })),
       })
 
       const channel = new BroadcastChannel('ventas')
@@ -349,21 +439,24 @@ export default function QuickSale() {
   }
 
   return (
-    <Main className="flex flex-col gap-4 p-3 sm:p-4 text-white">
-      <Steel className="flex flex-col gap-4 text-white">
-        <div className="flex flex-col gap-4 px-3 py-4 sm:px-4">
-          <div className="flex flex-col gap-2">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-white/70">Dashboard</p>
-            <Title className="border-b-0 pb-0 text-left">Venta rapida</Title>
-            <p className="inline-flex w-fit rounded-lg bg-black/26 px-3 py-2 text-sm text-white/88">
-              Escanea un codigo y el producto se agrega solo. Puedes ajustar cantidad,
-              descuentos y eliminar lineas antes de guardar.
+    <Main className="flex flex-col gap-1.5 p-2 text-white">
+      <div className="flex flex-col gap-1.5">
+        <div className="rounded border border-white/12 bg-gradient-to-r from-slate-950 via-slate-900 to-zinc-950 px-3 py-1.5 text-white shadow shadow-black">
+          <div className="relative flex min-h-8 items-center justify-center">
+            <p className="absolute left-0 top-0 text-[10px] uppercase tracking-[0.22em] text-white/60">
+              Dashboard
+            </p>
+            <Title className="border-b-0 pb-0 text-center text-lg">Venta rapida</Title>
+            <p className="absolute bottom-0 right-0 hidden text-xs text-white/68 lg:block">
+              Escanea, ajusta y cobra.
             </p>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_0.8fr_0.8fr_auto] gap-3 items-end">
+        <div className="rounded border border-white/12 bg-gradient-to-r from-zinc-950 via-slate-900 to-slate-950 px-2 py-1.5 text-white shadow shadow-black">
+          <div className="grid grid-cols-1 gap-2 xl:grid-cols-[1.6fr_0.8fr_auto] xl:items-end">
             <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.18em] text-white/78">Lector / codigo</span>
+              <span className="text-[11px] uppercase tracking-[0.18em] text-white/78">Lector / codigo</span>
               <form
                 onSubmit={(e) => {
                   e.preventDefault()
@@ -379,11 +472,11 @@ export default function QuickSale() {
                     updateDraft({ barcode: e.target.value })
                   }}
                   placeholder="Escanea o escribe un codigo"
-                  className="w-full rounded-xl border border-white/20 bg-black/45 px-4 py-3 text-white placeholder:text-white/55 caret-white outline-none focus:border-cyan-400 focus:bg-black/55"
+                  className="w-full rounded-lg border border-white/20 bg-black/45 px-3 py-1.5 text-white placeholder:text-white/55 caret-white outline-none focus:border-cyan-400 focus:bg-black/55"
                 />
                 <button
                   type="submit"
-                  className="rounded-xl border border-black bg-cyan-800 px-4 py-3 font-semibold text-white shadow-inner shadow-black hover:bg-sky-600"
+                  className="rounded-lg border border-black bg-cyan-800 px-4 py-1.5 font-semibold text-white shadow-inner shadow-black hover:bg-sky-600"
                   disabled={loadingProducts}
                 >
                   Agregar
@@ -392,39 +485,20 @@ export default function QuickSale() {
             </label>
 
             <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.18em] text-white/78">Vendedor</span>
+              <span className="text-[11px] uppercase tracking-[0.18em] text-white/78">Vendedor</span>
               <select
                 value={selectedSellerId}
                 onChange={(e) => {
                   setSelectedSellerId(e.target.value)
                   updateDraft({ selectedSellerId: e.target.value })
                 }}
-                className="rounded-xl border border-white/20 bg-black/45 px-4 py-3 text-white caret-white outline-none focus:border-cyan-400 focus:bg-black/55"
+                className="rounded-lg border border-white/20 bg-black/45 px-3 py-1.5 text-white caret-white outline-none focus:border-cyan-400 focus:bg-black/55"
                 disabled={loadingVendedores}
               >
-                <option value="">Seleccionar</option>
+                <option className="bg-slate-950 text-white" value="">Seleccionar</option>
                 {vendedores.map((seller) => (
-                  <option key={seller.id} value={seller.id}>
+                  <option className="bg-slate-950 text-white" key={seller.id} value={seller.id}>
                     {seller.nombre}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-[0.18em] text-white/78">Pago</span>
-              <select
-                value={selectedMethodId}
-                onChange={(e) => {
-                  setSelectedMethodId(e.target.value)
-                  updateDraft({ selectedMethodId: e.target.value })
-                }}
-                className="rounded-xl border border-white/20 bg-black/45 px-4 py-3 text-white caret-white outline-none focus:border-cyan-400 focus:bg-black/55"
-              >
-                <option value="">Seleccionar</option>
-                {methods.map((method) => (
-                  <option key={method.id} value={method.id}>
-                    {method.nombre}
                   </option>
                 ))}
               </select>
@@ -433,53 +507,55 @@ export default function QuickSale() {
             <button
               type="button"
               onClick={focusScanner}
-              className="rounded-xl border border-white/20 bg-black/45 px-4 py-3 text-sm font-semibold text-white/80 hover:bg-white/12"
+              className="rounded-lg border border-white/20 bg-black/45 px-4 py-1.5 text-sm font-semibold text-white/80 hover:bg-white/12"
             >
               Enfocar lector
             </button>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 text-sm">
-            <div className="rounded-xl border border-white/16 bg-black/36 px-4 py-3">
+          <div className="grid grid-cols-2 gap-2 text-sm xl:grid-cols-4">
+            <Steel typeWood={3} className="px-3 py-1">
               <p className="text-white/68 uppercase tracking-[0.16em] text-[11px]">Cliente</p>
-              <p className="mt-1 font-semibold">{consumidorFinal?.nombre ?? 'Consumidor Final no disponible'}</p>
-            </div>
-            <div className="rounded-xl border border-white/16 bg-black/36 px-4 py-3">
+              <p className="mt-0.5 font-semibold leading-tight">{consumidorFinal?.nombre ?? 'Consumidor Final no disponible'}</p>
+            </Steel>
+            <Steel typeWood={3} className="px-3 py-1">
               <p className="text-white/68 uppercase tracking-[0.16em] text-[11px]">Subtotal</p>
-              <p className="mt-1 font-semibold">{formatCurrencyARS(totals.subtotal)}</p>
-            </div>
-            <div className="rounded-xl border border-white/16 bg-black/36 px-4 py-3">
+              <p className="mt-0.5 font-semibold leading-tight">{formatCurrencyARS(totals.subtotal)}</p>
+            </Steel>
+            <Steel typeWood={3} className="px-3 py-1">
               <p className="text-white/68 uppercase tracking-[0.16em] text-[11px]">Descuentos</p>
-              <p className="mt-1 font-semibold">{formatCurrencyARS(totals.descuento)}</p>
-            </div>
-            <div className="rounded-xl border border-cyan-400/50 bg-black/52 px-4 py-3 shadow-[0_0_0_1px_rgba(34,211,238,0.12)]">
+              <p className="mt-0.5 font-semibold leading-tight">{formatCurrencyARS(totals.descuento)}</p>
+            </Steel>
+            <Steel typeWood={3} className="px-3 py-1 border-cyan-400/50 shadow-[0_0_0_1px_rgba(34,211,238,0.12)]">
               <p className="text-cyan-100/85 uppercase tracking-[0.16em] text-[11px]">Total a cobrar</p>
-              <p className="mt-1 text-xl font-bold">{formatCurrencyARS(totals.total)}</p>
-              {selectedMethod && (
-                <p className="mt-1 text-xs text-white/72">Se cargara completo en {selectedMethod.nombre}</p>
+              <p className="mt-0.5 text-base font-bold leading-tight">{formatCurrencyARS(totals.total)}</p>
+              {selectedPaymentMethods && (
+                <p className="mt-0.5 truncate text-xs text-white/72">Pago: {selectedPaymentMethods}</p>
               )}
-            </div>
+            </Steel>
           </div>
 
-          <div className="overflow-x-auto border-t border-white/10 pt-3">
+        <div className="rounded border border-white/12 bg-gradient-to-b from-slate-900 via-slate-950 to-zinc-950 px-2 py-1.5 text-white shadow shadow-black">
+          <div className="overflow-x-auto">
             <div className="min-w-[900px]">
               <table className="w-full text-sm">
                 <thead className="border-b border-white/16 text-white/88">
                   <tr>
-                    <th className="px-3 py-2 text-left"><span className="rounded-md bg-black/22 px-2 py-1">Codigo</span></th>
-                    <th className="px-3 py-2 text-left"><span className="rounded-md bg-black/22 px-2 py-1">Producto</span></th>
-                    <th className="px-3 py-2 text-right"><span className="rounded-md bg-black/22 px-2 py-1">Precio</span></th>
-                    <th className="px-3 py-2 text-center"><span className="rounded-md bg-black/22 px-2 py-1">Cant.</span></th>
-                    <th className="px-3 py-2 text-center"><span className="rounded-md bg-black/22 px-2 py-1">Desc. %</span></th>
-                    <th className="px-3 py-2 text-right"><span className="rounded-md bg-black/22 px-2 py-1">Desc. $</span></th>
-                    <th className="px-3 py-2 text-right"><span className="rounded-md bg-black/22 px-2 py-1">Total</span></th>
-                    <th className="px-3 py-2 text-center"><span className="rounded-md bg-black/22 px-2 py-1">Accion</span></th>
+                    <th className="px-3 py-1 text-left"><span className="rounded-md bg-black/22 px-2 py-0.5">Codigo</span></th>
+                    <th className="px-3 py-1 text-left"><span className="rounded-md bg-black/22 px-2 py-0.5">Producto</span></th>
+                    <th className="px-3 py-1 text-right"><span className="rounded-md bg-black/22 px-2 py-0.5">Precio</span></th>
+                    <th className="px-3 py-1 text-center"><span className="rounded-md bg-black/22 px-2 py-0.5">Cant.</span></th>
+                    <th className="px-3 py-1 text-center"><span className="rounded-md bg-black/22 px-2 py-0.5">Desc. %</span></th>
+                    <th className="px-3 py-1 text-right"><span className="rounded-md bg-black/22 px-2 py-0.5">Desc. $</span></th>
+                    <th className="px-3 py-1 text-right"><span className="rounded-md bg-black/22 px-2 py-0.5">Total</span></th>
+                    <th className="px-3 py-1 text-center"><span className="rounded-md bg-black/22 px-2 py-0.5">Accion</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center">
+                      <td colSpan={8} className="px-4 py-4 text-center">
                         <div className="mx-auto inline-flex rounded-xl bg-black/35 px-4 py-2 text-white/88">
                           Aun no hay productos cargados. Escanea el primer codigo para empezar.
                         </div>
@@ -488,10 +564,10 @@ export default function QuickSale() {
                   ) : (
                     items.map((item) => (
                       <tr key={item.id} className="border-b border-white/10 hover:bg-black/18">
-                        <td className="px-3 py-3">{item.codigo}</td>
-                        <td className="px-3 py-3 font-semibold text-white">{item.nombre}</td>
-                        <td className="px-3 py-3 text-right">{formatCurrencyARS(item.precio)}</td>
-                        <td className="px-3 py-3">
+                        <td className="px-3 py-2">{item.codigo}</td>
+                        <td className="px-3 py-2 font-semibold text-white">{item.nombre}</td>
+                        <td className="px-3 py-2 text-right">{formatCurrencyARS(item.precio)}</td>
+                        <td className="px-3 py-2">
                           <input
                             type="number"
                             min={1}
@@ -501,10 +577,10 @@ export default function QuickSale() {
                                 cantidad: Math.max(1, Number(e.target.value) || 1),
                               })
                             }
-                            className="w-20 rounded-lg border border-white/18 bg-black/42 px-2 py-2 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
+                            className="w-20 rounded-lg border border-white/20 bg-slate-950 px-2 py-1.5 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
                           />
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="px-3 py-2">
                           <input
                             type="number"
                             min={0}
@@ -518,10 +594,10 @@ export default function QuickSale() {
                                     : clamp(Number(e.target.value) || 0, 0, 100),
                               })
                             }
-                            className="w-20 rounded-lg border border-white/18 bg-black/42 px-2 py-2 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
+                            className="w-20 rounded-lg border border-white/20 bg-slate-950 px-2 py-1.5 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
                           />
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="px-3 py-2">
                           <input
                             type="number"
                             min={0}
@@ -532,15 +608,15 @@ export default function QuickSale() {
                                 descuentoMonto: e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0),
                               })
                             }
-                            className="w-28 rounded-lg border border-white/18 bg-black/42 px-2 py-2 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
+                            className="w-28 rounded-lg border border-white/20 bg-slate-950 px-2 py-1.5 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
                           />
                         </td>
-                        <td className="px-3 py-3 text-right font-semibold">{formatCurrencyARS(lineTotal(item))}</td>
-                        <td className="px-3 py-3 text-center">
+                        <td className="px-3 py-2 text-right font-semibold">{formatCurrencyARS(lineTotal(item))}</td>
+                        <td className="px-3 py-2 text-center">
                           <button
                             type="button"
                             onClick={() => removeItem(item.id)}
-                            className="rounded-lg border border-black bg-red-900 px-3 py-2 font-semibold shadow-inner shadow-black hover:bg-orange-700"
+                            className="rounded-lg border border-black bg-red-900 px-3 py-1.5 font-semibold shadow-inner shadow-black hover:bg-orange-700"
                           >
                             Eliminar
                           </button>
@@ -552,12 +628,147 @@ export default function QuickSale() {
               </table>
             </div>
           </div>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 justify-end border-t border-white/10 pt-2">
+        <div className="rounded border border-white/12 bg-gradient-to-r from-slate-950 via-slate-900 to-zinc-950 px-2 py-1.5 text-white shadow shadow-black">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Métodos de pago</h2>
+              <p className="text-xs text-white/65">
+                Pagado {formatCentsARS(paidCents)} · Restante {formatCentsARS(remainingCents)}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-1.5 grid grid-cols-1 gap-2 rounded-lg border border-white/10 bg-black/28 p-1.5 sm:grid-cols-[1fr_150px_74px_auto] sm:items-end">
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] uppercase tracking-[0.14em] text-white/65">Método</span>
+              <select
+                value={paymentDraft.metodoId}
+                onChange={(e) => {
+                  const method = methods.find((entry) => entry.id === e.target.value)
+                  setPaymentDraft((prev) => ({
+                    ...prev,
+                    metodoId: e.target.value,
+                    cuotas: normalizeText(method?.tipo) === 'credito' ? prev.cuotas || '1' : '',
+                  }))
+                }}
+                style={{ backgroundColor: '#020617', color: '#fff' }}
+                className="rounded-lg border border-white/20 bg-slate-950 px-3 py-1.5 text-white [color-scheme:dark] outline-none focus:border-cyan-400"
+              >
+                <option className="bg-slate-950 text-white" value="">Seleccionar</option>
+                {methods.map((entry) => (
+                  <option className="bg-slate-950 text-white" key={entry.id} value={entry.id}>
+                    {entry.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] uppercase tracking-[0.14em] text-white/65">Monto</span>
+              <input
+                inputMode="decimal"
+                value={paymentDraft.monto}
+                placeholder={remainingCents ? centsToInput(remainingCents) : '0'}
+                onChange={(e) =>
+                  setPaymentDraft((prev) => ({ ...prev, monto: cleanMoneyInput(e.target.value) }))
+                }
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPaymentFromDraft() } }}
+                style={{ backgroundColor: '#020617', color: '#fff' }}
+                className="rounded-lg border border-white/20 bg-slate-950 px-3 py-1.5 text-right text-white placeholder:text-white/45 [color-scheme:dark] outline-none focus:border-cyan-400"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] uppercase tracking-[0.14em] text-white/65">Cuotas</span>
+              <input
+                inputMode="numeric"
+                value={paymentDraft.cuotas}
+                disabled={
+                  normalizeText(methods.find((entry) => entry.id === paymentDraft.metodoId)?.tipo) !== 'credito'
+                }
+                onChange={(e) =>
+                  setPaymentDraft((prev) => ({ ...prev, cuotas: e.target.value.replace(/\D/g, '') }))
+                }
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPaymentFromDraft() } }}
+                style={{ backgroundColor: '#020617', color: '#fff' }}
+                className="rounded-lg border border-white/20 bg-slate-950 px-3 py-1.5 text-center text-white [color-scheme:dark] outline-none disabled:opacity-40 focus:border-cyan-400"
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={addPaymentFromDraft}
+              className="rounded-lg border border-black bg-cyan-800 px-4 py-1.5 font-semibold text-white shadow-inner shadow-black hover:bg-sky-600"
+            >
+              Agregar
+            </button>
+          </div>
+
+          <div className="mt-1.5 overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead className="border-b border-white/16 text-white/88">
+                <tr>
+                  <th className="px-3 py-1 text-left">Método</th>
+                  <th className="px-3 py-1 text-right">Monto</th>
+                  <th className="px-3 py-1 text-center">Cuotas</th>
+                  <th className="px-3 py-1 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-2 text-center text-white/65">
+                      Agrega al menos un método de pago.
+                    </td>
+                  </tr>
+                ) : (
+                  payments.map((payment, index) => {
+                    const method = methods.find((entry) => entry.id === payment.metodoId)
+
+                    return (
+                      <tr key={`${payment.metodoId}-${index}`} className="border-b border-white/10 hover:bg-black/18">
+                        <td className="px-3 py-1 font-semibold text-white">
+                          {method?.nombre ?? payment.metodoId}
+                        </td>
+                        <td className="px-3 py-1 text-right">{formatCentsARS(toCents(payment.monto))}</td>
+                        <td className="px-3 py-1 text-center">{payment.cuotas || '-'}</td>
+                        <td className="px-3 py-1 text-center">
+                          <button
+                            type="button"
+                            onClick={() => updatePayments((prev) => prev.filter((_, i) => i !== index))}
+                            className="rounded-lg border border-black bg-red-900 px-3 py-1 font-semibold shadow-inner shadow-black hover:bg-orange-700"
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 rounded border border-white/12 bg-gradient-to-r from-slate-950 via-zinc-950 to-slate-900 p-1.5 shadow shadow-black sm:flex-row sm:items-center sm:justify-end">
+            {(() => {
+              const reason =
+                !items.length ? 'Agrega al menos un producto' :
+                !selectedSellerId ? 'Falta seleccionar vendedor' :
+                !payments.some((p) => p.metodoId && toCents(p.monto) > 0) ? 'Agrega al menos un pago' :
+                paidCents < totalCents ? `Faltan ${formatCentsARS(remainingCents)} por pagar` :
+                paidCents > totalCents ? `Sobran ${formatCentsARS(excessCents)} en los pagos` :
+                null
+              return reason ? (
+                <p className="text-xs text-amber-400/90 sm:mr-auto">{reason}</p>
+              ) : null
+            })()}
             <button
               type="button"
               onClick={clearSale}
-              className="rounded-xl border border-white/18 bg-black/45 px-4 py-3 font-semibold text-white hover:bg-white/12"
+              className="rounded-lg border border-white/20 bg-black/45 px-4 py-2 font-semibold text-white hover:bg-white/12"
               disabled={saving}
             >
               Limpiar venta
@@ -565,21 +776,21 @@ export default function QuickSale() {
             <button
               type="button"
               onClick={saveSale}
-              className="rounded-xl border border-black bg-emerald-700 px-5 py-3 font-bold text-white shadow-inner shadow-black hover:bg-emerald-600 disabled:opacity-80 disabled:text-white/80"
+              className="rounded-lg border border-black bg-emerald-700 px-5 py-2 font-bold text-white shadow-inner shadow-black hover:bg-emerald-600 disabled:opacity-80 disabled:text-white/80"
               disabled={
                 saving ||
                 loadingClients ||
                 loadingVendedores ||
                 !items.length ||
                 !selectedSellerId ||
-                !selectedMethodId
+                paidCents !== totalCents ||
+                !payments.some((payment) => payment.metodoId && toCents(payment.monto) > 0)
               }
             >
               {saving ? 'Guardando...' : `Cobrar ${formatCurrencyARS(totals.total)}`}
             </button>
-          </div>
         </div>
-      </Steel>
+      </div>
     </Main>
   )
 }

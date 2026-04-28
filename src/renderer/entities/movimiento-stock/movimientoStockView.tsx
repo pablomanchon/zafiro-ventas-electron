@@ -9,7 +9,15 @@ import { useProducts } from '../../hooks/useProducts'
 import { useStockMovements, type StockMove } from '../../hooks/useMovimientoStock'
 import { getInitPayload } from '../../utils/init-data'
 
-export default function MovimientoStockView() {
+type MovimientoStockViewProps = {
+  idMovimiento?: number | string
+  movimiento?: StockMove | null
+}
+
+export default function MovimientoStockView({
+  idMovimiento: idMovimientoProp,
+  movimiento: movimientoProp = null,
+}: MovimientoStockViewProps = {}) {
   const { id: routeId } = useParams<{ id?: string }>()
   const location = useLocation()
 
@@ -17,11 +25,30 @@ export default function MovimientoStockView() {
   const { products } = useProducts()
 
   const [idMovimiento, setIdMovimiento] = useState<number | null>(
-    routeId ? Number(routeId) : null
+    idMovimientoProp != null
+      ? Number(idMovimientoProp)
+      : routeId
+      ? Number(routeId)
+      : null
   )
-  const [movimientoFromPayload, setMovimientoFromPayload] = useState<StockMove | null>(null)
+  const [movimientoFromPayload, setMovimientoFromPayload] = useState<StockMove | null>(
+    movimientoProp
+  )
 
   useEffect(() => {
+    if (idMovimientoProp != null) {
+      setIdMovimiento(Number(idMovimientoProp))
+    }
+  }, [idMovimientoProp])
+
+  useEffect(() => {
+    if (movimientoProp) {
+      setMovimientoFromPayload(movimientoProp)
+    }
+  }, [movimientoProp])
+
+  useEffect(() => {
+    if (idMovimientoProp != null || movimientoProp) return
     const fromLocation = getInitPayload<any>(location.state)
     if (!fromLocation) return
 
@@ -31,7 +58,7 @@ export default function MovimientoStockView() {
     if (fromLocation.movimiento) {
       setMovimientoFromPayload(fromLocation.movimiento as StockMove)
     }
-  }, [location.state])
+  }, [idMovimientoProp, location.state, movimientoProp])
 
   const movimiento: StockMove | null = useMemo(() => {
     if (movimientoFromPayload) return movimientoFromPayload

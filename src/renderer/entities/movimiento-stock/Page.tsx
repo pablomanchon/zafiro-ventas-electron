@@ -1,5 +1,4 @@
 import { useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import type { CrudConfig } from '../CrudConfig'
 import { crudConfigs } from '..'
 import Main from '../../layout/Main'
@@ -11,9 +10,9 @@ import { useFocusBlocker } from '../../hooks/useFocusBlocker'
 import { useStockMovements } from '../../hooks/useMovimientoStock'
 import { useModal } from '../../providers/ModalProvider'
 import MovimientoStockCreate from './movimientoStockCreate'
+import MovimientoStockView from './movimientoStockView'
 
 export default function MovimientoStockPage() {
-  const navigate = useNavigate()
   const { openModal, closeModal } = useModal()
   const config = crudConfigs['movimiento-stock'] as CrudConfig
   const { columns, searchFields } = config
@@ -29,10 +28,12 @@ export default function MovimientoStockPage() {
 
   const openMovimiento = useCallback((id: number) => {
     const movimiento = movimientos.find((m: any) => Number(m.id) === Number(id))
-    navigate(`/movimiento-stock/${id}`, {
-      state: movimiento ? { movimiento, idMovimiento: id } : { idMovimiento: id },
-    })
-  }, [movimientos, navigate])
+    openModal(
+      <div className="w-[min(96vw,900px)] max-h-[90vh] overflow-y-auto">
+        <MovimientoStockView idMovimiento={id} movimiento={movimiento ?? null} />
+      </div>
+    )
+  }, [movimientos, openModal])
 
   const handleDobleClickFila = useCallback((id: number) => {
     openMovimiento(id)

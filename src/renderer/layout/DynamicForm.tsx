@@ -67,6 +67,8 @@ const buildInitial = (inputs: InputDef[]) =>
         input.value === undefined || input.value === null
           ? ''
           : String(input.value)
+    } else if (input.type === 'select') {
+      acc[input.name] = input.value ?? input.options?.[0]?.value ?? ''
     } else {
       acc[input.name] = input.value ?? ''
     }
@@ -103,10 +105,16 @@ export default function DynamicForm({
       if (!raw) return fallbackInitial
 
       const parsed = JSON.parse(raw) as Record<string, any>
-      return {
-        ...fallbackInitial,
-        ...parsed,
+      const merged = { ...fallbackInitial, ...parsed }
+
+      for (const input of inputs) {
+        if (input.type === 'select' && input.options) {
+          const valid = input.options.some(o => o.value === merged[input.name])
+          if (!valid) merged[input.name] = fallbackInitial[input.name]
+        }
       }
+
+      return merged
     } catch {
       window.localStorage.removeItem(storageKey)
       return fallbackInitial
@@ -266,8 +274,7 @@ export default function DynamicForm({
      Submit
      Numbers → number | null
   ======================= */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const runSubmit = async () => {
     if (isSubmitting) return
 
     try {
@@ -294,6 +301,11 @@ export default function DynamicForm({
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    runSubmit()
   }
 
   const disabledAll = disableWhileSubmitting && isSubmitting
@@ -414,9 +426,9 @@ export default function DynamicForm({
 
       <div className="mt-4">
         <PrimaryButton
-          type="submit"
+          type={preventEnterSubmit ? 'button' : 'submit'}
           disabled={isSubmitting}
-          functionClick={undefined}
+          functionClick={preventEnterSubmit ? runSubmit : undefined}
           className="w-full md:w-auto"
           title={isSubmitting ? submittingText : titleBtn}
         />
