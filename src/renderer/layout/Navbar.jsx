@@ -12,10 +12,11 @@ import {
   ChefHat,
   Salad,
   Clock,
+  ChevronDown,
 } from 'lucide-react'
 import bgUrl from '/fondo-h.webp'
 import React, { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import logo from '/zafiro_rounded.ico'
 import { useAuth } from '../hooks/useAuth'
 
@@ -23,20 +24,43 @@ const navItems = [
   { name: 'Dashboard', href: '/', icon: <LayoutDashboard size={20} /> },
   { name: 'Ventas', href: '/ventas', icon: <Receipt size={20} /> },
   { name: 'Caja', href: '/caja', icon: <Wallet size={20} /> },
-  { name: 'Productos', href: '/productos', icon: <Package size={20} /> },
-  { name: 'Stock', href: '/movimientos-stock', icon: <ArrowUpDown size={20} /> },
-  { name: 'Ingredientes', href: '/ingredientes', icon: <Salad size={20} /> },
-  { name: 'Platos', href: '/platos', icon: <ChefHat size={20} /> },
+  {
+    name: 'Productos', href: '/productos', icon: <Package size={20} />,
+    children: [
+      { name: 'Stock', href: '/movimientos-stock', icon: <ArrowUpDown size={16} /> },
+    ],
+  },
+  {
+    name: 'Platos', href: '/platos', icon: <ChefHat size={20} />,
+    children: [
+      { name: 'Ingredientes', href: '/ingredientes', icon: <Salad size={16} /> },
+    ],
+  },
   { name: 'Clientes', href: '/clientes', icon: <Users size={20} /> },
-  { name: 'Vendedores', href: '/vendedores', icon: <Users size={20} /> },
+  {
+    name: 'Vendedores', href: '/vendedores', icon: <Users size={20} />,
+    children: [
+      { name: 'Horarios', href: '/horarios', icon: <Clock size={16} /> },
+    ],
+  },
   { name: 'Metodos de pago', href: '/metodos-pago', icon: <CreditCard size={20} /> },
   { name: 'Resumenes', href: '/resumenes', icon: <BarChart3 size={20} /> },
-  { name: 'Horarios', href: '/horarios', icon: <Clock size={20} /> },
 ]
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const [openGroups, setOpenGroups] = useState({})
   const { profile, signOut } = useAuth()
+  const location = useLocation()
+
+  const toggleGroup = (name) => {
+    setOpenGroups(prev => ({ ...prev, [name]: !prev[name] }))
+  }
+
+  const isGroupOpen = (item) => {
+    if (openGroups[item.name] !== undefined) return openGroups[item.name]
+    return item.children?.some(c => location.pathname === c.href) ?? false
+  }
 
   return (
     <>
@@ -82,25 +106,83 @@ export default function Navbar() {
           </div>
         </div>
 
-        <ul className="flex flex-col gap-1 p-2 pb-3 text-center">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.href}
-              end={item.href === '/'}
-              onClick={() => setIsOpen(false)}
-              className={({ isActive }) =>
-                `z-10 flex items-center gap-2 rounded-lg px-3 py-3 md:py-2 shadow-inner shadow-black transition-all hover:shadow-black hover:shadow-inner ${
-                  isActive
-                    ? 'bg-stone-900 bg-opacity-70 font-extrabold shadow-inner shadow-black'
-                    : 'bg-black/30 hover:bg-sky-600 hover:bg-opacity-80'
-                }`
-              }
-            >
-              {item.icon}
-              <span className="text-sm font-bold">{item.name}</span>
-            </NavLink>
-          ))}
+        <ul className="flex flex-col gap-1 p-2 pb-3">
+          {navItems.map((item) => {
+            if (!item.children) {
+              return (
+                <NavLink
+                  key={item.name}
+                  to={item.href}
+                  end={item.href === '/'}
+                  onClick={() => setIsOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2 rounded-lg px-3 py-3 shadow-inner shadow-black transition-all hover:shadow-black hover:shadow-inner ${
+                      isActive
+                        ? 'bg-stone-900 bg-opacity-70 font-extrabold shadow-inner shadow-black'
+                        : 'bg-black/30 hover:bg-sky-600/80'
+                    }`
+                  }
+                >
+                  {item.icon}
+                  <span className="text-sm font-bold">{item.name}</span>
+                </NavLink>
+              )
+            }
+
+            const expanded = isGroupOpen(item)
+
+            return (
+              <li key={item.name} className="flex flex-col gap-1">
+                <div className="flex items-stretch gap-0.5">
+                  <NavLink
+                    to={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={({ isActive }) =>
+                      `flex flex-1 items-center gap-2 rounded-l-lg px-3 py-3 shadow-inner shadow-black transition-all hover:shadow-black hover:shadow-inner ${
+                        isActive
+                          ? 'bg-stone-900 bg-opacity-70 font-extrabold'
+                          : 'bg-black/30 hover:bg-sky-600/80'
+                      }`
+                    }
+                  >
+                    {item.icon}
+                    <span className="text-sm font-bold">{item.name}</span>
+                  </NavLink>
+                  <button
+                    onClick={() => toggleGroup(item.name)}
+                    className="rounded-r-lg bg-black/30 px-2 hover:bg-sky-600/80 transition-all shadow-inner shadow-black"
+                  >
+                    <ChevronDown
+                      size={16}
+                      className={`transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                </div>
+
+                {expanded && (
+                  <ul className="flex flex-col gap-1 pl-4">
+                    {item.children.map((child) => (
+                      <NavLink
+                        key={child.name}
+                        to={child.href}
+                        onClick={() => setIsOpen(false)}
+                        className={({ isActive }) =>
+                          `flex items-center gap-2 rounded-lg px-3 py-2 transition-all ${
+                            isActive
+                              ? 'bg-stone-900/70 font-extrabold shadow-inner shadow-black'
+                              : 'bg-black/20 hover:bg-sky-600/70'
+                          }`
+                        }
+                      >
+                        {child.icon}
+                        <span className="text-xs font-bold text-white/85">{child.name}</span>
+                      </NavLink>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            )
+          })}
         </ul>
 
         <div className="mt-auto p-2 md:p-3">
