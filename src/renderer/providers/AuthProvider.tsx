@@ -91,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<unknown>(null)
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
   const initializedRef = useRef(false)
+  const isPasswordRecoveryRef = useRef(false)
   const authUserRef = useRef<User | null>(null)
   const profileRef = useRef<AppProfile | null>(null)
 
@@ -127,6 +128,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(async ({ data, error: sessionError }) => {
       if (!mounted) return
 
+      // PASSWORD_RECOVERY event may have fired synchronously during getSession().
+      // If so, skip the normal auth flow entirely.
+      if (isPasswordRecoveryRef.current) {
+        if (mounted) {
+          initializedRef.current = true
+          setLoading(false)
+        }
+        return
+      }
+
       if (sessionError) {
         setError(sessionError)
       }
@@ -156,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (event === 'PASSWORD_RECOVERY') {
+        isPasswordRecoveryRef.current = true
         setIsPasswordRecovery(true)
         setSession(nextSession ?? null)
         setAuthUser(nextSession?.user ?? null)
@@ -164,7 +176,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+      // SIGNED_IN fires right after PASSWORD_RECOVERY — do NOT reset the flag on it.
+      if (event === 'SIGNED_OUT') {
+        isPasswordRecoveryRef.current = false
         setIsPasswordRecovery(false)
       }
 

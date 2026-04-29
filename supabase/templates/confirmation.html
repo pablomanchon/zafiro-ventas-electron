@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmá tu cuenta · Zafiro</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0b1016;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0b1016;">
+    <tr>
+      <td align="center" style="padding:48px 16px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;">
+
+          <!-- Brand pill -->
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:8px 18px;">
+                    <span style="color:rgba(255,255,255,0.65);font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;letter-spacing:0.01em;">
+                      &#9670;&nbsp;&nbsp;Zafiro Stock y Ventas
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#101722;border-radius:20px;border:1px solid rgba(255,255,255,0.07);overflow:hidden;">
+
+              <!-- Top accent -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="40%" style="background-color:#1f7a8c;height:3px;font-size:0;line-height:0;">&nbsp;</td>
+                  <td width="20%" style="background-color:#2a93a8;height:3px;font-size:0;line-height:0;">&nbsp;</td>
+                  <td width="40%" style="background-color:#101722;height:3px;font-size:0;line-height:0;">&nbsp;</td>
+                </tr>
+              </table>
+
+              <!-- Body -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding:40px 40px 36px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+
+                    <!-- Icon -->
+                    <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+                      <tr>
+                        <td width="48" height="48" align="center" style="background-color:rgba(31,122,140,0.12);border:1px solid rgba(31,122,140,0.25);border-radius:14px;font-size:22px;line-height:48px;width:48px;height:48px;">
+                          ✉
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Title -->
+                    <p style="margin:0 0 10px;color:#ffffff;font-size:22px;font-weight:700;line-height:1.3;">
+                      Confirmá tu cuenta
+                    </p>
+
+                    <!-- Subtitle -->
+                    <p style="margin:0 0 26px;color:rgba(255,255,255,0.55);font-size:14px;line-height:1.75;">
+                      Gracias por registrarte en Zafiro. Para activar tu kiosco hacé clic en el botón de abajo — el enlace expira en 24 horas.
+                    </p>
+
+                    <!-- CTA -->
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="center" style="background-color:#1f7a8c;border-radius:12px;">
+                          <a href="{{ .ConfirmationURL }}"
+                             style="display:inline-block;padding:13px 30px;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;border-radius:12px;letter-spacing:0.01em;">
+                            Confirmar cuenta
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Divider -->
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0;">
+                      <tr>
+                        <td style="border-top:1px solid rgba(255,255,255,0.06);font-size:0;line-height:0;">&nbsp;</td>
+                      </tr>
+                    </table>
+
+                    <!-- Fallback link -->
+                    <p style="margin:0 0 6px;color:rgba(255,255,255,0.3);font-size:12px;line-height:1.6;">
+                      Si el botón no funciona, copiá y pegá este enlace en tu navegador:
+                    </p>
+                    <p style="margin:0;font-size:11px;line-height:1.6;word-break:break-all;">
+                      <a href="{{ .ConfirmationURL }}" style="color:#2a93a8;text-decoration:none;">{{ .ConfirmationURL }}</a>
+                    </p>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:22px 0 0;">
+              <p style="margin:0;color:rgba(255,255,255,0.2);font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.6;">
+                Si no creaste una cuenta en Zafiro podés ignorar este email.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

@@ -26,17 +26,20 @@ import { useAuth } from "./hooks/useAuth";
 import LoadingState from "./components/LoadingState";
 import PageFacturacion from "./pages/PageFacturacion";
 import PageNegocio from "./pages/PageNegocio";
-import PageStockAlertas from "./pages/PageStockAlertas";
+import PageStockAlertas from "./pages/PageStockAlertas"
+import PageCobrosPendientes from "./entities/cobros-pendientes/Page";
 
 export default function App() {
   const { loading, isAuthenticated, isPasswordRecovery } = useAuth();
   const { expired } = useUser();
 
+  // Check recovery before loading so the reset page shows immediately,
+  // even if getSession() hasn't resolved yet.
+  if (isPasswordRecovery) return <PageResetPassword />
+
   if (loading) {
     return <LoadingState variant="screen" title="Cargando sesión" message="Estamos preparando tu espacio de trabajo." />
   }
-
-  if (isPasswordRecovery) return <PageResetPassword />
 
   if (!isAuthenticated) return <PageAuth />
 
@@ -67,6 +70,7 @@ export default function App() {
         <Route path="/configuracion/facturacion" element={<PageFacturacion />} />
         <Route path="/configuracion/negocio" element={<PageNegocio />} />
         <Route path="/configuracion/stock" element={<PageStockAlertas />} />
+        <Route path="/cobros-pendientes" element={<PageCobrosPendientes />} />
       </Route>
       {/* fallback */}
       <Route path="*" element={<Navigate to="/" />} />

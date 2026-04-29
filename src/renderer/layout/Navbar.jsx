@@ -26,7 +26,12 @@ import { useAuth } from '../hooks/useAuth'
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: <LayoutDashboard size={20} /> },
-  { name: 'Ventas', href: '/ventas', icon: <Receipt size={20} /> },
+  {
+    name: 'Ventas', href: '/ventas', icon: <Receipt size={20} />,
+    children: [
+      { name: 'Cobros pendientes', href: '/cobros-pendientes', icon: <Receipt size={16} /> },
+    ],
+  },
   { name: 'Caja', href: '/caja', icon: <Wallet size={20} /> },
   {
     name: 'Productos', href: '/productos', icon: <Package size={20} />,
