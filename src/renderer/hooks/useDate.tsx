@@ -107,7 +107,7 @@ export function DateNavigator({
 }) {
   return (
     <div className={`flex flex-wrap items-center gap-2 w-full ${className ?? ''}`}>
-      <div className="flex gap-2 text-md">
+      <div className="flex gap-1.5 text-sm">
         {(['day', 'week', 'month'] as DateFilter[]).map(f => (
           <button
             key={f}
@@ -115,7 +115,7 @@ export function DateNavigator({
             className={
               (filter === f
                 ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-white') + ' px-3 py-1 rounded'
+                : 'bg-gray-700 text-white') + ' px-2.5 py-1 rounded'
             }
           >
             {f === 'day' ? 'Día' : f === 'week' ? 'Semana' : 'Mes'}
@@ -123,11 +123,11 @@ export function DateNavigator({
         ))}
       </div>
 
-      <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-2 sm:ml-auto">
-        <PrimaryButton functionClick={() => shift(-1)} title="<" />
-        <span className="text-sm md:text-base text-gray-200 text-center flex-1 sm:flex-none">{label}</span>
-        <PrimaryButton functionClick={() => shift(1)} title=">" />
-        <PrimaryButton functionClick={goToday} title="Hoy" />
+      <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-1.5 sm:ml-auto">
+        <PrimaryButton className="px-2 py-1 text-sm" functionClick={() => shift(-1)} title="<" />
+        <span className="text-sm text-gray-200 text-center flex-1 sm:flex-none">{label}</span>
+        <PrimaryButton className="px-2 py-1 text-sm" functionClick={() => shift(1)} title=">" />
+        <PrimaryButton className="px-2 py-1 text-sm" functionClick={goToday} title="Hoy" />
       </div>
     </div>
   )

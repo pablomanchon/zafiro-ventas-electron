@@ -112,7 +112,7 @@ function SegmentButton({
     <button
       onClick={onClick}
       className={[
-        "px-3 py-1 rounded border text-sm transition",
+        "px-2.5 py-0.5 rounded border text-sm transition",
         active
           ? "bg-white/20 border-white/40 text-white"
           : "bg-black/20 border-white/15 text-white/80 hover:bg-white/10",
@@ -174,13 +174,13 @@ export default function DashboardInsights() {
   const totalImp = useMemo(() => items.reduce((s, it) => s + (it.importe || 0), 0), [items]);
 
   return (
-    <div className="space-y-3 w-full">
-      <Steel>
-        <Glass className="flex flex-col gap-2 shadow inner shadow-black">
+    <div className="space-y-2 w-full">
+      <Steel className="px-3 py-2">
+        <Glass className="flex flex-col gap-1.5 p-2 shadow inner shadow-black">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <h2 className="text-lg font-semibold">Vendidos - {label}</h2>
+            <h2 className="text-base font-semibold">Vendidos - {label}</h2>
 
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <SegmentButton active={mode === "day"} onClick={() => setMode("day")}>
                 Día
               </SegmentButton>
@@ -191,24 +191,24 @@ export default function DashboardInsights() {
                 Mes
               </SegmentButton>
 
-              <div className="w-px h-6 bg-white/20 mx-1 hidden sm:block" />
+              <div className="w-px h-5 bg-white/20 mx-1 hidden sm:block" />
 
               <button
-                className="px-2 py-1 rounded border border-white/15 bg-black/20 hover:bg-white/10"
+                className="px-2 py-0.5 rounded border border-white/15 bg-black/20 hover:bg-white/10"
                 onClick={() => shift(-1)}
                 title="Anterior"
               >
                 {"<"}
               </button>
               <button
-                className="px-3 py-1 rounded border border-white/15 bg-black/20 hover:bg-white/10"
+                className="px-2.5 py-0.5 rounded border border-white/15 bg-black/20 hover:bg-white/10"
                 onClick={goToday}
                 title="Ir a hoy"
               >
                 Hoy
               </button>
               <button
-                className="px-2 py-1 rounded border border-white/15 bg-black/20 hover:bg-white/10"
+                className="px-2 py-0.5 rounded border border-white/15 bg-black/20 hover:bg-white/10"
                 onClick={() => shift(1)}
                 title="Siguiente"
               >
@@ -217,7 +217,7 @@ export default function DashboardInsights() {
             </div>
           </div>
 
-          <div className="text-sm opacity-80">
+          <div className="text-xs opacity-80">
             <span className="mr-4">
               Total items: <b>{totalCant}</b>
             </span>
@@ -231,7 +231,8 @@ export default function DashboardInsights() {
         </Glass>
       </Steel>
 
-      <Glass className="h-96 shadow-inner shadow-cyan-700 border-cyan-700 border">
+      <div className="flex flex-col gap-2 xl:flex-row">
+      <Glass className="min-h-[15rem] flex-[1.15] shadow-inner shadow-cyan-700 border-cyan-700 border">
         {loading ? (
           <LoadingState
             variant="table"
@@ -244,12 +245,12 @@ export default function DashboardInsights() {
         ) : chartData.length === 0 ? (
           <div className="text-sm opacity-70 p-2">Sin ventas en este rango.</div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={250}>
             <BarChart
               data={chartData}
               layout="vertical"
-              margin={{ top: 8, right: 16, bottom: 8, left: 5 }}
-              barSize={25}
+              margin={{ top: 6, right: 12, bottom: 4, left: 0 }}
+              barSize={18}
             >
               <defs>
                 {chartData.map((d, i) => {
@@ -265,7 +266,7 @@ export default function DashboardInsights() {
 
               <CartesianGrid strokeDasharray="5" opacity={0.2} />
               <XAxis type="number" tick={{ fill: "#fff" }} allowDecimals={false} />
-              <YAxis dataKey="name" type="category" width={160} tick={{ fill: "#fff", fontSize: 12 }} />
+              <YAxis dataKey="name" type="category" width={115} tick={{ fill: "#fff", fontSize: 11 }} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "#fff",
@@ -287,9 +288,9 @@ export default function DashboardInsights() {
         )}
       </Glass>
 
-      <Glass className="overflow-auto max-h-[60vh] relative p-0 shadow-inner shadow-cyan-700 border-cyan-700 border">
+      <Glass className="relative max-h-[16rem] flex-1 overflow-auto p-0 shadow-inner shadow-cyan-700 border-cyan-700 border">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-black/60 backdrop-blur-xl">
+          <thead className="sticky top-0 bg-black/70 backdrop-blur-xl">
             <tr>
               <th className="text-left px-3 py-2">Producto</th>
               <th className="text-right px-3 py-2">Cantidad</th>
@@ -316,8 +317,16 @@ export default function DashboardInsights() {
           </tfoot>
         </table>
       </Glass>
+      </div>
 
-      <VentasPorMetodoChartSmart className="shadow-white border border-white" from={from} to={to} />
+      <VentasPorMetodoChartSmart
+        className="shadow-white border border-white"
+        from={from}
+        to={to}
+        height={240}
+        innerRadius={48}
+        outerRadius="82%"
+      />
     </div>
   );
 }
