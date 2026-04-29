@@ -21,6 +21,7 @@ import PagePlatos from "./entities/platos/Page";
 import VentaCreate2 from "./entities/ventas/VentaCreate2";
 import PageHorarios from "./entities/horarios/Page2";
 import PageAuth from "./pages/PageAuth";
+import PageResetPassword from "./pages/PageResetPassword";
 import { useAuth } from "./hooks/useAuth";
 import LoadingState from "./components/LoadingState";
 import PageFacturacion from "./pages/PageFacturacion";
@@ -28,12 +29,14 @@ import PageNegocio from "./pages/PageNegocio";
 import PageStockAlertas from "./pages/PageStockAlertas";
 
 export default function App() {
-  const { loading, isAuthenticated } = useAuth();
+  const { loading, isAuthenticated, isPasswordRecovery } = useAuth();
   const { expired } = useUser();
 
   if (loading) {
     return <LoadingState variant="screen" title="Cargando sesión" message="Estamos preparando tu espacio de trabajo." />
   }
+
+  if (isPasswordRecovery) return <PageResetPassword />
 
   if (!isAuthenticated) return <PageAuth />
 

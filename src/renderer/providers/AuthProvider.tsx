@@ -36,10 +36,13 @@ type AuthContextValue = {
   loading: boolean
   error: unknown
   isAuthenticated: boolean
+  isPasswordRecovery: boolean
   refreshProfile: () => Promise<AppProfile | null>
   signIn: (email: string, password: string) => Promise<void>
   signUp: (input: SignUpInput) => Promise<{ needsEmailConfirmation: boolean }>
   signOut: () => Promise<void>
+  resetPassword: (email: string) => Promise<void>
+  updatePassword: (newPassword: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -86,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AppProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
   const initializedRef = useRef(false)
   const authUserRef = useRef<User | null>(null)
   const profileRef = useRef<AppProfile | null>(null)
@@ -151,6 +155,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true)
+        setSession(nextSession ?? null)
+        setAuthUser(nextSession?.user ?? null)
+        initializedRef.current = true
+        setLoading(false)
+        return
+      }
+
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        setIsPasswordRecovery(false)
+      }
+
       setSession(nextSession ?? null)
       setAuthUser(nextSession?.user ?? null)
 
@@ -232,6 +249,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null)
   }, [])
 
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    if (error) throw error
+  }, [])
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw error
+  }, [])
+
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
@@ -240,12 +267,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       isAuthenticated: Boolean(session?.user),
+      isPasswordRecovery,
       refreshProfile,
       signIn,
       signUp,
       signOut,
+      resetPassword,
+      updatePassword,
     }),
-    [authUser, error, loading, profile, refreshProfile, session, signIn, signOut, signUp]
+    [authUser, error, isPasswordRecovery, loading, profile, refreshProfile, resetPassword, session, signIn, signOut, signUp, updatePassword]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
