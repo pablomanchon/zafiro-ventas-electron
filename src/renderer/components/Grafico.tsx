@@ -55,7 +55,7 @@ export default function Pie2DChart({
     title,
     data,
     innerRadius = "40%",
-    outerRadius = "90%",
+    outerRadius = 90,
     showLegend = true,
     valueFormatter = (n) => new Intl.NumberFormat().format(n),
     onSliceClick,
@@ -74,64 +74,26 @@ export default function Pie2DChart({
             innerRadius: ir,
             outerRadius: or,
             percent,
-            name,
-            value,
         } = props;
 
-        if (!showLabels || percent < 0.02) return null; // ocultar <2%
+        if (!showLabels || percent < 0.06) return null;
 
         const RADIAN = Math.PI / 180;
-        const radius = ir + (or - ir) * 0.3;
+        const radius = ir + (or - ir) * 0.5;
         const x = cx + radius * Math.cos(-midAngle * RADIAN);
         const y = cy + radius * Math.sin(-midAngle * RADIAN);
-        const anchor = x > cx ? "start" : "end";
 
-        // 🔹 Versión glass usando foreignObject (HTML dentro del SVG)
-        if (showGlassLabels) {
-            return (
-                <foreignObject
-                    x={x - 60}
-                    y={y - 22}
-                    width={120}
-                    height={44}
-                    style={{ overflow: "visible", pointerEvents: "none" }}
-                >
-                    <div className="backdrop-blur-md bg-white/30 rounded-md px-2 py-1 text-[11px] font-semibold text-gray-800 flex flex-col items-center shadow-sm">
-                        <span className="leading-4">{name}</span>
-                        <span className="leading-4 opacity-90">
-                            {`${valueFormatter(Number(value))} · ${(percent * 100).toFixed(0)}%`}
-                        </span>
-                    </div>
-                </foreignObject>
-            );
-        }
-
-        // 🔹 Versión texto SVG normal
         return (
-            <g>
-                <text
-                    x={x}
-                    y={y}
-                    dy={10}
-                    fill="#f8fafc"
-                    textAnchor={anchor}
-                    dominantBaseline="central"
-                    style={{ fontSize: 11, fontWeight: 500, opacity: 0.95 }}
-                >
-                    {`${(percent * 100).toFixed(0)}%`}
-                </text>
-                <text
-                    x={x}
-                    y={y}
-                    dy={-6}
-                    fill="#fff"
-                    textAnchor={anchor}
-                    dominantBaseline="central"
-                    style={{ fontSize: 11, fontWeight: 600 }}
-                >
-                    {name}
-                </text>
-            </g>
+            <text
+                x={x}
+                y={y}
+                fill="#fff"
+                textAnchor="middle"
+                dominantBaseline="central"
+                style={{ fontSize: 12, fontWeight: 700 }}
+            >
+                {`${(percent * 100).toFixed(0)}%`}
+            </text>
         );
     };
 

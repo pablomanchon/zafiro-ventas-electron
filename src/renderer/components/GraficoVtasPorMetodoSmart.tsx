@@ -22,7 +22,7 @@ export default function VentasPorMetodoChartSmart({
   title = "Ingresos por método de pago",
   height = 320,
   innerRadius = 60,
-  outerRadius = "90%",
+  outerRadius = 90,
   showLegend = true,
   cornerRadius = 8,
   className = "",

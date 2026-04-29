@@ -79,6 +79,16 @@ export const getUser = async (id: string) => {
 
 export type MetodoTotal = { tipo: string; total: number }
 
+export type VentaDia = { fecha: string; total: number }
+
+export async function getVentasPorDia(from?: string, to?: string): Promise<VentaDia[]> {
+  const rows = await runRpc<Array<{ fecha: string; total: string | number }>>(
+    'ventas_por_dia',
+    { p_from: from ?? null, p_to: to ?? null },
+  )
+  return (rows ?? []).map((r) => ({ fecha: r.fecha, total: Number(r.total) }))
+}
+
 export async function getTotalesPorTipoPago(from?: string, to?: string): Promise<MetodoTotal[]> {
   const rows = await runRpc<Array<{ tipo: string; total: string | number }>>(
     'ventas_totales_por_tipo_pago',

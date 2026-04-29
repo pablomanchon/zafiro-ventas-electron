@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import Steel from "../layout/Steel";
 import { formatCurrencyARS } from "../utils/utils";
-import { getSelledProductsByDate } from "../api/db";
+import { getSelledProductsByDate, getVentasPorDia, type VentaDia } from "../api/db";
 import {
   BarChart,
   Bar,
@@ -11,6 +11,8 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   Cell,
+  AreaChart,
+  Area,
 } from "recharts";
 import Glass from "../layout/Glass";
 import VentasPorMetodoChartSmart from "./GraficoVtasPorMetodoSmart";
@@ -127,6 +129,7 @@ export default function DashboardInsights() {
   const [items, setItems] = useState<Vendido[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [evolutionData, setEvolutionData] = useState<VentaDia[]>([]);
   const [mode, setMode] = useState<RangeMode>("day");
   const [anchor, setAnchor] = useState<Date>(() => new Date());
 
@@ -150,9 +153,13 @@ export default function DashboardInsights() {
       setLoading(true);
       setErr(null);
       try {
-        const data = await getSelledProductsByDate(from, to);
+        const [data, dias] = await Promise.all([
+          getSelledProductsByDate(from, to),
+          getVentasPorDia(from, to),
+        ]);
         data.sort((a: Vendido, b: Vendido) => (b.cantidad || 0) - (a.cantidad || 0));
         setItems(data);
+        setEvolutionData(dias.map((d) => ({ ...d, fecha: d.fecha.slice(5) })));
       } catch (e: any) {
         setErr(e?.message ?? "Error al cargar vendidos");
       } finally {
@@ -319,14 +326,41 @@ export default function DashboardInsights() {
       </Glass>
       </div>
 
-      <VentasPorMetodoChartSmart
-        className="shadow-white border border-white"
-        from={from}
-        to={to}
-        height={240}
-        innerRadius={48}
-        outerRadius="82%"
-      />
+      <div className="flex flex-col gap-2 xl:flex-row xl:items-stretch">
+        <VentasPorMetodoChartSmart
+          className="shadow-white border border-white xl:w-80 shrink-0"
+          from={from}
+          to={to}
+          height={300}
+          innerRadius={52}
+          outerRadius={95}
+        />
+
+        {evolutionData.length > 1 && (
+          <Glass className="flex-1 p-3 shadow-inner shadow-cyan-700 border-cyan-700 border flex flex-col gap-2 min-w-0">
+            <p className="text-sm font-semibold">Evolución de ingresos</p>
+            <ResponsiveContainer width="100%" height={240}>
+              <AreaChart data={evolutionData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+                <defs>
+                  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#06B6D4" stopOpacity={0.5} />
+                    <stop offset="95%" stopColor="#06B6D4" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="4" opacity={0.12} />
+                <XAxis dataKey="fecha" tick={{ fill: "#94a3b8", fontSize: 10 }} interval="preserveStartEnd" />
+                <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} width={58} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#1e293b", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, color: "#fff" }}
+                  formatter={(v: number) => [formatCurrencyARS(v), "Ingresos"]}
+                  labelStyle={{ color: "#94a3b8", fontSize: 11 }}
+                />
+                <Area dataKey="total" stroke="#06B6D4" strokeWidth={2} fill="url(#areaGradient)" dot={{ r: 3, fill: "#06B6D4", strokeWidth: 0 }} activeDot={{ r: 5 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Glass>
+        )}
+      </div>
     </div>
   );
 }
