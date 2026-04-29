@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import useUser from "../hooks/useUser";
 import Main from "../layout/Main";
+import Steel from "../layout/Steel";
 
 export default function PageLicencia() {
   const { user, refetch, expired } = useUser();
@@ -26,20 +27,28 @@ export default function PageLicencia() {
   };
 
   return (
-    <Main className="p-6 text-white flex flex-col items-center justify-center">
-      <h1 className="text-2xl font-bold mb-2">Licencia vencida</h1>
-      {fecha && (
-        <p className="mb-2">
-          Vencio el <b>{fecha.toLocaleDateString()}</b>.
-        </p>
-      )}
-      <p className="mb-4">Contactate para renovar la licencia y seguir usando el sistema.</p>
-      <button
-        onClick={handleReintentar}
-        className="px-4 py-2 bg-emerald-700 rounded shadow-inner shadow-black"
-      >
-        Reintentar
-      </button>
+    <Main className="p-6 text-white flex flex-col items-center justify-center gap-4">
+      <Steel typeWood={2} className="w-full max-w-sm flex flex-col items-center gap-3 p-6 text-center">
+        <h1 className="text-2xl font-bold">Suscripción vencida</h1>
+        {fecha && (
+          <p className="text-white/70">
+            Venció el <b>{fecha.toLocaleDateString('es-AR')}</b>.
+          </p>
+        )}
+        <p className="text-white/60 text-sm">Renová tu suscripción para seguir usando el sistema.</p>
+        <button
+          onClick={() => navigate('/suscripcion')}
+          className="w-full px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 rounded-lg font-bold shadow-inner shadow-black transition"
+        >
+          Renovar suscripción
+        </button>
+        <button
+          onClick={handleReintentar}
+          className="text-sm text-white/40 hover:text-white/70 transition"
+        >
+          Ya pagué, verificar
+        </button>
+      </Steel>
     </Main>
   );
 }

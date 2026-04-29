@@ -27,7 +27,8 @@ import LoadingState from "./components/LoadingState";
 import PageFacturacion from "./pages/PageFacturacion";
 import PageNegocio from "./pages/PageNegocio";
 import PageStockAlertas from "./pages/PageStockAlertas"
-import PageCobrosPendientes from "./entities/cobros-pendientes/Page";
+import PageCobrosPendientes from "./entities/cobros-pendientes/Page"
+import PageSuscripcion from "./pages/PageSuscripcion";
 
 export default function App() {
   const { loading, isAuthenticated, isPasswordRecovery } = useAuth();
@@ -43,7 +44,12 @@ export default function App() {
 
   if (!isAuthenticated) return <PageAuth />
 
-  if (expired) return <PageLicencia />
+  if (expired) return (
+    <Routes>
+      <Route path="/suscripcion" element={<PageSuscripcion />} />
+      <Route path="*" element={<PageLicencia />} />
+    </Routes>
+  )
 
   return (
     <Routes>
@@ -71,6 +77,7 @@ export default function App() {
         <Route path="/configuracion/negocio" element={<PageNegocio />} />
         <Route path="/configuracion/stock" element={<PageStockAlertas />} />
         <Route path="/cobros-pendientes" element={<PageCobrosPendientes />} />
+        <Route path="/suscripcion" element={<PageSuscripcion />} />
       </Route>
       {/* fallback */}
       <Route path="*" element={<Navigate to="/" />} />

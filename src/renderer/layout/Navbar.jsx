@@ -60,6 +60,7 @@ const navItems = [
       { name: 'Negocio', href: '/configuracion/negocio', icon: <Building2 size={16} /> },
       { name: 'Facturacion', href: '/configuracion/facturacion', icon: <FileText size={16} /> },
       { name: 'Stock', href: '/configuracion/stock', icon: <AlertTriangle size={16} /> },
+      { name: 'Suscripcion', href: '/suscripcion', icon: <CreditCard size={16} /> },
     ],
   },
 ]
