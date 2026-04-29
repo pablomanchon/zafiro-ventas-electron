@@ -15,6 +15,8 @@ import {
   ChevronDown,
   Settings,
   FileText,
+  Building2,
+  AlertTriangle,
 } from 'lucide-react'
 import bgUrl from '/fondo-h.webp'
 import React, { useState } from 'react'
@@ -48,9 +50,11 @@ const navItems = [
   { name: 'Metodos de pago', href: '/metodos-pago', icon: <CreditCard size={20} /> },
   { name: 'Resumenes', href: '/resumenes', icon: <BarChart3 size={20} /> },
   {
-    name: 'Configuracion', href: '/configuracion/facturacion', icon: <Settings size={20} />,
+    name: 'Configuracion', href: '/configuracion/negocio', icon: <Settings size={20} />,
     children: [
+      { name: 'Negocio', href: '/configuracion/negocio', icon: <Building2 size={16} /> },
       { name: 'Facturacion', href: '/configuracion/facturacion', icon: <FileText size={16} /> },
+      { name: 'Stock', href: '/configuracion/stock', icon: <AlertTriangle size={16} /> },
     ],
   },
 ]

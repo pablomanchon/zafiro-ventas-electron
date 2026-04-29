@@ -24,6 +24,8 @@ import PageAuth from "./pages/PageAuth";
 import { useAuth } from "./hooks/useAuth";
 import LoadingState from "./components/LoadingState";
 import PageFacturacion from "./pages/PageFacturacion";
+import PageNegocio from "./pages/PageNegocio";
+import PageStockAlertas from "./pages/PageStockAlertas";
 
 export default function App() {
   const { loading, isAuthenticated } = useAuth();
@@ -60,6 +62,8 @@ export default function App() {
         <Route path="/platos" element={<PagePlatos />} />
         <Route path="/horarios" element={<PageHorarios/>} />
         <Route path="/configuracion/facturacion" element={<PageFacturacion />} />
+        <Route path="/configuracion/negocio" element={<PageNegocio />} />
+        <Route path="/configuracion/stock" element={<PageStockAlertas />} />
       </Route>
       {/* fallback */}
       <Route path="*" element={<Navigate to="/" />} />

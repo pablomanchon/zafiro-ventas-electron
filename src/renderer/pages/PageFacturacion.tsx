@@ -660,6 +660,36 @@ export default function PageFacturacion() {
                 )}
               </div>
 
+              <div className="rounded-2xl border border-violet-200/15 bg-violet-950/20 p-3">
+                <p className="text-sm font-bold text-white">Paso 1.5: subir la solicitud en AFIP</p>
+                <ol className="mt-2 flex flex-col gap-1.5 text-xs leading-relaxed text-white/60">
+                  <li>
+                    <span className="font-semibold text-white/80">1.</span> Ingresa a{' '}
+                    <span className="font-semibold text-violet-200">afip.gob.ar</span> e iniciá
+                    sesión con tu CUIT y clave fiscal.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-white/80">2.</span> Buscá el servicio{' '}
+                    <span className="font-semibold text-violet-200">
+                      "Administración de Certificados Digitales"
+                    </span>
+                    .
+                  </li>
+                  <li>
+                    <span className="font-semibold text-white/80">3.</span> Hacé clic en{' '}
+                    <span className="font-semibold text-violet-200">"Agregar alias"</span> o{' '}
+                    <span className="font-semibold text-violet-200">"Nuevo certificado"</span> y
+                    subí el archivo de solicitud que descargaste en el paso anterior.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-white/80">4.</span> AFIP generará el
+                    certificado. Descargalo como{' '}
+                    <span className="font-semibold text-violet-200">.crt</span> y volvé aquí para
+                    cargarlo en el paso 2.
+                  </li>
+                </ol>
+              </div>
+
               <form onSubmit={handleCredentialsSubmit} className="flex flex-col gap-3">
                 <p className="text-sm font-bold text-white">Paso 2: cargar certificado devuelto por ARCA</p>
 
@@ -729,6 +759,39 @@ export default function PageFacturacion() {
                   </button>
                 </div>
               </form>
+
+              <div className="rounded-2xl border border-amber-300/20 bg-amber-950/20 p-3">
+                <p className="text-sm font-bold text-amber-200">Paso final obligatorio: asociar el servicio en AFIP</p>
+                <p className="mt-1 text-xs text-white/55">
+                  Sin este paso el certificado no podrá emitir comprobantes.
+                </p>
+                <ol className="mt-2 flex flex-col gap-1.5 text-xs leading-relaxed text-white/60">
+                  <li>
+                    <span className="font-semibold text-white/80">1.</span> Volvé a{' '}
+                    <span className="font-semibold text-amber-200">afip.gob.ar</span> e iniciá
+                    sesión.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-white/80">2.</span> Ingresá en{' '}
+                    <span className="font-semibold text-amber-200">
+                      "Administrador de Relaciones de Clave Fiscal"
+                    </span>
+                    .
+                  </li>
+                  <li>
+                    <span className="font-semibold text-white/80">3.</span> Hacé clic en{' '}
+                    <span className="font-semibold text-amber-200">"Nueva relación"</span>.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-white/80">4.</span> Elegí el servicio{' '}
+                    <span className="font-semibold text-amber-200">"WSFEv1"</span>.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-white/80">5.</span> Asociá el certificado
+                    que creaste y guardá los cambios.
+                  </li>
+                </ol>
+              </div>
 
               {activeCredential && (
                 <button
