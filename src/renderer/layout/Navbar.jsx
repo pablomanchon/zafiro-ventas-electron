@@ -13,6 +13,8 @@ import {
   Salad,
   Clock,
   ChevronDown,
+  Settings,
+  FileText,
 } from 'lucide-react'
 import bgUrl from '/fondo-h.webp'
 import React, { useState } from 'react'
@@ -45,6 +47,12 @@ const navItems = [
   },
   { name: 'Metodos de pago', href: '/metodos-pago', icon: <CreditCard size={20} /> },
   { name: 'Resumenes', href: '/resumenes', icon: <BarChart3 size={20} /> },
+  {
+    name: 'Configuracion', href: '/configuracion/facturacion', icon: <Settings size={20} />,
+    children: [
+      { name: 'Facturacion', href: '/configuracion/facturacion', icon: <FileText size={16} /> },
+    ],
+  },
 ]
 
 export default function Navbar() {

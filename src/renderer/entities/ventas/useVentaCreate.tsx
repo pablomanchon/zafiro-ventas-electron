@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { create } from '../../api/crud'
+import { facturarVenta } from '../../api/facturacion'
 import { useProducts } from '../../hooks/useProducts'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { fetchSaleById, makeSelectVentaById, needsRefresh } from '../../store/salesReduce'
@@ -324,6 +325,21 @@ export function useVentaCreateLogic() {
         channel.close()
 
         toast.success(`Venta ${venta.id} creada con éxito!`)
+        try {
+          const facturacion = await facturarVenta({
+            ventaId: Number(venta.id),
+            trigger: 'automatic',
+          })
+          if (facturacion?.authorized) {
+            toast.success(`Factura autorizada. CAE ${facturacion.invoice?.cae ?? ''}`.trim())
+          }
+        } catch (facturaError) {
+          const message =
+            facturaError instanceof Error
+              ? facturaError.message
+              : 'No se pudo autorizar la factura'
+          toast.error(`Venta guardada, pero ARCA respondio: ${message}`)
+        }
         resetForm()
         return venta
       } catch (err: any) {

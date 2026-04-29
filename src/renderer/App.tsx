@@ -23,6 +23,7 @@ import PageHorarios from "./entities/horarios/Page2";
 import PageAuth from "./pages/PageAuth";
 import { useAuth } from "./hooks/useAuth";
 import LoadingState from "./components/LoadingState";
+import PageFacturacion from "./pages/PageFacturacion";
 
 export default function App() {
   const { loading, isAuthenticated } = useAuth();
@@ -58,6 +59,7 @@ export default function App() {
         <Route path="/ingredientes" element={<PageIngredientes />} />
         <Route path="/platos" element={<PagePlatos />} />
         <Route path="/horarios" element={<PageHorarios/>} />
+        <Route path="/configuracion/facturacion" element={<PageFacturacion />} />
       </Route>
       {/* fallback */}
       <Route path="*" element={<Navigate to="/" />} />

@@ -1,5 +1,11 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { toast } from 'sonner'
+import { FileCheck2, LoaderCircle } from 'lucide-react'
+import { facturarVenta } from '../../api/facturacion'
 import { useSale } from '../../hooks/useSale'
+import { useAppDispatch } from '../../store/hooks'
+import { fetchSaleById } from '../../store/salesReduce'
 import Main from '../../layout/Main'
 import Title from '../../layout/Title'
 import Steel from '../../layout/Steel'
@@ -24,6 +30,8 @@ export type TypeVenta = {
 export default function SaleDetail({ idVenta: idProp }: { idVenta?: string }) {
   const { idVenta: idParam } = useParams<{ idVenta: string }>()
   const id = idProp ?? idParam ?? ''
+  const dispatch = useAppDispatch()
+  const [facturando, setFacturando] = useState(false)
   const { venta, loading } = useSale(id)
 
   if (!id) return <div>No se encontró el ID de la venta</div>
@@ -34,6 +42,27 @@ export default function SaleDetail({ idVenta: idProp }: { idVenta?: string }) {
   const totalVenta =
     venta.total ??
     venta.pagos?.reduce((acc: number, pago: any) => acc + Number(pago.monto ?? 0), 0)
+
+  const handleFacturar = async () => {
+    setFacturando(true)
+    try {
+      const result = await facturarVenta({
+        ventaId: Number(venta.id),
+        trigger: 'manual',
+        force: true,
+      })
+      if (result?.authorized) {
+        toast.success(`Factura autorizada. CAE ${result.invoice?.cae ?? ''}`.trim())
+      } else {
+        toast.success(result?.message ?? 'Factura procesada')
+      }
+      dispatch(fetchSaleById(id))
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo facturar la venta')
+    } finally {
+      setFacturando(false)
+    }
+  }
 
   const content = (
     <div className="w-full text-white flex flex-col gap-3">
@@ -62,6 +91,15 @@ export default function SaleDetail({ idVenta: idProp }: { idVenta?: string }) {
             <span className="px-3 py-1 rounded-full text-sm font-semibold border border-emerald-400 bg-emerald-900/70 text-emerald-100">
               {formatCurrencyARS(totalVenta)}
             </span>
+            <button
+              type="button"
+              onClick={() => void handleFacturar()}
+              disabled={facturando}
+              className="inline-flex items-center gap-2 rounded-lg border border-cyan-200/25 bg-cyan-700 px-3 py-1.5 text-sm font-semibold text-white shadow shadow-black transition hover:bg-cyan-600 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {facturando ? <LoaderCircle className="animate-spin" size={16} /> : <FileCheck2 size={16} />}
+              Facturar
+            </button>
           </div>
         </div>
       </Steel>
