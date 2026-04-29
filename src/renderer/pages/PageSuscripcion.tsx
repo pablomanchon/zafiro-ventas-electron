@@ -4,8 +4,6 @@ import { useSearchParams } from 'react-router-dom'
 import { CheckCircle2, Loader2, RefreshCw, ExternalLink } from 'lucide-react'
 import useUser from '../hooks/useUser'
 import Main from '../layout/Main'
-import Steel from '../layout/Steel'
-import bgUrl from '../assets/fondo-h.webp'
 
 const PLANES = {
   mensual: {
@@ -44,10 +42,7 @@ export default function PageSuscripcion() {
 
   const handlePagar = () => {
     const link = PLANES[planSel].link
-    if (!link) {
-      toast.error('Link de pago no configurado')
-      return
-    }
+    if (!link) { toast.error('Link de pago no configurado'); return }
     window.open(link, '_blank')
   }
 
@@ -66,51 +61,47 @@ export default function PageSuscripcion() {
   }
 
   const content = (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-6 text-white">
+    <div className="w-full max-w-2xl flex flex-col gap-6 text-white">
 
       {/* Estado actual */}
       <div>
-        <h1 className="text-2xl font-bold mb-1">Suscripción</h1>
-        <Steel typeWood={2} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3">
-          <div className="text-sm">
-            <p className="text-white/60 text-xs uppercase tracking-wide mb-0.5">Estado actual</p>
+        <h1 className="text-2xl font-bold mb-2">Suscripción</h1>
+        <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-1">Estado actual</p>
             {estaActivo ? (
-              <p className="font-semibold text-emerald-300 flex items-center gap-1.5">
-                <CheckCircle2 size={15} />
+              <p className="font-bold text-emerald-300 text-base flex items-center gap-2">
+                <CheckCircle2 size={16} />
                 Activa hasta {vencDate?.toLocaleDateString('es-AR')}
-                <span className="text-white/50 font-normal">({diasRestantes} días restantes)</span>
+                <span className="text-white/60 font-normal text-sm">({diasRestantes} días restantes)</span>
               </p>
             ) : (
-              <p className="font-semibold text-red-400">Suscripción vencida</p>
+              <p className="font-bold text-red-400 text-base">Suscripción vencida</p>
             )}
           </div>
           {user?.name && (
-            <p className="text-white/50 text-sm">{user.name}</p>
+            <p className="text-white/60 text-sm font-medium">{user.name}</p>
           )}
-        </Steel>
+        </div>
       </div>
 
-      {/* Banner de regreso de MP */}
+      {/* Banners de regreso de MP */}
       {pagoParam === 'ok' && (
-        <Steel typeWood={2} className="p-4 border border-emerald-600 bg-emerald-900/30">
-          <p className="font-semibold text-emerald-300">
-            ¡Pago recibido! La suscripción se activa en unos minutos.
-          </p>
-          <p className="text-sm text-white/60 mt-1">
-            Usá el botón "Verificar pago" para actualizar tu estado.
-          </p>
-        </Steel>
+        <div className="rounded-xl border border-emerald-600 bg-emerald-900/30 p-4">
+          <p className="font-semibold text-emerald-300">¡Pago recibido! La suscripción se activa en unos minutos.</p>
+          <p className="text-sm text-white/60 mt-1">Usá el botón "Verificar pago" para actualizar tu estado.</p>
+        </div>
       )}
       {pagoParam === 'error' && (
-        <Steel typeWood={2} className="p-4 border border-red-700 bg-red-900/20">
+        <div className="rounded-xl border border-red-700 bg-red-900/20 p-4">
           <p className="font-semibold text-red-400">El pago fue rechazado o cancelado.</p>
           <p className="text-sm text-white/60 mt-1">Intentá de nuevo con otra tarjeta.</p>
-        </Steel>
+        </div>
       )}
 
       {/* Selector de planes */}
       <div>
-        <p className="text-white/60 text-xs uppercase tracking-wide mb-2">Elegí tu plan</p>
+        <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-2">Elegí tu plan</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {(Object.keys(PLANES) as Plan[]).map((key) => {
             const p = PLANES[key]
@@ -122,8 +113,8 @@ export default function PageSuscripcion() {
                 onClick={() => setPlanSel(key)}
                 className={`relative text-left rounded-xl border-2 p-4 transition-all ${
                   seleccionado
-                    ? 'border-cyan-400 bg-cyan-900/30 shadow-lg shadow-cyan-900/40'
-                    : 'border-white/15 bg-white/5 hover:border-white/30'
+                    ? 'border-cyan-400 bg-cyan-900/20 shadow-lg shadow-cyan-900/30'
+                    : 'border-white/15 bg-white/5 hover:border-white/30 hover:bg-white/10'
                 }`}
               >
                 {p.ahorro && (
@@ -132,8 +123,7 @@ export default function PageSuscripcion() {
                   </span>
                 )}
                 <p className="font-bold text-base mb-1">{p.label}</p>
-                <p className="text-2xl font-extrabold text-white">{p.precioLabel}</p>
-                <p className="text-sm text-cyan-300 mt-0.5">{p.porMes}</p>
+                <p className="text-2xl font-extrabold text-cyan-300">{p.porMes}</p>
                 <p className="text-xs text-white/50 mt-1">{p.detalle}</p>
               </button>
             )
@@ -151,18 +141,13 @@ export default function PageSuscripcion() {
           <ExternalLink size={18} />
           Pagar con MercadoPago
         </button>
-
         <button
           type="button"
           onClick={() => void handleVerificar()}
           disabled={verificando}
           className="flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 disabled:opacity-50 px-5 py-3 font-semibold text-white transition text-sm"
         >
-          {verificando ? (
-            <Loader2 size={15} className="animate-spin" />
-          ) : (
-            <RefreshCw size={15} />
-          )}
+          {verificando ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
           Verificar pago
         </button>
       </div>
@@ -174,12 +159,11 @@ export default function PageSuscripcion() {
   )
 
   return (
-    <Main
-      style={{ backgroundImage: `url(${bgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-      className="flex items-center justify-center min-h-screen p-4"
-    >
-      <div className="w-full bg-black/70 backdrop-blur-sm rounded-2xl shadow-2xl shadow-black border border-white/10 p-6">
-        {content}
+    <Main>
+      <div className="flex flex-1 items-center justify-center p-6">
+        <div className="w-full max-w-2xl border border-white/10 rounded-2xl p-6">
+          {content}
+        </div>
       </div>
     </Main>
   )
