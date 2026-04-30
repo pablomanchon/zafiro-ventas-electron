@@ -11,6 +11,24 @@ const PLANES = {
   anual:   { monto: 180000, dias: 365, titulo: 'Zafiro - Plan Anual'   },
 }
 
+function getPublicOrigin(origin: string | null | undefined) {
+  if (!origin) return null
+
+  try {
+    const url = new URL(origin)
+    const isHttp = url.protocol === 'http:' || url.protocol === 'https:'
+    const isLocal =
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1' ||
+      url.hostname.endsWith('.localhost')
+
+    if (!isHttp || isLocal) return null
+    return url.origin
+  } catch {
+    return null
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
@@ -33,10 +51,11 @@ Deno.serve(async (req) => {
     if (!PLANES[plan]) throw new Error('Plan inválido')
 
     const { monto, titulo } = PLANES[plan]
+    const publicOrigin = getPublicOrigin(origin)
     const mpToken = Deno.env.get('MP_ACCESS_TOKEN')
     if (!mpToken) throw new Error('MP_ACCESS_TOKEN no configurado')
 
-    const preferenceBody = {
+    const preferenceBody: Record<string, unknown> = {
       items: [{
         title: titulo,
         quantity: 1,
@@ -45,13 +64,16 @@ Deno.serve(async (req) => {
       }],
       external_reference: `${kioscoId}|${plan}`,
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/suscripcion-webhook`,
-      back_urls: {
-        success: `${origin}/suscripcion?pago=ok`,
-        failure: `${origin}/suscripcion?pago=error`,
-        pending: `${origin}/suscripcion?pago=pendiente`,
-      },
-      auto_return: 'approved',
       statement_descriptor: 'ZAFIRO SISTEMA',
+    }
+
+    if (publicOrigin) {
+      preferenceBody.back_urls = {
+        success: `${publicOrigin}/suscripcion?pago=ok`,
+        failure: `${publicOrigin}/suscripcion?pago=error`,
+        pending: `${publicOrigin}/suscripcion?pago=pendiente`,
+      }
+      preferenceBody.auto_return = 'approved'
     }
 
     const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {

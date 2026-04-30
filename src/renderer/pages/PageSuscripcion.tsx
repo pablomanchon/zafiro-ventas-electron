@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import { CheckCircle2, Loader2, RefreshCw, ExternalLink } from 'lucide-react'
 import useUser from '../hooks/useUser'
 import Main from '../layout/Main'
+import { crearPreferenciaSuscripcion } from '../api/suscripcion'
 
 const PLANES = {
   mensual: {
@@ -12,7 +13,6 @@ const PLANES = {
     porMes: '$30.000 / mes',
     detalle: 'Renovación mes a mes',
     ahorro: null,
-    link: import.meta.env.VITE_MP_MONTHLY_LINK as string,
   },
   anual: {
     label: 'Anual',
@@ -20,7 +20,6 @@ const PLANES = {
     porMes: '$15.000 / mes',
     detalle: '12 meses de acceso',
     ahorro: '50% OFF',
-    link: import.meta.env.VITE_MP_YEARLY_LINK as string,
   },
 } as const
 
@@ -33,6 +32,7 @@ export default function PageSuscripcion() {
 
   const [planSel, setPlanSel] = useState<Plan>('mensual')
   const [verificando, setVerificando] = useState(false)
+  const [pagando, setPagando] = useState(false)
 
   const vencDate = user?.vencDate ? new Date(user.vencDate) : null
   const estaActivo = vencDate ? vencDate > new Date() : false
@@ -40,10 +40,16 @@ export default function PageSuscripcion() {
     ? Math.ceil((vencDate.getTime() - Date.now()) / 86400000)
     : 0
 
-  const handlePagar = () => {
-    const link = PLANES[planSel].link
-    if (!link) { toast.error('Link de pago no configurado'); return }
-    window.open(link, '_blank')
+  const handlePagar = async () => {
+    setPagando(true)
+    try {
+      const { init_point } = await crearPreferenciaSuscripcion(planSel)
+      window.open(init_point, '_blank')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo crear el link de pago')
+    } finally {
+      setPagando(false)
+    }
   }
 
   const handleVerificar = async () => {
@@ -135,11 +141,12 @@ export default function PageSuscripcion() {
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           type="button"
-          onClick={handlePagar}
-          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 px-5 py-3 font-bold text-white transition shadow shadow-black/40"
+          onClick={() => void handlePagar()}
+          disabled={pagando}
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 px-5 py-3 font-bold text-white transition shadow shadow-black/40"
         >
-          <ExternalLink size={18} />
-          Pagar con MercadoPago
+          {pagando ? <Loader2 size={18} className="animate-spin" /> : <ExternalLink size={18} />}
+          {pagando ? 'Preparando pago...' : 'Pagar con MercadoPago'}
         </button>
         <button
           type="button"
