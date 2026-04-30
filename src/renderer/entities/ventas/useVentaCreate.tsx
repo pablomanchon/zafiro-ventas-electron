@@ -347,7 +347,7 @@ export function useVentaCreateLogic() {
         return venta
       } catch (err: any) {
         const msg =
-          err?.response?.data?.message ?? err?.message ?? 'Ocurrió un error al crear la venta'
+          typeof err === 'string' ? err : err?.message ?? 'Ocurrió un error al crear la venta'
         toast.error(`Error: ${msg}`)
       } finally {
         setSubmitting(false)

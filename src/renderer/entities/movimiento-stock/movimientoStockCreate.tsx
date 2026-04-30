@@ -111,9 +111,7 @@ export default function MovimientoStockCreate({ onSuccess }: Props) {
       setFormKey((k) => k + 1)
       onSuccess?.()
     } catch (err: any) {
-      toast.error(
-        err?.response?.data?.message ?? err?.message ?? 'Error al crear movimiento'
-      )
+      toast.error(typeof err === 'string' ? err : err?.message ?? 'Error al crear movimiento')
     } finally {
       setSubmitting(false)
     }

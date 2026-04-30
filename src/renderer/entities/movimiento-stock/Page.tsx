@@ -23,7 +23,9 @@ export default function MovimientoStockPage() {
     productsMoveStock: Array.isArray(m.productsMoveStock)
       ? m.productsMoveStock.map((p: any) => `${p.idProduct} x${p.quantity}`).join(', ')
       : m.productsMoveStock ?? '',
-    moveType: m.moveType === 'in' ? 'Entrada' : 'Salida',
+    moveType: m.deleted
+      ? 'Deshecho'
+      : m.moveType === 'in' ? 'Entrada' : 'Salida',
   }))
 
   const openMovimiento = useCallback((id: number) => {

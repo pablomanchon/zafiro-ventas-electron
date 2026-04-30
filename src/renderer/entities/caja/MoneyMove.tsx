@@ -46,7 +46,7 @@ export default function MoneyMove({
       handleEndMove(moveType)
     } catch (err: any) {
       const message =
-        err?.response?.data?.message ?? err?.message ?? 'Error al guardar el movimiento'
+        typeof err === 'string' ? err : err?.message ?? 'Error al guardar el movimiento'
       toast.error(message)
     } finally {
       setLoading(false)

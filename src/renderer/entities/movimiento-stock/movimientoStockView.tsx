@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
 import Main from '../../layout/Main'
 import Title from '../../layout/Title'
@@ -9,6 +10,7 @@ import LoadingState from '../../components/LoadingState'
 import { useProducts } from '../../hooks/useProducts'
 import { useStockMovements, type StockMove } from '../../hooks/useMovimientoStock'
 import { getInitPayload } from '../../utils/init-data'
+import { supabase } from '../../api/supabase'
 
 type MovimientoStockViewProps = {
   idMovimiento?: number | string
@@ -22,7 +24,8 @@ export default function MovimientoStockView({
   const { id: routeId } = useParams<{ id?: string }>()
   const location = useLocation()
 
-  const { movimientos, loading, error, getById, normalizeLines } = useStockMovements()
+  const { movimientos, loading, error, getById, normalizeLines, reload } = useStockMovements()
+  const [deshaciendo, setDeshaciendo] = useState(false)
   const { products } = useProducts()
 
   const [idMovimiento, setIdMovimiento] = useState<number | null>(
@@ -115,6 +118,27 @@ export default function MovimientoStockView({
       ? 'Entrada (+ stock)'
       : movimiento?.moveType ?? 'Desconocido'
 
+  const handleDeshacer = async () => {
+    if (!movimiento?.id) return
+    const ok = window.confirm(
+      `¿Seguro que querés deshacer el movimiento #${movimiento.id}? Se revertirán los cambios de stock.`
+    )
+    if (!ok) return
+
+    setDeshaciendo(true)
+    try {
+      const { error } = await supabase.rpc('movimiento_stock_deshacer', { p_id: Number(movimiento.id) })
+      if (error) throw new Error(error.message)
+      toast.success(`Movimiento #${movimiento.id} deshecho correctamente`)
+      setMovimientoFromPayload((prev) => prev ? { ...prev, deleted: true } : prev)
+      reload()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al deshacer el movimiento')
+    } finally {
+      setDeshaciendo(false)
+    }
+  }
+
   const tipoColorClasses =
     movimiento?.moveType === 'out'
       ? 'bg-red-900/60 border-red-500 text-red-200'
@@ -162,16 +186,35 @@ export default function MovimientoStockView({
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-300">Tipo de movimiento:</span>
-              <span
-                className={
-                  'px-3 py-1 rounded-full text-xs font-semibold border ' +
-                  tipoColorClasses
-                }
-              >
-                {tipoLabel}
-              </span>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-300">Tipo de movimiento:</span>
+                <span
+                  className={
+                    'px-3 py-1 rounded-full text-xs font-semibold border ' +
+                    tipoColorClasses
+                  }
+                >
+                  {tipoLabel}
+                </span>
+              </div>
+
+              {!movimiento.deleted && (
+                <button
+                  type="button"
+                  onClick={() => void handleDeshacer()}
+                  disabled={deshaciendo}
+                  className="px-3 py-1 rounded-lg bg-amber-700 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-semibold transition"
+                >
+                  {deshaciendo ? 'Deshaciendo...' : 'Deshacer movimiento'}
+                </button>
+              )}
+
+              {movimiento.deleted && (
+                <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-slate-800/70 border-slate-500 text-slate-400">
+                  Deshecho
+                </span>
+              )}
             </div>
           </Steel>
 

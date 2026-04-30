@@ -37,6 +37,8 @@ type QuickSaleDraft = {
   selectedSellerId: string
   selectedMethodId?: string
   payments: QuickPayment[]
+  descuentoGlobalPct: string
+  descuentoGlobalMonto: string
 }
 
 const QUICK_SALE_DRAFT_KEY = 'quick-sale-draft'
@@ -76,6 +78,8 @@ export default function QuickSale() {
   const [paymentDraft, setPaymentDraft] = useState<QuickPayment>(() => emptyPayment())
   const [saving, setSaving] = useState(false)
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
+  const [descuentoGlobalPct, setDescuentoGlobalPct] = useState('')
+  const [descuentoGlobalMonto, setDescuentoGlobalMonto] = useState('')
 
   const barcodeRef = useRef<HTMLInputElement>(null)
   const draftLoadedRef = useRef(false)
@@ -85,6 +89,8 @@ export default function QuickSale() {
     items: [],
     selectedSellerId: '',
     payments: [],
+    descuentoGlobalPct: '',
+    descuentoGlobalMonto: '',
   })
 
   const persistDraft = (draft: QuickSaleDraft) => {
@@ -130,12 +136,16 @@ export default function QuickSale() {
           : typeof draft.selectedMethodId === 'string' && draft.selectedMethodId
           ? [emptyPayment(draft.selectedMethodId)]
           : [],
+        descuentoGlobalPct: typeof draft.descuentoGlobalPct === 'string' ? draft.descuentoGlobalPct : '',
+        descuentoGlobalMonto: typeof draft.descuentoGlobalMonto === 'string' ? draft.descuentoGlobalMonto : '',
       }
       latestDraftRef.current = hydratedDraft
       setBarcode(hydratedDraft.barcode)
       setItems(hydratedDraft.items)
       setSelectedSellerId(hydratedDraft.selectedSellerId)
       setPayments(hydratedDraft.payments)
+      setDescuentoGlobalPct(hydratedDraft.descuentoGlobalPct)
+      setDescuentoGlobalMonto(hydratedDraft.descuentoGlobalMonto)
     } catch {
       window.localStorage.removeItem(QUICK_SALE_DRAFT_KEY)
     } finally {
@@ -186,14 +196,18 @@ export default function QuickSale() {
 
   const totals = useMemo(() => {
     const subtotal = items.reduce((acc, item) => acc + Number(item.precio) * Number(item.cantidad), 0)
-    const total = items.reduce((acc, item) => acc + lineTotal(item), 0)
+    const totalConItemDesc = items.reduce((acc, item) => acc + lineTotal(item), 0)
+    const gpct = Math.max(0, Math.min(100, Number(descuentoGlobalPct) || 0))
+    const gmonto = Math.max(0, Number(descuentoGlobalMonto) || 0)
+    const total = Math.max(0, totalConItemDesc * (1 - gpct / 100) - gmonto)
     const descuento = Math.max(0, subtotal - total)
     return {
       subtotal: Number(subtotal.toFixed(2)),
       descuento: Number(descuento.toFixed(2)),
       total: Number(total.toFixed(2)),
+      totalConItemDesc: Number(totalConItemDesc.toFixed(2)),
     }
-  }, [items])
+  }, [items, descuentoGlobalPct, descuentoGlobalMonto])
 
   const totalCents = Math.trunc(totals.total * 100)
   const paidCents = useMemo(
@@ -324,11 +338,15 @@ export default function QuickSale() {
     skipPersistOnUnmountRef.current = true
     setItems([])
     setBarcode('')
+    setDescuentoGlobalPct('')
+    setDescuentoGlobalMonto('')
     latestDraftRef.current = {
       barcode: '',
       items: [],
       selectedSellerId: '',
       payments: [],
+      descuentoGlobalPct: '',
+      descuentoGlobalMonto: '',
     }
     clearDraft()
     focusScanner()
@@ -398,9 +416,17 @@ export default function QuickSale() {
       setSaving(true)
       const clienteVenta = await ensureConsumidorFinal()
 
+      const gpct = Math.max(0, Math.min(100, Number(descuentoGlobalPct) || 0))
+      const gmonto = Math.max(0, Number(descuentoGlobalMonto) || 0)
+      const subtotalConItemDesc = items.reduce((acc, item) => acc + lineTotal(item), 0)
+      const totalFinal = Math.max(0, subtotalConItemDesc * (1 - gpct / 100) - gmonto)
+      const globalDiscountAbs = Math.max(0, subtotalConItemDesc - totalFinal)
+
       const detalles = items.map((item) => {
-        const totalLinea = lineTotal(item)
-        const unitPrice = item.cantidad > 0 ? Number((totalLinea / item.cantidad).toFixed(2)) : 0
+        const lineaConItemDesc = lineTotal(item)
+        const share = subtotalConItemDesc > 0 ? lineaConItemDesc / subtotalConItemDesc : 0
+        const lineaFinal = Math.max(0, lineaConItemDesc - globalDiscountAbs * share)
+        const unitPrice = item.cantidad > 0 ? Number((lineaFinal / item.cantidad).toFixed(2)) : 0
 
         return {
           productoId: item.id,
@@ -433,6 +459,8 @@ export default function QuickSale() {
 
       toast.success(`Venta ${(venta as any)?.id ?? ''} creada con exito`)
       setIdempotencyKey(crypto.randomUUID())
+      setDescuentoGlobalPct('')
+      setDescuentoGlobalMonto('')
       clearSale()
     } catch (error) {
       toast.error(String(error))
@@ -572,15 +600,18 @@ export default function QuickSale() {
                         <td className="px-3 py-2 text-right">{formatCurrencyARS(item.precio)}</td>
                         <td className="px-3 py-2">
                           <input
-                            type="number"
-                            min={1}
-                            value={item.cantidad}
-                            onChange={(e) =>
-                              updateItem(item.id, {
-                                cantidad: Math.max(1, Number(e.target.value) || 1),
-                              })
-                            }
-                            className="w-20 rounded-lg border border-white/20 bg-slate-950 px-2 py-1.5 text-right !text-white caret-white [color-scheme:dark] outline-none focus:border-cyan-400"
+                            type="text"
+                            inputMode="numeric"
+                            value={item.cantidad === 0 ? '' : item.cantidad}
+                            onFocus={(e) => e.currentTarget.select()}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/\D/g, '')
+                              updateItem(item.id, { cantidad: raw === '' ? 0 : Number(raw) })
+                            }}
+                            onBlur={() => {
+                              if (item.cantidad < 1) updateItem(item.id, { cantidad: 1 })
+                            }}
+                            className="w-20 rounded-lg border border-white/20 bg-slate-950 px-2 py-1.5 text-right !text-white caret-white outline-none focus:border-cyan-400"
                           />
                         </td>
                         <td className="px-3 py-2">
@@ -634,12 +665,46 @@ export default function QuickSale() {
         </div>
 
         <div className="rounded border border-white/12 bg-gradient-to-r from-slate-950 via-slate-900 to-zinc-950 px-2 py-1.5 text-white shadow shadow-black">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-sm font-semibold text-white">Métodos de pago</h2>
               <p className="text-xs text-white/65">
                 Pagado {formatCentsARS(paidCents)} · Restante {formatCentsARS(remainingCents)}
               </p>
+            </div>
+            <div className="flex items-end gap-2">
+              <label className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase tracking-[0.14em] text-white/55">Desc. total %</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={descuentoGlobalPct}
+                  onFocus={(e) => e.currentTarget.select()}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^0-9.,]/g, '')
+                    setDescuentoGlobalPct(v)
+                    updateDraft({ descuentoGlobalPct: v })
+                  }}
+                  className="w-24 rounded-lg border border-white/20 bg-black/45 px-2 py-1 text-right text-sm text-white placeholder:text-white/35 outline-none focus:border-cyan-400"
+                />
+              </label>
+              <label className="flex flex-col gap-0.5">
+                <span className="text-[10px] uppercase tracking-[0.14em] text-white/55">Desc. total $</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={descuentoGlobalMonto}
+                  onFocus={(e) => e.currentTarget.select()}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^0-9.,]/g, '')
+                    setDescuentoGlobalMonto(v)
+                    updateDraft({ descuentoGlobalMonto: v })
+                  }}
+                  className="w-28 rounded-lg border border-white/20 bg-black/45 px-2 py-1 text-right text-sm text-white placeholder:text-white/35 outline-none focus:border-cyan-400"
+                />
+              </label>
             </div>
           </div>
 
