@@ -75,6 +75,7 @@ export default function QuickSale() {
   const [payments, setPayments] = useState<QuickPayment[]>([])
   const [paymentDraft, setPaymentDraft] = useState<QuickPayment>(() => emptyPayment())
   const [saving, setSaving] = useState(false)
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
 
   const barcodeRef = useRef<HTMLInputElement>(null)
   const draftLoadedRef = useRef(false)
@@ -423,6 +424,7 @@ export default function QuickSale() {
           monto: payment.montoCents / 100,
           ...(payment.cuotas ? { cuotas: Number(payment.cuotas) || 0 } : {}),
         })),
+        idempotencyKey,
       })
 
       const channel = new BroadcastChannel('ventas')
@@ -430,6 +432,7 @@ export default function QuickSale() {
       channel.close()
 
       toast.success(`Venta ${(venta as any)?.id ?? ''} creada con exito`)
+      setIdempotencyKey(crypto.randomUUID())
       clearSale()
     } catch (error) {
       toast.error(String(error))

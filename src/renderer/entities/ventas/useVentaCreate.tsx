@@ -97,6 +97,7 @@ export function useVentaCreateLogic() {
 
   const [formKey, setFormKey] = useState(0)
   const [submitting, setSubmitting] = useState(false)
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
 
   const [itemsMirror, setItemsMirror] = useState<SaleItem[]>([])
   const [totalDiscountMirror, setTotalDiscountMirror] = useState<TotalDiscount>({
@@ -229,6 +230,7 @@ export function useVentaCreateLogic() {
     setItemsMirror([])
     setTotalDiscountMirror({ pct: '', monto: '' })
     setDefaults({})
+    setIdempotencyKey(crypto.randomUUID())
   }, [])
 
   const handleSubmit = useCallback(
@@ -318,6 +320,7 @@ export function useVentaCreateLogic() {
           clienteId: values.clienteId ?? null,
           detalles,
           pagos: pagosPayload,
+          idempotencyKey,
         })
 
         const channel = new BroadcastChannel('ventas')
