@@ -25,6 +25,12 @@ function isEditableTarget(el: EventTarget | null) {
   return false
 }
 
+function isLowStockProduct(item: Record<string, any>) {
+  const stock = Number(item.stock ?? 0)
+  const stockMinimo = Number(item.stock_minimo ?? item.stockMinimo ?? 0)
+  return stockMinimo > 0 && stock <= stockMinimo
+}
+
 export default function CrudPage<T extends { id: number | string }>({
   config,
   color,
@@ -184,6 +190,14 @@ export default function CrudPage<T extends { id: number | string }>({
             }}
             loading={loading}
             loadingTitle={`Cargando ${title.toLowerCase()}`}
+            rowClassName={
+              entity === 'productos'
+                ? (item) =>
+                    isLowStockProduct(item as Record<string, any>)
+                      ? 'bg-amber-950/80 text-amber-100 hover:bg-amber-900'
+                      : ''
+                : undefined
+            }
           />
         </div>
 

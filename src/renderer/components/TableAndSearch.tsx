@@ -15,6 +15,7 @@ interface TableAndSearchProps<T extends { id: number | string }> {
   loading?: boolean;
   loadingTitle?: string;
   emptyMessage?: string;
+  rowClassName?: (item: T, index: number) => string;
 }
 
 export default function TableAndSearch<T extends { id: number | string }>({
@@ -27,6 +28,7 @@ export default function TableAndSearch<T extends { id: number | string }>({
   loading = false,
   loadingTitle = 'Cargando datos',
   emptyMessage = 'No hay datos para mostrar.',
+  rowClassName,
 }: TableAndSearchProps<T>) {
   const { search, setSearch } = useSearch();
   useEffect(() => {
@@ -79,6 +81,7 @@ export default function TableAndSearch<T extends { id: number | string }>({
           onFilaSeleccionada={onFilaSeleccionada}
           loading={loading}
           emptyMessage={emptyMessage}
+          rowClassName={rowClassName}
         />
       </div>
     </div>

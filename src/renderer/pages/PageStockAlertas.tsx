@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { AlertTriangle, CheckCircle2, LoaderCircle, PackageSearch, RefreshCcw } from 'lucide-react'
 import Title from '../layout/Title'
@@ -14,19 +14,15 @@ export default function PageStockAlertas() {
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState<number | null>(null)
   const [localMinimos, setLocalMinimos] = useState<Record<number, string>>({})
-  const initializedRef = useRef(false)
 
   async function cargar() {
     setLoading(true)
     try {
       const data = await productosStockMinimosListar()
       setProductos(data)
-      if (!initializedRef.current) {
-        const map: Record<number, string> = {}
-        for (const p of data) map[p.id] = String(p.stockMinimo)
-        setLocalMinimos(map)
-        initializedRef.current = true
-      }
+      const map: Record<number, string> = {}
+      for (const p of data) map[p.id] = String(p.stockMinimo)
+      setLocalMinimos(map)
     } catch {
       toast.error('No se pudo cargar el listado de productos')
     } finally {
@@ -58,6 +54,9 @@ export default function PageStockAlertas() {
             : p,
         ),
       )
+      const channel = new BroadcastChannel('crud-refresh')
+      channel.postMessage({ entity: 'productos' })
+      channel.close()
     } catch {
       toast.error(`No se pudo guardar el mínimo de ${producto.nombre}`)
       setLocalMinimos((prev) => ({ ...prev, [producto.id]: String(producto.stockMinimo) }))
@@ -169,6 +168,14 @@ export default function PageStockAlertas() {
                             type="number"
                             min={0}
                             value={localMinimos[p.id] ?? String(p.stockMinimo)}
+                            onFocus={(e) => e.target.select()}
+                            onClick={(e) => e.currentTarget.select()}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                e.currentTarget.blur()
+                              }
+                            }}
                             onChange={(e) => handleMinimoChange(p.id, e.target.value)}
                             onBlur={() => void handleMinimoBlur(p)}
                             className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-right tabular-nums text-white outline-none transition focus:border-cyan-300/60 focus:bg-black/50"

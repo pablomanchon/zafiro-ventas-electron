@@ -20,6 +20,7 @@ const Table = ({
   formatoFecha = "fecha-hora",
   loading = false,
   emptyMessage = "No hay datos para mostrar.",
+  rowClassName,
 }) => {
   const [filaSeleccionada, setFilaSeleccionada] = useState(null);
   const { isModalOpen } = useModal();
@@ -187,25 +188,27 @@ const Table = ({
                 {emptyMessage}
               </td>
             </tr>
-          ) : datos.map((fila, index) => (
-            <tr
-              key={index}
-              onClick={() => manejarSeleccion(index)}
-              onDoubleClick={() => manejarDobleClick(index)}
-              className={`cursor-pointer hover:bg-cyan-700 ${filaSeleccionada === index
-                  ? "bg-cyan-600"
-                  : index % 2 === 0
-                    ? "bg-gray-950"
-                    : "bg-gray-800"
-                }`}
-            >
-              {encabezados.map((enc, i) => (
-                <td key={i} className="px-2 border-x-2 text-center">
-                  {obtenerValor(fila, enc)}
-                </td>
-              ))}
-            </tr>
-          ))}
+          ) : datos.map((fila, index) => {
+            const customRowClass = rowClassName?.(fila, index) ?? "";
+            const rowStateClass = filaSeleccionada === index
+              ? "bg-cyan-600"
+              : customRowClass || (index % 2 === 0 ? "bg-gray-950" : "bg-gray-800");
+
+            return (
+              <tr
+                key={index}
+                onClick={() => manejarSeleccion(index)}
+                onDoubleClick={() => manejarDobleClick(index)}
+                className={`cursor-pointer hover:bg-cyan-700 ${rowStateClass}`}
+              >
+                {encabezados.map((enc, i) => (
+                  <td key={i} className="px-2 border-x-2 text-center">
+                    {obtenerValor(fila, enc)}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

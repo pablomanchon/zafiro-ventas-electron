@@ -21,16 +21,14 @@ export class ProductosService {
   }
 
   async create(createDto: ProductoDto, manager?: EntityManager) {
-    console.log(createDto);
+    const productoData = this.sanitizeProductoPayload(createDto);
 
     const repo = manager ? manager.getRepository(Producto) : this.repo;
 
     // Buscar por código sin importar si está eliminado o no
     const existing = await repo.findOne({
-      where: { codigo: createDto.codigo },
+      where: { codigo: productoData.codigo },
     });
-
-    console.log(existing);
 
     // Si existe y está activo, no dejar duplicar
     if (existing && !existing.deleted) {
@@ -39,7 +37,7 @@ export class ProductosService {
 
     // Si existe pero estaba soft-deleted, lo reactivamos
     if (existing && existing.deleted) {
-      Object.assign(existing, createDto, { deleted: false });
+      Object.assign(existing, productoData, { deleted: false });
       const restored = await repo.save(existing);
 
       emitChange('productos:changed', { type: 'upsert', data: restored });
@@ -47,7 +45,7 @@ export class ProductosService {
     }
 
     // Si no existe, crear normal
-    const entity = repo.create(createDto);
+    const entity = repo.create(productoData);
     const saved = await repo.save(entity);
 
     emitChange('productos:changed', { type: 'upsert', data: saved });
@@ -65,7 +63,7 @@ export class ProductosService {
     const repo = manager ? manager.getRepository(Producto) : this.repo;
     const existing = await repo.findOne({ where: { id } });
     if (!existing || existing.deleted) throw new NotFoundException('Producto no encontrado');
-    const updated = await repo.save(repo.merge(existing, updateDto));
+    const updated = await repo.save(repo.merge(existing, this.sanitizeProductoPayload(updateDto)));
     if (updated) emitChange('productos:changed', { type: 'upsert', data: updated }); // 🔔
     return updated;
   }
@@ -95,5 +93,22 @@ export class ProductosService {
   }
   async getFromXlsx(path: string, index: number, columns: Column[]) {
     getFromXlsx(path, index, columns)
+  }
+
+  private sanitizeProductoPayload<T extends Partial<ProductoDto>>(payload: T): Partial<Producto> {
+    const { stock, stock_minimo, stockMinimo, ...rest } = payload as T & {
+      stock?: number;
+      stock_minimo?: number;
+      stockMinimo?: number;
+    };
+
+    const sanitized: Partial<Producto> = { ...rest };
+    const minimo = stockMinimo ?? stock_minimo;
+
+    if (minimo !== undefined) {
+      sanitized.stockMinimo = minimo;
+    }
+
+    return sanitized;
   }
 }

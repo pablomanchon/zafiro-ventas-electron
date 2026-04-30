@@ -19,8 +19,11 @@ export class Producto {
   @Column('decimal', { precision: 10, scale: 2 })
   precio: number;
 
-  @Column('int')
+  @Column('int', { default: 0 })
   stock: number;
+
+  @Column('int', { name: 'stock_minimo', default: 0 })
+  stockMinimo: number;
 
   @Column({ default: false })
   deleted: boolean;

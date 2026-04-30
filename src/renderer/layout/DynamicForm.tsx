@@ -280,7 +280,11 @@ export default function DynamicForm({
     try {
       setIsSubmitting(true)
 
-      const payload: Record<string, any> = { ...formValues }
+      const payload: Record<string, any> = {}
+
+      for (const input of inputs) {
+        payload[input.name] = formValues[input.name]
+      }
 
       for (const input of inputs) {
         if (input.type === 'number') {

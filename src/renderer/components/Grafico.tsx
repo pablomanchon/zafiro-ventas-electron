@@ -4,16 +4,11 @@ import {
     Pie,
     Cell,
     Tooltip,
-    Legend,
     ResponsiveContainer,
 } from "recharts";
 import Title from "../layout/Title";
 import Glass from "../layout/Glass";
-import { formatCurrencyARS } from "../utils/utils";
 
-// ────────────────────────────────────────────────────────────────────────────────
-// Types
-// ────────────────────────────────────────────────────────────────────────────────
 export type PieDatum = {
     name: string;
     value: number;
@@ -31,7 +26,6 @@ export type Pie2DChartProps = {
     height?: number;
     showLabels?: boolean;
     cornerRadius?: number;
-    /** 🔹 activa labels con efecto glass */
     showGlassLabels?: boolean;
 };
 
@@ -48,9 +42,6 @@ const DEFAULT_COLORS = [
     "#3B82F6",
 ];
 
-// ────────────────────────────────────────────────────────────────────────────────
-// Component
-// ────────────────────────────────────────────────────────────────────────────────
 export default function Pie2DChart({
     title,
     data,
@@ -62,9 +53,14 @@ export default function Pie2DChart({
     height = 320,
     showLabels = true,
     cornerRadius = 4,
-    showGlassLabels = false, // 🔹 default off
 }: Pie2DChartProps) {
     const safeData = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+    const total = useMemo(
+        () => safeData.reduce((sum, item) => sum + Number(item.value || 0), 0),
+        [safeData]
+    );
+    const chartHeight = showLegend ? Math.max(150, Math.min(210, height - 90)) : height;
+    const legendMaxHeight = showLegend ? Math.max(78, height - chartHeight) : 0;
 
     const label = (props: any) => {
         const {
@@ -106,11 +102,11 @@ export default function Pie2DChart({
     }
 
     return (
-        <div role="figure" aria-label={title ?? "Gráfico de torta"} className="w-full">
+        <div role="figure" aria-label={title ?? "Grafico de torta"} className="w-full">
             <Glass>
                 {title && <Title>{title}</Title>}
 
-                <div className="w-full flex" style={{ height }}>
+                <div className="w-full flex" style={{ height: chartHeight }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
@@ -126,7 +122,7 @@ export default function Pie2DChart({
                                 label={label}
                                 cornerRadius={cornerRadius}
                                 paddingAngle={3}
-                                onClick={(_, idx) => onSliceClick?.(safeData[idx], idx)} // ✔ firma correcta
+                                onClick={(_, idx) => onSliceClick?.(safeData[idx], idx)}
                             >
                                 {safeData.map((entry, index) => (
                                     <Cell
@@ -137,26 +133,49 @@ export default function Pie2DChart({
                             </Pie>
                             <Tooltip
                                 formatter={(value) => [
-                                    formatCurrencyARS(Number(value ?? 0)),
+                                    valueFormatter(Number(value ?? 0)),
                                     "Importe",
                                 ]}
                             />
-
-
-                            {showLegend && (
-                                <Legend
-                                    verticalAlign="bottom"
-                                    wrapperStyle={{ paddingTop: 8 }}
-                                    formatter={(value: string, entry: any) => (
-                                        <span>
-                                            {value} — {valueFormatter(Number(entry?.payload?.value))}
-                                        </span>
-                                    )}
-                                />
-                            )}
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
+
+                {showLegend && (
+                    <div
+                        className="mt-2 overflow-y-auto pr-1 text-sm leading-tight"
+                        style={{ maxHeight: legendMaxHeight }}
+                    >
+                        <div className="grid grid-cols-1 gap-1.5">
+                            {safeData.map((item, index) => {
+                                const color = item.color ?? DEFAULT_COLORS[index % DEFAULT_COLORS.length];
+                                const percent = total > 0 ? (item.value / total) * 100 : 0;
+
+                                return (
+                                    <div
+                                        key={`${item.name}-${index}`}
+                                        className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-1.5 text-white/90"
+                                        title={`${item.name}: ${valueFormatter(item.value)}`}
+                                    >
+                                        <span
+                                            className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                                            style={{ backgroundColor: color }}
+                                        />
+                                        <span className="truncate font-medium" style={{ color }}>
+                                            {item.name}
+                                        </span>
+                                        <span className="shrink-0 tabular-nums" style={{ color }}>
+                                            {valueFormatter(item.value)}
+                                        </span>
+                                        <span className="shrink-0 text-xs text-white/45">
+                                            ({percent.toFixed(0)}%)
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </Glass>
         </div>
     );

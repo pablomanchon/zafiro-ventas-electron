@@ -38,6 +38,11 @@ const entityMap: Record<EntityName, EntityConfig> = {
     table: 'producto',
     softDelete: true,
     orderBy: { column: 'id', ascending: true },
+    serialize: (payload: any) => {
+      const { stock, stockMinimo, ...rest } = payload ?? {}
+      if (stockMinimo !== undefined) rest.stock_minimo = stockMinimo
+      return rest
+    },
   },
   clientes: {
     kind: 'table',

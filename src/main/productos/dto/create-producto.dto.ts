@@ -5,5 +5,6 @@ export class ProductoDto {
   descripcion?: string;
   codigo?:string;
   precio: number;
-  stock: number;
+  stockMinimo?: number;
+  stock_minimo?: number;
 }
