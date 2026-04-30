@@ -34,8 +34,11 @@ export default function CrudPage<T extends { id: number | string }>({
   color?: string
   cols?: 1 | 2 | 3 | 4 | undefined
 }) {
-  const { entity, title, columns, formInputs, searchFields } = config
+  const { entity, title, columns, formInputs, searchFields, isProtected } = config
   const { items, selected, setSelected, handleDelete, fetchItems, loading } = useCrud<T>(entity, formInputs)
+
+  const selectedItem = selected != null ? items.find(i => i.id === selected) : null
+  const selectedIsProtected = selectedItem != null && isProtected ? isProtected(selectedItem as any) : false
   const { openModal, closeModal, isModalOpen } = useModal()
 
   const scopeRef = useRef<HTMLDivElement>(null)
@@ -174,7 +177,11 @@ export default function CrudPage<T extends { id: number | string }>({
             encabezados={columns}
             searchFilters={searchFields}
             onFilaSeleccionada={setSelected}
-            onDobleClickFila={(rowId) => openEditModal(rowId)} // editar en modal
+            onDobleClickFila={(rowId) => {
+              const item = items.find(i => i.id === rowId)
+              if (item && isProtected?.(item as any)) return
+              openEditModal(rowId)
+            }}
             loading={loading}
             loadingTitle={`Cargando ${title.toLowerCase()}`}
           />
@@ -195,11 +202,21 @@ export default function CrudPage<T extends { id: number | string }>({
                 tabIndex={-1}
                 onMouseDown={(e) => e.preventDefault()}
               >
-                <SecondaryButton className="w-full" title="Modificar" functionClick={() => openEditModal(selected)} />
+                <SecondaryButton
+                  className="w-full"
+                  title="Modificar"
+                  disabled={selectedIsProtected}
+                  functionClick={() => openEditModal(selected)}
+                />
               </div>
 
               <div className="w-full sm:w-auto" tabIndex={-1} onMouseDown={(e) => e.preventDefault()}>
-                <DangerButton className="w-full" title="Eliminar" functionClick={() => { handleDelete(`${toSingular(config.title)} eliminado con éxito!`) }} />
+                <DangerButton
+                  className="w-full"
+                  title="Eliminar"
+                  disabled={selectedIsProtected}
+                  functionClick={() => { handleDelete(`${toSingular(config.title)} eliminado con éxito!`) }}
+                />
               </div>
             </>
           )}

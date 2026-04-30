@@ -12,4 +12,6 @@ export interface CrudConfig {
 
   formInputs: FormInput[];
 
+  isProtected?: (item: Record<string, any>) => boolean;
+
 }

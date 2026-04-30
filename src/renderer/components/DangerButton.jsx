@@ -2,6 +2,6 @@ import React from 'react'
 
 export default function DangerBtn({ functionClick, title, type = "", disabled = false , className = ''}) {
     return (
-        <button disabled={disabled} type={type} className={`p-2 bg-red-900 border-black border-2 rounded shadow-black shadow-inner hover:bg-orange-700 transition-colors font-bold ${className}`} onClick={functionClick}>{title}</button>
+        <button disabled={disabled} type={type} className={`p-2 bg-red-900 border-black border-2 rounded shadow-black shadow-inner hover:bg-orange-700 transition-colors font-bold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-900 ${className}`} onClick={functionClick}>{title}</button>
     )
 }
