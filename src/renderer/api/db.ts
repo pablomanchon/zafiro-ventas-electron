@@ -127,3 +127,23 @@ export async function marcarEgresoHorario(vendedorId: number, horaEgreso?: strin
     p_hora_egreso: horaEgreso ?? null,
   })
 }
+
+export type VentaVendedor = {
+  vendedor_id: number | null
+  nombre: string
+  total: number
+  cantidad: number
+}
+
+export async function getVentasPorVendedor(from?: string, to?: string): Promise<VentaVendedor[]> {
+  const rows = await runRpc<Array<{ vendedor_id: number | null; nombre: string; total: string | number; cantidad: string | number }>>(
+    'ventas_por_vendedor',
+    { p_from: from ?? null, p_to: to ?? null },
+  )
+  return (rows ?? []).map((r) => ({
+    vendedor_id: r.vendedor_id,
+    nombre: r.nombre,
+    total: Number(r.total),
+    cantidad: Number(r.cantidad),
+  }))
+}

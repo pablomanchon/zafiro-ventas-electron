@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import Steel from "../layout/Steel";
 import { formatCurrencyARS } from "../utils/utils";
 import { getSelledProductsByDate, getVentasPorDia, type VentaDia } from "../api/db";
+import VentasPorVendedorChart from "./VentasPorVendedorChart";
 import {
   BarChart,
   Bar,
@@ -361,6 +362,8 @@ export default function DashboardInsights() {
           </Glass>
         )}
       </div>
+
+      <VentasPorVendedorChart />
     </div>
   );
 }
