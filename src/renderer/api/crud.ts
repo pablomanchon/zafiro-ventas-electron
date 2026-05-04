@@ -42,10 +42,19 @@ export async function getAll<T = any>(
     const config = getEntityConfig(entity as EntityName)
 
     if (isRpcEntity(config)) {
-      return await runRpc<T[]>(
+      const data = await runRpc<T[]>(
         config.listRpc,
         config.listArgs ? config.listArgs(params) : undefined
       )
+
+      if (entity === 'ventas' && params?.clienteId != null) {
+        const clienteId = String(params.clienteId)
+        return (data ?? []).filter((venta: any) =>
+          String(venta?.clienteId ?? venta?.cliente?.id ?? '') === clienteId
+        )
+      }
+
+      return data
     }
 
     let query = supabase.from(config.table).select(config.select ?? '*')

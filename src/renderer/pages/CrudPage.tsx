@@ -1,6 +1,6 @@
 // src/pages/CrudPage.tsx
 /// <reference lib="dom" />
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { useCrud } from '../hooks/useCrud'
 import TableAndSearch from '../components/TableAndSearch'
 import PrimaryButton from '../components/PrimaryButton'
@@ -34,11 +34,18 @@ function isLowStockProduct(item: Record<string, any>) {
 export default function CrudPage<T extends { id: number | string }>({
   config,
   color,
-  cols = 1
+  cols = 1,
+  renderSelectedActions,
 }: {
   config: CrudConfig
   color?: string
   cols?: 1 | 2 | 3 | 4 | undefined
+  renderSelectedActions?: (context: {
+    selected: number | string
+    selectedItem: T
+    disabled: boolean
+    refresh: () => void
+  }) => ReactNode
 }) {
   const { entity, title, columns, formInputs, searchFields, isProtected } = config
   const { items, selected, setSelected, handleDelete, fetchItems, loading } = useCrud<T>(entity, formInputs)
@@ -232,6 +239,13 @@ export default function CrudPage<T extends { id: number | string }>({
                   functionClick={() => { handleDelete(`${toSingular(config.title)} eliminado con éxito!`) }}
                 />
               </div>
+
+              {selectedItem && renderSelectedActions?.({
+                selected,
+                selectedItem,
+                disabled: selectedIsProtected,
+                refresh: fetchItems,
+              })}
             </>
           )}
         </Steel>
