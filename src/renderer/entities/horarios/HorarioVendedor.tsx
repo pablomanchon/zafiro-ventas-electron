@@ -56,6 +56,12 @@ function formatHora(iso: string) {
   return d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
 }
 
+function isSameDay(a: string, b: string) {
+  const da = new Date(a)
+  const db = new Date(b)
+  return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate()
+}
+
 function formatDuration(hours: number) {
   const h = Math.floor(hours)
   const m = Math.round((hours - h) * 60)
@@ -245,7 +251,15 @@ export default function HorarioVendedor({ id }: { id: number }) {
                 <p className="text-sm mt-1 opacity-90">
                   de <span className="font-mono">{formatHora(h.horaIngreso)}</span>
                   {' '}a{' '}
-                  <span className="font-mono">{abierto ? '—' : formatHora(h.horaEgreso!)}</span>
+                  {abierto
+                    ? <span className="font-mono">—</span>
+                    : <>
+                        {!isSameDay(h.horaIngreso, h.horaEgreso!) && (
+                          <span className="capitalize opacity-70 mr-1">{formatDia(h.horaEgreso!)}</span>
+                        )}
+                        <span className="font-mono">{formatHora(h.horaEgreso!)}</span>
+                      </>
+                  }
                 </p>
               </div>
             )

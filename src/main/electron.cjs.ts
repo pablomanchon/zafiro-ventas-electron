@@ -3,7 +3,6 @@ import { app, BrowserWindow, Menu, shell, ipcMain, dialog } from 'electron'
 import path from 'path'
 import { URL, pathToFileURL } from 'url'
 import fs from 'fs'
-import { validateLicense } from './license'
 import { onChange } from './broadcast/event-bus'
 import { broadcast } from './broadcast/ipc-broadcast'
 
@@ -201,40 +200,7 @@ async function waitForApi(opts: {
 async function createWindow() {
   splashWindow = createSplashWindow()
 
-  // 1) Licencia
-  updateSplashStatus('Verificando licencia...')
-  try {
-    const lic = validateLicense()
-    console.log('🔐 Licencia válida:', lic)
-
-    if (lic.warning) {
-      dialog.showMessageBoxSync({
-        type: 'warning',
-        title: 'Licencia por vencer',
-        message: `Tu licencia vence en ${lic.daysLeft} día(s).\nContactá al desarrollador para renovarla.`,
-        buttons: ['Aceptar'],
-      })
-    }
-  } catch (e: any) {
-    console.error('❌ ERROR DE LICENCIA:', e?.message)
-
-    dialog.showMessageBoxSync({
-      type: 'error',
-      title: 'Licencia',
-      message:
-        e?.code === 'LICENSE_EXPIRED'
-          ? 'Tu licencia ha expirado.\nPor favor, contacta al desarrollador.'
-          : 'No se pudo validar la licencia.\n' + (e?.message ?? String(e)),
-      buttons: ['Aceptar'],
-    })
-
-    splashWindow?.close()
-    splashWindow = null
-    app.quit()
-    return
-  }
-
-  // 2) DB path
+  // 1) DB path
   const dbPath = ensureDbPath()
   updateSplashStatus(`Abriendo base de datos...\n${dbPath}`)
 

@@ -11,9 +11,6 @@ import fs from 'fs'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 
-// 🔹 4) Importar licencia (opcional acá si ya la validás en Electron main)
-import { validateLicense } from './license'
-
 function loadEnv() {
   // Prioridad:
   // 1) .env en el directorio actual (dev normal)
@@ -29,9 +26,6 @@ function loadEnv() {
 }
 
 export async function bootstrap() {
-  // Si ya la validás en main.ts de Electron, podés sacar esta línea para no duplicar
-  validateLicense()
-
   loadEnv()
 
   const app = await NestFactory.create(AppModule, {

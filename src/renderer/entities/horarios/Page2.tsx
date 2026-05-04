@@ -23,6 +23,10 @@ function formatDateTimeLocal(value?: string | null) {
   return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
+function openDateTimePicker(input: HTMLInputElement) {
+  input.showPicker?.()
+}
+
 export default function PageHorarios() {
   const { vendedores, loading: loadingVendedores, error } = useVendedores()
   const { openModal } = useModal()
@@ -139,10 +143,11 @@ export default function PageHorarios() {
                     <input
                       type="datetime-local"
                       value={ingresos[vendedor.id] ?? ''}
+                      onClick={(e) => openDateTimePicker(e.currentTarget)}
                       onChange={(e) =>
                         setIngresos((prev) => ({ ...prev, [vendedor.id]: e.target.value }))
                       }
-                      className="rounded-lg border border-white/20 bg-black/35 px-3 py-2 text-white outline-none focus:border-cyan-400"
+                      className="datetime-dark rounded-lg border border-white/20 bg-black/35 px-3 py-2 text-white outline-none focus:border-cyan-400"
                     />
                   </label>
 
@@ -157,11 +162,11 @@ export default function PageHorarios() {
                     <input
                       type="datetime-local"
                       value={egresos[vendedor.id] ?? ''}
+                      onClick={(e) => openDateTimePicker(e.currentTarget)}
                       onChange={(e) =>
                         setEgresos((prev) => ({ ...prev, [vendedor.id]: e.target.value }))
                       }
-                      className="rounded-lg border border-white/20 bg-black/35 px-3 py-2 text-white outline-none focus:border-cyan-400"
-                      disabled={!estaAbierto}
+                      className="datetime-dark rounded-lg border border-white/20 bg-black/35 px-3 py-2 text-white outline-none focus:border-cyan-400"
                     />
                   </label>
 
