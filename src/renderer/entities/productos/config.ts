@@ -9,7 +9,6 @@ const productosConfig: CrudConfig = {
     'descripcion',
     'precio',
     'stock',
-    { clave: 'stock_minimo', titulo: 'Stock minimo' },
   ],
   searchFields: ['codigo', 'nombre', 'descripcion'],
   formInputs: [

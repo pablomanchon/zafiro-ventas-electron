@@ -194,7 +194,7 @@ export default function CrudPage<T extends { id: number | string }>({
               entity === 'productos'
                 ? (item) =>
                     isLowStockProduct(item as Record<string, any>)
-                      ? 'bg-amber-950/80 text-amber-100 hover:bg-amber-900'
+                      ? 'bg-yellow-600 text-gray-950 font-semibold hover:bg-yellow-500'
                       : ''
                 : undefined
             }
