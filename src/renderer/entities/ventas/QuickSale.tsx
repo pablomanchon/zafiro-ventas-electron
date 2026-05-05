@@ -67,6 +67,44 @@ function lineTotal(item: ProductRow) {
   return Math.max(0, Number((base * (1 - pct / 100) - monto).toFixed(2)))
 }
 
+function playScanSound() {
+  try {
+    const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioContextCtor) return
+
+    const ctx = new AudioContextCtor()
+    const now = ctx.currentTime
+    const gain = ctx.createGain()
+    const main = ctx.createOscillator()
+    const overtone = ctx.createOscillator()
+
+    main.type = 'sine'
+    main.frequency.setValueAtTime(880, now)
+    main.frequency.exponentialRampToValueAtTime(1320, now + 0.08)
+
+    overtone.type = 'triangle'
+    overtone.frequency.setValueAtTime(1760, now)
+    overtone.detune.setValueAtTime(-8, now)
+
+    gain.gain.setValueAtTime(0.0001, now)
+    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.012)
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16)
+
+    main.connect(gain)
+    overtone.connect(gain)
+    gain.connect(ctx.destination)
+
+    main.start(now)
+    overtone.start(now + 0.018)
+    main.stop(now + 0.17)
+    overtone.stop(now + 0.13)
+
+    window.setTimeout(() => ctx.close().catch(() => undefined), 240)
+  } catch {
+    // Audio feedback is optional; the sale flow should never depend on it.
+  }
+}
+
 export default function QuickSale() {
   const { products, loading: loadingProducts } = useProducts()
   const { clients, loading: loadingClients, refetch: refetchClients } = useClients()
@@ -202,7 +240,9 @@ export default function QuickSale() {
               setBarcode(code)
               updateDraft({ barcode: code })
               addProductFromScanner(code)
+              playScanSound()
               setCameraStatus(`Codigo leido: ${code}`)
+              closeCameraScanner()
             }
             return
           }
