@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser'
+import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 import { Camera, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { create, getAll } from '../../api/crud'
@@ -80,6 +81,22 @@ const barcodeCameraConstraints: MediaStreamConstraints = {
   },
   audio: false,
 }
+
+const barcodeScannerHints = new Map<DecodeHintType, unknown>([
+  [
+    DecodeHintType.POSSIBLE_FORMATS,
+    [
+      BarcodeFormat.EAN_13,
+      BarcodeFormat.EAN_8,
+      BarcodeFormat.UPC_A,
+      BarcodeFormat.UPC_E,
+      BarcodeFormat.CODE_128,
+      BarcodeFormat.CODE_39,
+      BarcodeFormat.ITF,
+    ],
+  ],
+  [DecodeHintType.TRY_HARDER, true],
+])
 
 function playScanSound() {
   try {
@@ -227,7 +244,10 @@ export default function QuickSale() {
     if (!cameraOpen) return
 
     let cancelled = false
-    const codeReader = new BrowserMultiFormatReader()
+    const codeReader = new BrowserMultiFormatReader(barcodeScannerHints, {
+      delayBetweenScanAttempts: 80,
+      delayBetweenScanSuccess: 450,
+    })
 
     const startScanner = async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -273,14 +293,7 @@ export default function QuickSale() {
         }
 
         scannerControlsRef.current = controls
-        scannerControlsRef.current.streamVideoConstraintsApply?.({
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          advanced: [
-            { focusMode: 'continuous' } as MediaTrackConstraintSet,
-            { exposureMode: 'continuous' } as MediaTrackConstraintSet,
-          ],
-        })
+        improveCameraForBarcodes(controls)
         setCameraStatus('Acerca el codigo al recuadro y mantenelo enfocado')
       } catch (error) {
         setCameraStatus('No se pudo abrir la camara')
@@ -408,6 +421,33 @@ export default function QuickSale() {
     setCameraOpen(false)
     setCameraStatus('')
     focusScanner()
+  }
+
+  const improveCameraForBarcodes = (controls: IScannerControls) => {
+    try {
+      const allVideoTracks = (tracks: MediaStreamTrack[]) => tracks
+      const capabilities = controls.streamVideoCapabilitiesGet?.(allVideoTracks) as
+        | (MediaTrackCapabilities & { zoom?: { min?: number; max?: number } })
+        | undefined
+      const maxZoom = Number(capabilities?.zoom?.max ?? 0)
+      const minZoom = Number(capabilities?.zoom?.min ?? 1)
+      const zoom = maxZoom > minZoom ? Math.min(maxZoom, Math.max(minZoom, 2)) : undefined
+
+      controls.streamVideoConstraintsApply?.({
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        advanced: [
+          ...(zoom ? [{ zoom } as MediaTrackConstraintSet] : []),
+          { focusMode: 'continuous' } as MediaTrackConstraintSet,
+          { exposureMode: 'continuous' } as MediaTrackConstraintSet,
+        ],
+      })
+    } catch {
+      controls.streamVideoConstraintsApply?.({
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      })
+    }
   }
 
   const addProductFromScanner = (rawValue: string) => {
