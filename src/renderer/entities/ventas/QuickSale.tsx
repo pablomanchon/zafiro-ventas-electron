@@ -74,13 +74,25 @@ const barcodeCameraConstraints: MediaStreamConstraints = {
     width: { ideal: 1920 },
     height: { ideal: 1080 },
     frameRate: { ideal: 30 },
-    advanced: [
-      { focusMode: 'continuous' } as MediaTrackConstraintSet,
-      { exposureMode: 'continuous' } as MediaTrackConstraintSet,
-    ],
   },
   audio: false,
 }
+
+const fallbackCameraConstraints: MediaStreamConstraints[] = [
+  barcodeCameraConstraints,
+  {
+    video: {
+      facingMode: { ideal: 'environment' },
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+    },
+    audio: false,
+  },
+  {
+    video: true,
+    audio: false,
+  },
+]
 
 const barcodeScannerHints = new Map<DecodeHintType, unknown>([
   [
@@ -323,7 +335,21 @@ export default function QuickSale() {
             setCameraStatus('Acerca el codigo al recuadro y mantenelo enfocado')
           }
         }
-        const controls = await codeReader.decodeFromConstraints(barcodeCameraConstraints, video, onDecode)
+        let controls: IScannerControls | null = null
+        let lastCameraError: unknown = null
+
+        for (const constraints of fallbackCameraConstraints) {
+          try {
+            controls = await codeReader.decodeFromConstraints(constraints, video, onDecode)
+            break
+          } catch (error) {
+            lastCameraError = error
+          }
+        }
+
+        if (!controls) {
+          throw lastCameraError ?? new Error('No se pudo abrir la camara')
+        }
 
         if (cancelled) {
           controls.stop()
@@ -471,20 +497,13 @@ export default function QuickSale() {
       const minZoom = Number(capabilities?.zoom?.min ?? 1)
       const zoom = maxZoom > minZoom ? Math.min(maxZoom, Math.max(minZoom, 2)) : undefined
 
+      if (!zoom) return
+
       controls.streamVideoConstraintsApply?.({
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        advanced: [
-          ...(zoom ? [{ zoom } as MediaTrackConstraintSet] : []),
-          { focusMode: 'continuous' } as MediaTrackConstraintSet,
-          { exposureMode: 'continuous' } as MediaTrackConstraintSet,
-        ],
+        advanced: [{ zoom } as MediaTrackConstraintSet],
       })
     } catch {
-      controls.streamVideoConstraintsApply?.({
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-      })
+      // Some browsers expose camera capabilities but reject applying them.
     }
   }
 
