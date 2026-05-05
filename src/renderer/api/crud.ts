@@ -57,6 +57,10 @@ export async function getAll<T = any>(
       return data
     }
 
+    if (config.listRpc) {
+      return await runRpc<T[]>(config.listRpc)
+    }
+
     let query = supabase.from(config.table).select(config.select ?? '*')
 
     if (config.softDelete) query = query.eq('deleted', false)

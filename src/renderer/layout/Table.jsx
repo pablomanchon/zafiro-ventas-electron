@@ -134,6 +134,12 @@ const Table = ({
 
     const lk = lastKey.toLowerCase()
 
+    if (lk === 'estrellas') {
+      const n = Number(valor ?? 0)
+      if (n === 0) return '—'
+      return '★'.repeat(n) + '☆'.repeat(5 - n)
+    }
+
     const isDateTimeKey =
       lk.includes("fecha") ||
       lk.includes("hora") ||        // 👈 horaIngreso / horaEgreso

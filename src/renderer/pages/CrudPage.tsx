@@ -60,6 +60,8 @@ export default function CrudPage<T extends { id: number | string }>({
       .slice(0, 2)
     const get = (key: string) => (item as any)[key] ?? (item as any)[key.toLowerCase()] ?? ''
     const isPriceField = (key: string) => key === 'precio' || key.includes('total') || key.includes('monto')
+    const isStarsField = (key: string) => key.toLowerCase() === 'estrellas'
+    const starsLabel = (n: number) => n === 0 ? '—' : '★'.repeat(n) + '☆'.repeat(5 - n)
     const lowStock = entity === 'productos' && isLowStockProduct(item as any)
 
     return (
@@ -72,7 +74,7 @@ export default function CrudPage<T extends { id: number | string }>({
         {secondaryCols.map((col: string) => (
           <p key={col} className="text-xs text-white/55 mt-auto">
             <span className="text-white/30 capitalize">{col}: </span>
-            {isPriceField(col) ? formatCurrencyARS(Number(get(col))) : String(get(col) || '—')}
+            {isStarsField(col) ? starsLabel(Number(get(col))) : isPriceField(col) ? formatCurrencyARS(Number(get(col))) : String(get(col) || '—')}
           </p>
         ))}
       </div>

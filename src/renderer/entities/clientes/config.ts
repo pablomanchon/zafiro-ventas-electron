@@ -3,7 +3,7 @@ import type { CrudConfig } from '../CrudConfig';
 const clientesConfig: CrudConfig = {
   entity: 'clientes',
   title: 'Clientes',
-  columns: ['id', 'nombre', 'apellido', 'dni', 'email', 'telefono', 'direccion'],
+  columns: ['id', 'nombre', 'apellido', 'dni', 'email', 'telefono', 'direccion', 'estrellas'],
   searchFields: ['id', 'nombre', 'apellido', 'email', 'dni'],
   formInputs: [
     { name: 'nombre', label: 'Nombre', type: 'text', required: true },

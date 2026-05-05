@@ -18,6 +18,7 @@ type TableEntityConfig = {
   extraFilters?: Record<string, unknown>
   select?: string
   serialize?: (payload: any) => any
+  listRpc?: string
 }
 
 type RpcEntityConfig = {
@@ -49,6 +50,7 @@ const entityMap: Record<EntityName, EntityConfig> = {
     table: 'cliente',
     softDelete: true,
     orderBy: { column: 'id', ascending: true },
+    listRpc: 'clientes_listar',
   },
   vendedores: {
     kind: 'table',
