@@ -303,13 +303,18 @@ export default function VentasPorVendedorChart() {
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#1e293b",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    borderRadius: 8,
-                    color: "#fff",
+                    backgroundColor: "#0f172a",
+                    border: "1px solid #7c3aed",
+                    borderRadius: 10,
+                    color: "#f1f5f9",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    padding: "8px 14px",
                   }}
                   formatter={(v: number) => [formatCurrencyARS(v), "Total"]}
-                  labelStyle={{ color: "#94a3b8", fontSize: 11 }}
+                  labelStyle={{ color: "#c4b5fd", fontSize: 13, fontWeight: 700, marginBottom: 2 }}
+                  itemStyle={{ color: "#ffffff", fontSize: 13, fontWeight: 600 }}
+                  cursor={{ fill: "rgba(124,58,237,0.12)" }}
                 />
                 <Bar dataKey="total" radius={8}>
                   {chartData.map((_, i) => (
