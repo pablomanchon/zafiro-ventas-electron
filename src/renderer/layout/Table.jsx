@@ -170,8 +170,10 @@ const Table = ({
     return valor;
   };
 
-  const obtenerTitulo = (encabezado) =>
-    typeof encabezado === "string" ? encabezado : encabezado.titulo;
+  const obtenerTitulo = (encabezado) => {
+    if (encabezado === 'estrellas') return 'Fidelidad'
+    return typeof encabezado === "string" ? encabezado : encabezado.titulo
+  }
 
   return (
     <div className="w-full">
