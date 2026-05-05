@@ -110,6 +110,41 @@ const barcodeScannerHints = new Map<DecodeHintType, unknown>([
   [DecodeHintType.TRY_HARDER, true],
 ])
 
+function describeCameraError(error: unknown) {
+  const name = error instanceof DOMException ? error.name : (error as any)?.name
+  const message = error instanceof Error ? error.message : String(error ?? '')
+
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+    return 'Permiso de camara denegado. Habilitalo desde el candado de la barra de direcciones.'
+  }
+
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+    return 'No se encontro ninguna camara disponible.'
+  }
+
+  if (name === 'NotReadableError' || name === 'TrackStartError') {
+    return 'La camara esta ocupada por otra app o el navegador no puede iniciarla.'
+  }
+
+  if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') {
+    return 'La camara no soporta la calidad solicitada. Probando un modo compatible...'
+  }
+
+  if (name === 'SecurityError') {
+    return 'El navegador bloqueo la camara por seguridad. Usa HTTPS y revisa permisos del sitio.'
+  }
+
+  if (name === 'AbortError') {
+    return 'El navegador interrumpio el inicio de la camara. Intenta abrirla otra vez.'
+  }
+
+  if (message.includes('Requested device not found')) {
+    return 'No se encontro la camara seleccionada.'
+  }
+
+  return `No se pudo abrir la camara${name ? ` (${name})` : ''}${message ? `: ${message}` : ''}`
+}
+
 let scanAudioContext: AudioContext | null = null
 
 function getScanAudioContext() {
@@ -295,16 +330,23 @@ export default function QuickSale() {
     if (!cameraOpen) return
 
     let cancelled = false
-    const codeReader = new BrowserMultiFormatOneDReader(barcodeScannerHints, {
+    const createCodeReader = () => new BrowserMultiFormatOneDReader(barcodeScannerHints, {
       delayBetweenScanAttempts: 30,
       delayBetweenScanSuccess: 450,
     })
+    let codeReader = createCodeReader()
 
     const startScanner = async () => {
+      if (!window.isSecureContext && window.location.hostname !== 'localhost') {
+        const reason = 'La camara requiere HTTPS para funcionar en el navegador.'
+        setCameraStatus(reason)
+        toast.error(reason)
+        return
+      }
+
       if (!navigator.mediaDevices?.getUserMedia) {
         setCameraStatus('La camara no esta disponible en este navegador')
         toast.error('La camara no esta disponible en este navegador')
-        setCameraOpen(false)
         return
       }
 
@@ -338,12 +380,22 @@ export default function QuickSale() {
         let controls: IScannerControls | null = null
         let lastCameraError: unknown = null
 
-        for (const constraints of fallbackCameraConstraints) {
+        for (const [index, constraints] of fallbackCameraConstraints.entries()) {
           try {
+            codeReader = createCodeReader()
+            setCameraStatus(
+              index === 0
+                ? 'Abriendo camara en alta calidad...'
+                : `Reintentando con modo compatible ${index + 1}/${fallbackCameraConstraints.length}...`
+            )
             controls = await codeReader.decodeFromConstraints(constraints, video, onDecode)
             break
           } catch (error) {
             lastCameraError = error
+            console.warn('[QuickSale] No se pudo abrir la camara con constraints', constraints, error)
+            if (!cancelled && index < fallbackCameraConstraints.length - 1) {
+              setCameraStatus(describeCameraError(error))
+            }
           }
         }
 
@@ -360,9 +412,10 @@ export default function QuickSale() {
         improveCameraForBarcodes(controls)
         setCameraStatus('Acerca el codigo al recuadro y mantenelo enfocado')
       } catch (error) {
-        setCameraStatus('No se pudo abrir la camara')
-        toast.error('No se pudo abrir la camara. Revisa los permisos del navegador.')
-        setCameraOpen(false)
+        const reason = describeCameraError(error)
+        console.error('[QuickSale] Error al abrir la camara', error)
+        setCameraStatus(reason)
+        toast.error(reason)
       }
     }
 
