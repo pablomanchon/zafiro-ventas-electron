@@ -74,7 +74,7 @@ export default function CrudPage<T extends { id: number | string }>({
         {secondaryCols.map((col: string) => (
           <p key={col} className="text-xs mt-auto">
             {isStarsField(col) ? (
-              <span className="text-yellow-400 tracking-wide">{starsLabel(Number(get(col)))}</span>
+              <span style={{ color: '#facc15' }} className="tracking-wide">{starsLabel(Number(get(col)))}</span>
             ) : (
               <span className="text-white/55">
                 <span className="text-white/30 capitalize">{col}: </span>
