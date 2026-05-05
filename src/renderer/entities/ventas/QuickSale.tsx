@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser'
+import { BrowserMultiFormatOneDReader, type IScannerControls } from '@zxing/browser'
 import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 import { Camera, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -98,39 +98,78 @@ const barcodeScannerHints = new Map<DecodeHintType, unknown>([
   [DecodeHintType.TRY_HARDER, true],
 ])
 
+let scanAudioContext: AudioContext | null = null
+
+function getScanAudioContext() {
+  const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext
+  if (!AudioContextCtor) return null
+
+  if (!scanAudioContext || scanAudioContext.state === 'closed') {
+    scanAudioContext = new AudioContextCtor()
+  }
+
+  return scanAudioContext
+}
+
+function unlockScanSound() {
+  try {
+    const ctx = getScanAudioContext()
+    if (ctx?.state === 'suspended') {
+      ctx.resume().catch(() => undefined)
+    }
+  } catch {
+    // Optional browser capability.
+  }
+}
+
 function playScanSound() {
   try {
-    const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext
-    if (!AudioContextCtor) return
+    navigator.vibrate?.(35)
 
-    const ctx = new AudioContextCtor()
-    const now = ctx.currentTime
-    const gain = ctx.createGain()
-    const main = ctx.createOscillator()
-    const overtone = ctx.createOscillator()
+    const ctx = getScanAudioContext()
+    if (!ctx) return
 
-    main.type = 'sine'
-    main.frequency.setValueAtTime(880, now)
-    main.frequency.exponentialRampToValueAtTime(1320, now + 0.08)
+    const scheduleSound = () => {
+      const now = ctx.currentTime
+      const master = ctx.createGain()
+      const filter = ctx.createBiquadFilter()
 
-    overtone.type = 'triangle'
-    overtone.frequency.setValueAtTime(1760, now)
-    overtone.detune.setValueAtTime(-8, now)
+      filter.type = 'lowpass'
+      filter.frequency.setValueAtTime(2600, now)
+      master.gain.setValueAtTime(0.0001, now)
+      master.gain.linearRampToValueAtTime(0.18, now + 0.018)
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 0.28)
 
-    gain.gain.setValueAtTime(0.0001, now)
-    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.012)
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16)
+      filter.connect(master)
+      master.connect(ctx.destination)
 
-    main.connect(gain)
-    overtone.connect(gain)
-    gain.connect(ctx.destination)
+      const makeTone = (start: number, frequency: number, duration: number, type: OscillatorType) => {
+        const osc = ctx.createOscillator()
+        const toneGain = ctx.createGain()
 
-    main.start(now)
-    overtone.start(now + 0.018)
-    main.stop(now + 0.17)
-    overtone.stop(now + 0.13)
+        osc.type = type
+        osc.frequency.setValueAtTime(frequency, start)
+        osc.frequency.exponentialRampToValueAtTime(frequency * 1.08, start + duration)
 
-    window.setTimeout(() => ctx.close().catch(() => undefined), 240)
+        toneGain.gain.setValueAtTime(0.0001, start)
+        toneGain.gain.linearRampToValueAtTime(0.7, start + 0.016)
+        toneGain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
+
+        osc.connect(toneGain)
+        toneGain.connect(filter)
+        osc.start(start)
+        osc.stop(start + duration + 0.02)
+      }
+
+      makeTone(now, 660, 0.12, 'sine')
+      makeTone(now + 0.095, 990, 0.14, 'triangle')
+    }
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(scheduleSound).catch(() => undefined)
+    } else {
+      scheduleSound()
+    }
   } catch {
     // Audio feedback is optional; the sale flow should never depend on it.
   }
@@ -244,8 +283,8 @@ export default function QuickSale() {
     if (!cameraOpen) return
 
     let cancelled = false
-    const codeReader = new BrowserMultiFormatReader(barcodeScannerHints, {
-      delayBetweenScanAttempts: 80,
+    const codeReader = new BrowserMultiFormatOneDReader(barcodeScannerHints, {
+      delayBetweenScanAttempts: 30,
       delayBetweenScanSuccess: 450,
     })
 
@@ -274,7 +313,6 @@ export default function QuickSale() {
               setBarcode(code)
               updateDraft({ barcode: code })
               addProductFromScanner(code)
-              playScanSound()
               setCameraStatus(`Codigo leido: ${code}`)
               closeCameraScanner()
             }
@@ -493,6 +531,8 @@ export default function QuickSale() {
       return nextItems
     })
 
+    toast.success(`Se cargo ${String(product.nombre ?? product.codigo ?? rawValue.trim())}`)
+    playScanSound()
     setBarcode('')
     focusScanner()
   }
@@ -674,6 +714,7 @@ export default function QuickSale() {
               <form
                 onSubmit={(e) => {
                   e.preventDefault()
+                  unlockScanSound()
                   addProductFromScanner(barcode)
                 }}
                 className="flex gap-2"
@@ -690,6 +731,7 @@ export default function QuickSale() {
                 />
                 <button
                   type="submit"
+                  onPointerDown={unlockScanSound}
                   className="rounded-lg border border-black bg-cyan-800 px-4 py-1.5 font-semibold text-white shadow-inner shadow-black hover:bg-sky-600"
                   disabled={loadingProducts}
                 >
@@ -697,6 +739,7 @@ export default function QuickSale() {
                 </button>
                 <button
                   type="button"
+                  onPointerDown={unlockScanSound}
                   onClick={() => (cameraOpen ? closeCameraScanner() : setCameraOpen(true))}
                   className="inline-flex items-center justify-center rounded-lg border border-white/20 bg-black/45 px-3 py-1.5 text-white/88 hover:bg-white/12"
                   title={cameraOpen ? 'Cerrar camara' : 'Escanear con camara'}
@@ -736,8 +779,8 @@ export default function QuickSale() {
             </button>
           </div>
           {cameraOpen && (
-            <div className="mt-2 overflow-hidden rounded-lg border border-cyan-400/35 bg-black/55">
-              <div className="relative mx-auto aspect-video max-h-[360px] w-full bg-black">
+            <div className="mt-2 overflow-hidden rounded-lg border border-cyan-400/35 bg-black/55 lg:max-w-3xl">
+              <div className="relative mx-auto aspect-video max-h-[340px] w-full bg-black lg:max-h-[260px]">
                 <video
                   ref={cameraVideoRef}
                   className="h-full w-full object-cover"

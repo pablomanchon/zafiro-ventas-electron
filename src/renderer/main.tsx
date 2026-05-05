@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import { Toaster } from 'sonner';
@@ -11,6 +11,31 @@ import { SearchProvider } from './providers/SearchProvider'
 import Modal from './layout/Modal'
 import { AuthProvider } from './providers/AuthProvider'
 
+function AppToaster() {
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 640px)').matches)
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 640px)')
+    const onChange = () => setIsMobile(media.matches)
+
+    onChange()
+    media.addEventListener('change', onChange)
+    return () => media.removeEventListener('change', onChange)
+  }, [])
+
+  return (
+    <Toaster
+      containerAriaLabel="Notificaciones"
+      position={isMobile ? 'top-center' : 'bottom-right'}
+      duration={2400}
+      visibleToasts={3}
+      closeButton
+      swipeDirections={isMobile ? ['up', 'right', 'left'] : ['right', 'left']}
+      theme="dark"
+      expand={false}
+    />
+  )
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -21,16 +46,7 @@ createRoot(document.getElementById('root')!).render(
               <HashRouter>
                 <App />
                 <Modal />
-                <Toaster
-                  containerAriaLabel="Notificaciones"
-                  position="bottom-right"
-                  duration={2400}
-                  visibleToasts={3}
-                  closeButton
-                  swipeDirections={['right', 'left']}
-                  theme="dark"
-                  expand={false}
-                />
+                <AppToaster />
               </HashRouter>
             </SearchProvider>
         </ModalProvider>
