@@ -42,7 +42,7 @@
     "@supabase/supabase-js": "^2.103.0",
     "@types/express": "4.17.21",
     "@zxing/browser": "^0.2.0",
-    "axios": "^1.9.0",
+    "axios": "^1.16.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cors": "^2.8.5",
@@ -95,7 +95,7 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2",
     "vite": "5.2.8",
-    "wait-on": "7.0.1"
+    "wait-on": "7.2.0"
   },
   "main": "dist/electron.cjs.js",
   "build": {
