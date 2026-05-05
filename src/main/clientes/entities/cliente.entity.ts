@@ -22,6 +22,9 @@ export class Cliente {
   @Column({ nullable: true })
   direccion?: string;
 
+  @Column({ nullable: true })
+  dni?: string;
+
   @OneToMany(() => Venta, venta => venta.cliente)
   ventas: Venta[];
   

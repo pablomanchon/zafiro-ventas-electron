@@ -13,7 +13,7 @@ import type { CrudConfig } from '../entities/CrudConfig'
 import { useModal } from '../providers/ModalProvider'
 import DynamicForm from '../layout/DynamicForm'
 import { create, update } from '../api/crud'
-import { toSingular } from '../utils/utils'
+import { toSingular, formatCurrencyARS } from '../utils/utils'
 import { toast } from 'sonner'
 
 function isEditableTarget(el: EventTarget | null) {
@@ -49,6 +49,35 @@ export default function CrudPage<T extends { id: number | string }>({
 }) {
   const { entity, title, columns, formInputs, searchFields, isProtected } = config
   const { items, selected, setSelected, handleDelete, fetchItems, loading } = useCrud<T>(entity, formInputs)
+
+  const renderMobileItem = (item: T) => {
+    const colsLC = columns.map((c: string) => c.toLowerCase())
+    const primaryCol = colsLC.find((c: string) => c === 'nombre')
+      ?? colsLC.find((c: string) => c !== 'id' && c !== 'descripcion' && c !== 'deleted')
+      ?? colsLC[0]
+    const secondaryCols = colsLC
+      .filter((c: string) => c !== primaryCol && c !== 'id' && c !== 'descripcion' && c !== 'deleted')
+      .slice(0, 2)
+    const get = (key: string) => (item as any)[key] ?? (item as any)[key.toLowerCase()] ?? ''
+    const isPriceField = (key: string) => key === 'precio' || key.includes('total') || key.includes('monto')
+    const lowStock = entity === 'productos' && isLowStockProduct(item as any)
+
+    return (
+      <div className={[
+        'rounded-xl border p-2.5 text-white shadow shadow-black/40 active:bg-white/5 h-full flex flex-col gap-1',
+        lowStock ? 'border-yellow-500/60 bg-yellow-900/30' : 'border-white/15 bg-slate-950/75',
+      ].join(' ')}>
+        <p className="text-[10px] text-white/35 leading-none">#{get('id')}</p>
+        <p className="font-semibold text-sm leading-snug line-clamp-2">{get(primaryCol) || '—'}</p>
+        {secondaryCols.map((col: string) => (
+          <p key={col} className="text-xs text-white/55 mt-auto">
+            <span className="text-white/30 capitalize">{col}: </span>
+            {isPriceField(col) ? formatCurrencyARS(Number(get(col))) : String(get(col) || '—')}
+          </p>
+        ))}
+      </div>
+    )
+  }
 
   const selectedItem = selected != null ? items.find(i => i.id === selected) : null
   const selectedIsProtected = selectedItem != null && isProtected ? isProtected(selectedItem as any) : false
@@ -195,6 +224,10 @@ export default function CrudPage<T extends { id: number | string }>({
               if (item && isProtected?.(item as any)) return
               openEditModal(rowId)
             }}
+            renderMobileItem={renderMobileItem}
+            onMobileItemClick={setSelected}
+            mobileColumns={2}
+            selectedId={selected}
             loading={loading}
             loadingTitle={`Cargando ${title.toLowerCase()}`}
             rowClassName={
@@ -209,9 +242,9 @@ export default function CrudPage<T extends { id: number | string }>({
         </div>
 
         {/* Barra de acciones */}
-        <Steel className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mt-auto bg-gray-800 p-2">
+        <Steel className="flex flex-row gap-1 items-stretch mt-auto bg-gray-800 p-1.5 sm:p-2 sticky bottom-0 z-10">
           <PrimaryButton
-            className="w-full sm:w-auto"
+            className="flex-1 whitespace-nowrap !p-1.5 text-xs sm:flex-none sm:w-auto sm:!p-2 sm:text-base"
             title="Crear"
             functionClick={openCreateModal}
           />
@@ -219,24 +252,31 @@ export default function CrudPage<T extends { id: number | string }>({
           {selected != null && (
             <>
               <div
-                className="w-full sm:w-auto"
+                className="flex-1 min-w-0 sm:flex-none sm:w-auto"
                 tabIndex={-1}
                 onMouseDown={(e) => e.preventDefault()}
               >
                 <SecondaryButton
-                  className="w-full"
+                  className="w-full whitespace-nowrap !p-1.5 text-xs sm:!p-2 sm:text-base"
                   title="Modificar"
                   disabled={selectedIsProtected}
                   functionClick={() => openEditModal(selected)}
                 />
               </div>
 
-              <div className="w-full sm:w-auto" tabIndex={-1} onMouseDown={(e) => e.preventDefault()}>
+              <div className="flex-1 min-w-0 sm:flex-none sm:w-auto" tabIndex={-1} onMouseDown={(e) => e.preventDefault()}>
                 <DangerButton
-                  className="w-full"
+                  className="w-full whitespace-nowrap !p-1.5 text-xs sm:!p-2 sm:text-base"
                   title="Eliminar"
                   disabled={selectedIsProtected}
-                  functionClick={() => { handleDelete(`${toSingular(config.title)} eliminado con éxito!`) }}
+                  functionClick={() => {
+                    const nombre = (selectedItem as any)?.nombre ?? (selectedItem as any)?.name ?? null
+                    const entidad = toSingular(config.title).toLowerCase()
+                    const confirmMsg = nombre
+                      ? `¿Eliminar ${entidad} "${nombre}"? Esta acción no se puede deshacer.`
+                      : `¿Eliminar este ${entidad}? Esta acción no se puede deshacer.`
+                    handleDelete(`${toSingular(config.title)} eliminado con éxito.`, confirmMsg)
+                  }}
                 />
               </div>
 

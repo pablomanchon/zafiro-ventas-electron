@@ -185,9 +185,14 @@ export default function usePlato() {
   }
 
   const deletePlato = async (id: string | number) => {
+    const plato = platos.find((p: any) => String(p.id) === String(id))
+    const nombre = (plato as any)?.nombre ?? null
+    const mensaje = nombre
+      ? `¿Eliminar plato "${nombre}"? Esta acción no se puede deshacer.`
+      : '¿Eliminar este plato? Esta acción no se puede deshacer.'
     openModal(
       <Confirmation
-        mensaje="¿Eliminar registro?"
+        mensaje={mensaje}
         onConfirm={async () => {
           try {
             await remove(config.entity, id)

@@ -12,9 +12,9 @@ export default function PageClientes() {
     <CrudPage<Cliente>
       config={config}
       renderSelectedActions={({ selectedItem }) => (
-        <div className="w-full sm:w-auto" tabIndex={-1} onMouseDown={(e) => e.preventDefault()}>
+        <div className="flex-1 min-w-0 sm:flex-none sm:w-auto" tabIndex={-1} onMouseDown={(e) => e.preventDefault()}>
           <SecondaryButton
-            className="w-full"
+            className="w-full whitespace-nowrap !p-1.5 text-xs sm:!p-2 sm:text-base"
             title="Ver compras"
             functionClick={() => openModal(<ClientPurchases cliente={selectedItem} />)}
           />

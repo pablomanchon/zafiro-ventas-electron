@@ -70,11 +70,11 @@ export function useCrud<T extends { id: number | string }>(
     )
   }
 
-  const handleDelete = (message = '¡Eliminado con éxito!'): void => {
+  const handleDelete = (message = '¡Eliminado con éxito!', confirmMessage = '¿Eliminar este registro?'): void => {
     if (selected == null) return
     openModal(
       <Confirmation
-        mensaje="¿Eliminar registro?"
+        mensaje={confirmMessage}
         onConfirm={async () => {
           await remove(entity, selected)
           setSelected(null)

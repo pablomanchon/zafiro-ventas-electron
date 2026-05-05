@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser'
+import { Camera, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { create, getAll } from '../../api/crud'
 import { useProducts } from '../../hooks/useProducts'
@@ -80,8 +82,13 @@ export default function QuickSale() {
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
   const [descuentoGlobalPct, setDescuentoGlobalPct] = useState('')
   const [descuentoGlobalMonto, setDescuentoGlobalMonto] = useState('')
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [cameraStatus, setCameraStatus] = useState('')
 
   const barcodeRef = useRef<HTMLInputElement>(null)
+  const cameraVideoRef = useRef<HTMLVideoElement>(null)
+  const scannerControlsRef = useRef<IScannerControls | null>(null)
+  const lastScannedRef = useRef<{ code: string; at: number } | null>(null)
   const draftLoadedRef = useRef(false)
   const skipPersistOnUnmountRef = useRef(false)
   const latestDraftRef = useRef<QuickSaleDraft>({
@@ -163,6 +170,70 @@ export default function QuickSale() {
   useEffect(() => {
     barcodeRef.current?.focus()
   }, [])
+
+  useEffect(() => {
+    if (!cameraOpen) return
+
+    let cancelled = false
+    const codeReader = new BrowserMultiFormatReader()
+
+    const startScanner = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraStatus('La camara no esta disponible en este navegador')
+        toast.error('La camara no esta disponible en este navegador')
+        setCameraOpen(false)
+        return
+      }
+
+      const video = cameraVideoRef.current
+      if (!video) return
+
+      try {
+        setCameraStatus('Abriendo camara...')
+        const controls = await codeReader.decodeFromVideoDevice(undefined, video, (result, error) => {
+          if (cancelled) return
+
+          if (result) {
+            const code = result.getText().trim()
+            const now = Date.now()
+            const last = lastScannedRef.current
+            if (code && (!last || last.code !== code || now - last.at > 1400)) {
+              lastScannedRef.current = { code, at: now }
+              setBarcode(code)
+              updateDraft({ barcode: code })
+              addProductFromScanner(code)
+              setCameraStatus(`Codigo leido: ${code}`)
+            }
+            return
+          }
+
+          if (error) {
+            setCameraStatus('Apunta la camara al codigo de barras')
+          }
+        })
+
+        if (cancelled) {
+          controls.stop()
+          return
+        }
+
+        scannerControlsRef.current = controls
+        setCameraStatus('Apunta la camara al codigo de barras')
+      } catch (error) {
+        setCameraStatus('No se pudo abrir la camara')
+        toast.error('No se pudo abrir la camara. Revisa los permisos del navegador.')
+        setCameraOpen(false)
+      }
+    }
+
+    startScanner()
+
+    return () => {
+      cancelled = true
+      scannerControlsRef.current?.stop()
+      scannerControlsRef.current = null
+    }
+  }, [cameraOpen])
 
   useEffect(() => {
     getAll<MetodoPago>('metodo-pago')
@@ -265,6 +336,15 @@ export default function QuickSale() {
       barcodeRef.current?.focus()
       barcodeRef.current?.select?.()
     })
+  }
+
+  const closeCameraScanner = () => {
+    scannerControlsRef.current?.stop()
+    scannerControlsRef.current = null
+    lastScannedRef.current = null
+    setCameraOpen(false)
+    setCameraStatus('')
+    focusScanner()
   }
 
   const addProductFromScanner = (rawValue: string) => {
@@ -512,6 +592,15 @@ export default function QuickSale() {
                 >
                   Agregar
                 </button>
+                <button
+                  type="button"
+                  onClick={() => (cameraOpen ? closeCameraScanner() : setCameraOpen(true))}
+                  className="inline-flex items-center justify-center rounded-lg border border-white/20 bg-black/45 px-3 py-1.5 text-white/88 hover:bg-white/12"
+                  title={cameraOpen ? 'Cerrar camara' : 'Escanear con camara'}
+                  aria-label={cameraOpen ? 'Cerrar camara' : 'Escanear con camara'}
+                >
+                  {cameraOpen ? <X size={18} /> : <Camera size={18} />}
+                </button>
               </form>
             </label>
 
@@ -543,6 +632,29 @@ export default function QuickSale() {
               Enfocar lector
             </button>
           </div>
+          {cameraOpen && (
+            <div className="mt-2 overflow-hidden rounded-lg border border-cyan-400/35 bg-black/55">
+              <div className="relative mx-auto aspect-video max-h-[360px] w-full bg-black">
+                <video
+                  ref={cameraVideoRef}
+                  className="h-full w-full object-cover"
+                  muted
+                  playsInline
+                />
+                <div className="pointer-events-none absolute inset-x-[10%] top-1/2 h-16 -translate-y-1/2 rounded-lg border-2 border-cyan-300/80 shadow-[0_0_0_999px_rgba(0,0,0,0.22)]" />
+              </div>
+              <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2 text-xs text-white/72">
+                <span>{cameraStatus || 'Preparando camara...'}</span>
+                <button
+                  type="button"
+                  onClick={closeCameraScanner}
+                  className="rounded border border-white/20 bg-black/45 px-3 py-1 font-semibold text-white/82 hover:bg-white/12"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
           <div className="grid grid-cols-2 gap-2 text-sm xl:grid-cols-4">

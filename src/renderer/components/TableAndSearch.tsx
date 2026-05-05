@@ -12,6 +12,9 @@ interface TableAndSearchProps<T extends { id: number | string }> {
   onFilaSeleccionada: (id: T['id'] | null) => void;
   searchFilters: string[];
   renderMobileItem?: (item: T) => ReactNode;
+  onMobileItemClick?: (id: T['id']) => void;
+  mobileColumns?: 1 | 2;
+  selectedId?: T['id'] | null;
   loading?: boolean;
   loadingTitle?: string;
   emptyMessage?: string;
@@ -25,6 +28,9 @@ export default function TableAndSearch<T extends { id: number | string }>({
   onFilaSeleccionada,
   searchFilters,
   renderMobileItem,
+  onMobileItemClick,
+  mobileColumns = 1,
+  selectedId,
   loading = false,
   loadingTitle = 'Cargando datos',
   emptyMessage = 'No hay datos para mostrar.',
@@ -53,19 +59,21 @@ export default function TableAndSearch<T extends { id: number | string }>({
     <div className="flex flex-col gap-2 p-2">
       <Search />
       {renderMobileItem && (
-        <div className="flex flex-col gap-2 sm:hidden">
+        <div className={`sm:hidden grid gap-2 ${mobileColumns === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
           {loading ? (
-            <LoadingState variant="table" title={loadingTitle} message="Esto va a tomar solo un momento." />
+            <div className={mobileColumns === 2 ? 'col-span-2' : ''}>
+              <LoadingState variant="table" title={loadingTitle} message="Esto va a tomar solo un momento." />
+            </div>
           ) : filteredData.length === 0 ? (
-            <div className="rounded-xl border border-white/12 bg-slate-950/70 px-3 py-8 text-center text-sm text-white/65">
+            <div className={`rounded-xl border border-white/12 bg-slate-950/70 px-3 py-8 text-center text-sm text-white/65 ${mobileColumns === 2 ? 'col-span-2' : ''}`}>
               {emptyMessage}
             </div>
           ) : filteredData.map((item) => (
             <button
               key={item.id}
               type="button"
-              onClick={() => onDobleClickFila(item.id)}
-              className="w-full text-left"
+              onClick={() => (onMobileItemClick ?? onDobleClickFila)(item.id)}
+              className={`w-full text-left rounded-xl outline-none ring-offset-0 ${selectedId === item.id ? 'ring-2 ring-cyan-400' : ''}`}
             >
               {renderMobileItem(item)}
             </button>

@@ -326,7 +326,7 @@ export default function VentasPorVendedorChart() {
           )}
         </Glass>
 
-        <Glass className="relative max-h-[18rem] flex-1 overflow-auto p-0 shadow-inner shadow-purple-700 border-purple-700 border">
+        <Glass className="hidden sm:block relative max-h-[18rem] flex-1 overflow-auto p-0 shadow-inner shadow-purple-700 border-purple-700 border">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-black/70 backdrop-blur-xl">
               <tr>
@@ -357,6 +357,27 @@ export default function VentasPorVendedorChart() {
             </tfoot>
           </table>
         </Glass>
+      </div>
+
+      {/* cards mobile vendedores */}
+      <div className="grid grid-cols-2 gap-2 sm:hidden">
+        {loading
+          ? Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-white/10 bg-white/5 h-20 animate-pulse" />
+            ))
+          : items.map((it, idx) => (
+              <div key={idx} className="rounded-xl border border-purple-700/40 bg-slate-950/75 p-3 flex flex-col gap-1 shadow shadow-black/40">
+                <p className="text-sm font-semibold text-white leading-snug line-clamp-1">{it.nombre}</p>
+                <p className="text-xs text-purple-300">{it.cantidad} {it.cantidad === 1 ? 'venta' : 'ventas'}</p>
+                <p className="text-base font-bold text-white">{formatCurrencyARS(it.total)}</p>
+              </div>
+            ))}
+        {!loading && items.length > 0 && (
+          <div className="col-span-2 flex justify-between items-center rounded-xl border border-purple-700/60 bg-black/50 px-3 py-2 text-sm font-semibold text-white">
+            <span>Totales</span>
+            <span>{totalVentas} ventas — {formatCurrencyARS(totalGeneral)}</span>
+          </div>
+        )}
       </div>
     </div>
   );

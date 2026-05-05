@@ -10,6 +10,9 @@ export class Vendedor {
     @Column()
     nombre: string
 
+    @Column({ nullable: true })
+    dni?: string
+
     @OneToMany(() => Venta, venta => venta.vendedor)
     ventas: Venta[];
 
