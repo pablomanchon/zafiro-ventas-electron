@@ -4,6 +4,8 @@ import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 import { Camera, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { create, getAll } from '../../api/crud'
+import { facturarVenta } from '../../api/facturacion'
+import { kioscoObtener } from '../../api/negocio'
 import { useProducts } from '../../hooks/useProducts'
 import { useClients } from '../../hooks/useClients'
 import { useVendedores } from '../../hooks/useSellers'
@@ -32,6 +34,8 @@ type QuickPayment = {
   metodoId: string
   monto: string
   cuotas: string
+  montoUsd?: string
+  tipoCambio?: string
 }
 
 type QuickSaleDraft = {
@@ -42,6 +46,7 @@ type QuickSaleDraft = {
   payments: QuickPayment[]
   descuentoGlobalPct: string
   descuentoGlobalMonto: string
+  facturarAhora: boolean
 }
 
 const QUICK_SALE_DRAFT_KEY = 'quick-sale-draft'
@@ -50,6 +55,8 @@ const emptyPayment = (metodoId = '', monto = ''): QuickPayment => ({
   metodoId,
   monto,
   cuotas: '',
+  montoUsd: '',
+  tipoCambio: '',
 })
 
 const normalizeText = (value: unknown) =>
@@ -237,6 +244,8 @@ export default function QuickSale() {
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
   const [descuentoGlobalPct, setDescuentoGlobalPct] = useState('')
   const [descuentoGlobalMonto, setDescuentoGlobalMonto] = useState('')
+  const [facturarAhora, setFacturarAhora] = useState(true)
+  const [tipoCambioUsd, setTipoCambioUsd] = useState(1000)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [cameraStatus, setCameraStatus] = useState('')
 
@@ -253,6 +262,7 @@ export default function QuickSale() {
     payments: [],
     descuentoGlobalPct: '',
     descuentoGlobalMonto: '',
+    facturarAhora: true,
   })
 
   const persistDraft = (draft: QuickSaleDraft) => {
@@ -294,12 +304,15 @@ export default function QuickSale() {
               metodoId: String(payment?.metodoId ?? ''),
               monto: cleanMoneyInput(String(payment?.monto ?? '')),
               cuotas: String(payment?.cuotas ?? ''),
+              montoUsd: payment?.montoUsd != null ? String(payment.montoUsd) : '',
+              tipoCambio: payment?.tipoCambio != null ? String(payment.tipoCambio) : '',
             }))
           : typeof draft.selectedMethodId === 'string' && draft.selectedMethodId
           ? [emptyPayment(draft.selectedMethodId)]
           : [],
         descuentoGlobalPct: typeof draft.descuentoGlobalPct === 'string' ? draft.descuentoGlobalPct : '',
         descuentoGlobalMonto: typeof draft.descuentoGlobalMonto === 'string' ? draft.descuentoGlobalMonto : '',
+        facturarAhora: typeof draft.facturarAhora === 'boolean' ? draft.facturarAhora : true,
       }
       latestDraftRef.current = hydratedDraft
       setBarcode(hydratedDraft.barcode)
@@ -308,6 +321,7 @@ export default function QuickSale() {
       setPayments(hydratedDraft.payments)
       setDescuentoGlobalPct(hydratedDraft.descuentoGlobalPct)
       setDescuentoGlobalMonto(hydratedDraft.descuentoGlobalMonto)
+      setFacturarAhora(hydratedDraft.facturarAhora)
     } catch {
       window.localStorage.removeItem(QUICK_SALE_DRAFT_KEY)
     } finally {
@@ -429,6 +443,12 @@ export default function QuickSale() {
   }, [cameraOpen])
 
   useEffect(() => {
+    kioscoObtener()
+      .then((k) => setTipoCambioUsd(k.tipoCambioUsd ?? 1000))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
     getAll<MetodoPago>('metodo-pago')
       .then(setMethods)
       .catch((error) => toast.error(String(error)))
@@ -509,6 +529,8 @@ export default function QuickSale() {
         metodoId: paymentDraft.metodoId,
         monto,
         cuotas: paymentDraft.cuotas,
+        montoUsd: paymentDraft.montoUsd || '',
+        tipoCambio: paymentDraft.tipoCambio || '',
       },
     ])
 
@@ -516,6 +538,8 @@ export default function QuickSale() {
       metodoId: prev.metodoId,
       monto: '',
       cuotas: prev.cuotas,
+      montoUsd: '',
+      tipoCambio: prev.tipoCambio,
     }))
   }
 
@@ -642,6 +666,7 @@ export default function QuickSale() {
       payments: [],
       descuentoGlobalPct: '',
       descuentoGlobalMonto: '',
+      facturarAhora: true,
     }
     clearDraft()
     focusScanner()
@@ -740,11 +765,20 @@ export default function QuickSale() {
         clienteId: clienteVenta.id,
         vendedorId: Number(selectedSellerId),
         detalles,
-        pagos: validPayments.map((payment) => ({
-          metodoId: payment.metodoId,
-          monto: payment.montoCents / 100,
-          ...(payment.cuotas ? { cuotas: Number(payment.cuotas) || 0 } : {}),
-        })),
+        pagos: validPayments.map((payment) => {
+          const dto: Record<string, any> = {
+            metodoId: payment.metodoId,
+            monto: payment.montoCents / 100,
+            ...(payment.cuotas ? { cuotas: Number(payment.cuotas) || 0 } : {}),
+          }
+          const montoUsd = Number(payment.montoUsd)
+          const tipoCambio = Number(payment.tipoCambio)
+          if (montoUsd > 0 && tipoCambio > 0) {
+            dto.montoUsd = montoUsd
+            dto.tipoCambio = tipoCambio
+          }
+          return dto
+        }),
         idempotencyKey,
       })
 
@@ -753,9 +787,28 @@ export default function QuickSale() {
       channel.close()
 
       toast.success(`Venta ${(venta as any)?.id ?? ''} creada con exito`)
+      if (facturarAhora) {
+        try {
+          const facturacion = await facturarVenta({
+            ventaId: Number((venta as any)?.id),
+            trigger: 'manual',
+            force: true,
+          })
+          if (facturacion?.authorized) {
+            toast.success(`Factura autorizada. CAE ${facturacion.invoice?.cae ?? ''}`.trim())
+          } else {
+            toast.success(facturacion?.message ?? 'Factura procesada')
+          }
+        } catch (facturaError) {
+          const message =
+            facturaError instanceof Error ? facturaError.message : 'No se pudo autorizar la factura'
+          toast.error(`Venta guardada, pero ARCA respondio: ${message}`)
+        }
+      }
       setIdempotencyKey(crypto.randomUUID())
       setDescuentoGlobalPct('')
       setDescuentoGlobalMonto('')
+      setFacturarAhora(true)
       clearSale()
     } catch (error) {
       toast.error(String(error))
@@ -1045,10 +1098,20 @@ export default function QuickSale() {
                 value={paymentDraft.metodoId}
                 onChange={(e) => {
                   const method = methods.find((entry) => entry.id === e.target.value)
+                  const isUsd = normalizeText(method?.tipo) === 'usd'
                   setPaymentDraft((prev) => ({
                     ...prev,
                     metodoId: e.target.value,
                     cuotas: normalizeText(method?.tipo) === 'credito' ? prev.cuotas || '1' : '',
+                    ...(isUsd && remainingCents > 0
+                      ? {
+                          montoUsd: (remainingCents / 100 / tipoCambioUsd).toFixed(2),
+                          monto: centsToInput(remainingCents),
+                          tipoCambio: String(tipoCambioUsd),
+                        }
+                      : isUsd
+                      ? { montoUsd: '', monto: '', tipoCambio: String(tipoCambioUsd) }
+                      : { montoUsd: '', tipoCambio: '' }),
                   }))
                 }}
                 style={{ backgroundColor: '#020617', color: '#fff' }}
@@ -1063,20 +1126,55 @@ export default function QuickSale() {
               </select>
             </label>
 
-            <label className="flex flex-col gap-1">
-              <span className="text-[11px] uppercase tracking-[0.14em] text-white/65">Monto</span>
-              <input
-                inputMode="decimal"
-                value={paymentDraft.monto}
-                placeholder={remainingCents ? centsToInput(remainingCents) : '0'}
-                onChange={(e) =>
-                  setPaymentDraft((prev) => ({ ...prev, monto: cleanMoneyInput(e.target.value) }))
-                }
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPaymentFromDraft() } }}
-                style={{ backgroundColor: '#020617', color: '#fff' }}
-                className="rounded-lg border border-white/20 bg-slate-950 px-3 py-1.5 text-right text-white placeholder:text-white/45 [color-scheme:dark] outline-none focus:border-cyan-400"
-              />
-            </label>
+            {normalizeText(methods.find((m) => m.id === paymentDraft.metodoId)?.tipo) === 'usd' ? (
+              <label className="flex flex-col gap-1">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-white/65">
+                  Monto USD{' '}
+                  <span className="text-white/40 normal-case tracking-normal">
+                    (1 USD = {formatCentsARS(tipoCambioUsd * 100)})
+                  </span>
+                </span>
+                <input
+                  inputMode="decimal"
+                  value={paymentDraft.montoUsd ?? ''}
+                  placeholder={remainingCents ? (remainingCents / 100 / tipoCambioUsd).toFixed(2) : '0'}
+                  onChange={(e) => {
+                    const usdRaw = e.target.value.replace(/[^0-9.,]/g, '')
+                    const usd = parseFloat(usdRaw.replace(',', '.')) || 0
+                    const arsAmount = usd > 0 ? (usd * tipoCambioUsd).toFixed(2) : ''
+                    setPaymentDraft((prev) => ({
+                      ...prev,
+                      montoUsd: usdRaw,
+                      monto: arsAmount,
+                      tipoCambio: String(tipoCambioUsd),
+                    }))
+                  }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPaymentFromDraft() } }}
+                  style={{ backgroundColor: '#020617', color: '#fff' }}
+                  className="rounded-lg border border-white/20 bg-slate-950 px-3 py-1.5 text-right text-white placeholder:text-white/45 [color-scheme:dark] outline-none focus:border-cyan-400"
+                />
+                {paymentDraft.montoUsd && Number(paymentDraft.montoUsd) > 0 && (
+                  <span className="text-[10px] text-white/50 text-right">
+                    = {formatCentsARS(Math.round(Number(paymentDraft.montoUsd) * tipoCambioUsd * 100))}
+                  </span>
+                )}
+              </label>
+            ) : (
+              <label className="flex flex-col gap-1">
+                <span className="text-[11px] uppercase tracking-[0.14em] text-white/65">Monto</span>
+                <input
+                  inputMode="decimal"
+                  value={paymentDraft.monto}
+                  placeholder={remainingCents ? centsToInput(remainingCents) : '0'}
+                  onChange={(e) =>
+                    setPaymentDraft((prev) => ({ ...prev, monto: cleanMoneyInput(e.target.value) }))
+                  }
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPaymentFromDraft() } }}
+                  style={{ backgroundColor: '#020617', color: '#fff' }}
+                  className="rounded-lg border border-white/20 bg-slate-950 px-3 py-1.5 text-right text-white placeholder:text-white/45 [color-scheme:dark] outline-none focus:border-cyan-400"
+                />
+              </label>
+            )}
 
             <label className="flex flex-col gap-1">
               <span className="text-[11px] uppercase tracking-[0.14em] text-white/65">Cuotas</span>
@@ -1130,7 +1228,11 @@ export default function QuickSale() {
                         <td className="px-3 py-1 font-semibold text-white">
                           {method?.nombre ?? payment.metodoId}
                         </td>
-                        <td className="px-3 py-1 text-right">{formatCentsARS(toCents(payment.monto))}</td>
+                        <td className="px-3 py-1 text-right">
+                          {payment.montoUsd && Number(payment.montoUsd) > 0
+                            ? <span>USD {Number(payment.montoUsd).toFixed(2)} <span className="text-white/55">({formatCentsARS(toCents(payment.monto))})</span></span>
+                            : formatCentsARS(toCents(payment.monto))}
+                        </td>
                         <td className="px-3 py-1 text-center">{payment.cuotas || '-'}</td>
                         <td className="px-3 py-1 text-center">
                           <button
@@ -1163,6 +1265,19 @@ export default function QuickSale() {
                 <p className="text-xs text-amber-400/90 sm:mr-auto">{reason}</p>
               ) : null
             })()}
+            <label className="flex min-h-10 items-center gap-2 rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-sm font-semibold text-white/86 hover:bg-white/10">
+              <input
+                type="checkbox"
+                checked={facturarAhora}
+                onChange={(e) => {
+                  setFacturarAhora(e.target.checked)
+                  updateDraft({ facturarAhora: e.target.checked })
+                }}
+                className="h-4 w-4 accent-cyan-500"
+                disabled={saving}
+              />
+              Facturar ahora
+            </label>
             <button
               type="button"
               onClick={clearSale}

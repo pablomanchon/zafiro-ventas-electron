@@ -146,7 +146,7 @@ export default function VentaCreate({
       colSpan: 2,
     },
   ],
-  [defaults, ItemsProxy, TotalDiscountProxy, totalConDescuento]
+  [defaults, ItemsProxy, TotalDiscountProxy, totalConDescuento, tipoCambioUsd]
 )
 
   const content = (
