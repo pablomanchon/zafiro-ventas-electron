@@ -242,6 +242,8 @@ export default function QuickSale() {
 
   const barcodeRef = useRef<HTMLInputElement>(null)
   const cameraVideoRef = useRef<HTMLVideoElement>(null)
+  const cameraStreamRef = useRef<MediaStream | null>(null)
+  const nativeScannerTimerRef = useRef<number | null>(null)
   const scannerControlsRef = useRef<IScannerControls | null>(null)
   const lastScannedRef = useRef<{ code: string; at: number } | null>(null)
   const draftLoadedRef = useRef(false)
@@ -336,6 +338,78 @@ export default function QuickSale() {
     })
     let codeReader = createCodeReader()
 
+    const handleDecodedCode = (rawCode: string) => {
+      const code = rawCode.trim()
+      const now = Date.now()
+      const last = lastScannedRef.current
+      if (!code || (last && last.code === code && now - last.at <= 1400)) return
+
+      lastScannedRef.current = { code, at: now }
+      setBarcode(code)
+      updateDraft({ barcode: code })
+      addProductFromScanner(code)
+      setCameraStatus(`Codigo leido: ${code}`)
+      closeCameraScanner()
+    }
+
+    const openCameraStream = async () => {
+      let lastCameraError: unknown = null
+
+      for (const [index, constraints] of fallbackCameraConstraints.entries()) {
+        try {
+          setCameraStatus(
+            index === 0
+              ? 'Abriendo camara en alta calidad...'
+              : `Reintentando con modo compatible ${index + 1}/${fallbackCameraConstraints.length}...`
+          )
+          return await navigator.mediaDevices.getUserMedia(constraints)
+        } catch (error) {
+          lastCameraError = error
+          console.warn('[QuickSale] No se pudo abrir la camara con constraints', constraints, error)
+          if (!cancelled && index < fallbackCameraConstraints.length - 1) {
+            setCameraStatus(describeCameraError(error))
+          }
+        }
+      }
+
+      throw lastCameraError ?? new Error('No se pudo abrir la camara')
+    }
+
+    const startNativeScanner = (video: HTMLVideoElement) => {
+      const BarcodeDetectorCtor = (window as any).BarcodeDetector
+      if (!BarcodeDetectorCtor) return false
+
+      let detector: any
+      try {
+        detector = new BarcodeDetectorCtor()
+      } catch (error) {
+        console.warn('[QuickSale] BarcodeDetector no disponible', error)
+        return false
+      }
+
+      const scan = async () => {
+        if (cancelled || !cameraOpen) return
+
+        try {
+          const codes = await detector.detect(video)
+          const value = codes?.[0]?.rawValue
+          if (value) {
+            handleDecodedCode(String(value))
+            return
+          }
+          setCameraStatus('Acerca el codigo al recuadro y mantenelo enfocado')
+        } catch (error) {
+          console.warn('[QuickSale] BarcodeDetector no pudo leer este cuadro', error)
+        }
+
+        nativeScannerTimerRef.current = window.setTimeout(scan, 70)
+      }
+
+      setCameraStatus('Lector nativo activo. Apunta al codigo de barras.')
+      scan()
+      return true
+    }
+
     const startScanner = async () => {
       if (!window.isSecureContext && window.location.hostname !== 'localhost') {
         const reason = 'La camara requiere HTTPS para funcionar en el navegador.'
@@ -354,22 +428,22 @@ export default function QuickSale() {
       if (!video) return
 
       try {
-        setCameraStatus('Abriendo camara...')
+        const stream = await openCameraStream()
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop())
+          return
+        }
+
+        cameraStreamRef.current = stream
+        video.srcObject = stream
+        await video.play()
+
+        setCameraStatus('Camara abierta. Preparando lector...')
         const onDecode = (result: any, error: unknown) => {
           if (cancelled) return
 
           if (result) {
-            const code = result.getText().trim()
-            const now = Date.now()
-            const last = lastScannedRef.current
-            if (code && (!last || last.code !== code || now - last.at > 1400)) {
-              lastScannedRef.current = { code, at: now }
-              setBarcode(code)
-              updateDraft({ barcode: code })
-              addProductFromScanner(code)
-              setCameraStatus(`Codigo leido: ${code}`)
-              closeCameraScanner()
-            }
+            handleDecodedCode(result.getText())
             return
           }
 
@@ -377,40 +451,20 @@ export default function QuickSale() {
             setCameraStatus('Acerca el codigo al recuadro y mantenelo enfocado')
           }
         }
-        let controls: IScannerControls | null = null
-        let lastCameraError: unknown = null
 
-        for (const [index, constraints] of fallbackCameraConstraints.entries()) {
-          try {
-            codeReader = createCodeReader()
-            setCameraStatus(
-              index === 0
-                ? 'Abriendo camara en alta calidad...'
-                : `Reintentando con modo compatible ${index + 1}/${fallbackCameraConstraints.length}...`
-            )
-            controls = await codeReader.decodeFromConstraints(constraints, video, onDecode)
-            break
-          } catch (error) {
-            lastCameraError = error
-            console.warn('[QuickSale] No se pudo abrir la camara con constraints', constraints, error)
-            if (!cancelled && index < fallbackCameraConstraints.length - 1) {
-              setCameraStatus(describeCameraError(error))
-            }
-          }
-        }
-
-        if (!controls) {
-          throw lastCameraError ?? new Error('No se pudo abrir la camara')
-        }
+        const usingNativeScanner = startNativeScanner(video)
+        const controls = usingNativeScanner ? null : codeReader.scan(video, onDecode)
 
         if (cancelled) {
-          controls.stop()
+          controls?.stop()
           return
         }
 
         scannerControlsRef.current = controls
-        improveCameraForBarcodes(controls)
-        setCameraStatus('Acerca el codigo al recuadro y mantenelo enfocado')
+        if (controls) {
+          improveCameraForBarcodes(controls)
+          setCameraStatus('Lector ZXing activo. Acerca el codigo al recuadro.')
+        }
       } catch (error) {
         const reason = describeCameraError(error)
         console.error('[QuickSale] Error al abrir la camara', error)
@@ -425,6 +479,12 @@ export default function QuickSale() {
       cancelled = true
       scannerControlsRef.current?.stop()
       scannerControlsRef.current = null
+      if (nativeScannerTimerRef.current != null) {
+        window.clearTimeout(nativeScannerTimerRef.current)
+        nativeScannerTimerRef.current = null
+      }
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop())
+      cameraStreamRef.current = null
     }
   }, [cameraOpen])
 
@@ -534,6 +594,15 @@ export default function QuickSale() {
   const closeCameraScanner = () => {
     scannerControlsRef.current?.stop()
     scannerControlsRef.current = null
+    if (nativeScannerTimerRef.current != null) {
+      window.clearTimeout(nativeScannerTimerRef.current)
+      nativeScannerTimerRef.current = null
+    }
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop())
+    cameraStreamRef.current = null
+    if (cameraVideoRef.current) {
+      cameraVideoRef.current.srcObject = null
+    }
     lastScannedRef.current = null
     setCameraOpen(false)
     setCameraStatus('')
