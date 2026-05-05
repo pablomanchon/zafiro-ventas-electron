@@ -3,6 +3,7 @@ import { useLocation, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { create } from '../../api/crud'
 import { facturarVenta } from '../../api/facturacion'
+import { kioscoObtener } from '../../api/negocio'
 import { useProducts } from '../../hooks/useProducts'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { fetchSaleById, makeSelectVentaById, needsRefresh } from '../../store/salesReduce'
@@ -78,6 +79,8 @@ const normalizePayments = (raw?: unknown): PaymentItem[] | undefined => {
     monto: String(entry?.monto ?? ''),
     cuotas:
       entry?.cuotas !== undefined && entry?.cuotas !== null ? String(entry.cuotas) : '',
+    montoUsd: entry?.montoUsd != null ? String(entry.montoUsd) : '',
+    tipoCambio: entry?.tipoCambio != null ? String(entry.tipoCambio) : '',
   }))
 }
 
@@ -98,6 +101,13 @@ export function useVentaCreateLogic() {
   const [formKey, setFormKey] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
+  const [tipoCambioUsd, setTipoCambioUsd] = useState(1000)
+
+  useEffect(() => {
+    kioscoObtener()
+      .then((k) => setTipoCambioUsd(k.tipoCambioUsd ?? 1000))
+      .catch(() => {})
+  }, [])
 
   const [itemsMirror, setItemsMirror] = useState<SaleItem[]>([])
   const [totalDiscountMirror, setTotalDiscountMirror] = useState<TotalDiscount>({
@@ -312,6 +322,12 @@ export function useVentaCreateLogic() {
             if ((p as any).cuotas != null && (p as any).cuotas !== '') {
               dto.cuotas = Number((p as any).cuotas) || 0
             }
+            const montoUsd = Number((p as any).montoUsd)
+            const tipoCambio = Number((p as any).tipoCambio)
+            if (montoUsd > 0 && tipoCambio > 0) {
+              dto.montoUsd = montoUsd
+              dto.tipoCambio = tipoCambio
+            }
             return dto
           })
 
@@ -362,6 +378,7 @@ export function useVentaCreateLogic() {
     submitting,
     defaults,
     totalConDescuento,
+    tipoCambioUsd,
     setItemsMirror,
     setTotalDiscountMirror,
     handleSubmit,
