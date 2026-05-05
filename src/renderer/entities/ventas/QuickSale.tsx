@@ -67,6 +67,20 @@ function lineTotal(item: ProductRow) {
   return Math.max(0, Number((base * (1 - pct / 100) - monto).toFixed(2)))
 }
 
+const barcodeCameraConstraints: MediaStreamConstraints = {
+  video: {
+    facingMode: { ideal: 'environment' },
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    frameRate: { ideal: 30 },
+    advanced: [
+      { focusMode: 'continuous' } as MediaTrackConstraintSet,
+      { exposureMode: 'continuous' } as MediaTrackConstraintSet,
+    ],
+  },
+  audio: false,
+}
+
 function playScanSound() {
   try {
     const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext
@@ -228,7 +242,7 @@ export default function QuickSale() {
 
       try {
         setCameraStatus('Abriendo camara...')
-        const controls = await codeReader.decodeFromVideoDevice(undefined, video, (result, error) => {
+        const onDecode = (result: any, error: unknown) => {
           if (cancelled) return
 
           if (result) {
@@ -248,9 +262,10 @@ export default function QuickSale() {
           }
 
           if (error) {
-            setCameraStatus('Apunta la camara al codigo de barras')
+            setCameraStatus('Acerca el codigo al recuadro y mantenelo enfocado')
           }
-        })
+        }
+        const controls = await codeReader.decodeFromConstraints(barcodeCameraConstraints, video, onDecode)
 
         if (cancelled) {
           controls.stop()
@@ -258,7 +273,15 @@ export default function QuickSale() {
         }
 
         scannerControlsRef.current = controls
-        setCameraStatus('Apunta la camara al codigo de barras')
+        scannerControlsRef.current.streamVideoConstraintsApply?.({
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          advanced: [
+            { focusMode: 'continuous' } as MediaTrackConstraintSet,
+            { exposureMode: 'continuous' } as MediaTrackConstraintSet,
+          ],
+        })
+        setCameraStatus('Acerca el codigo al recuadro y mantenelo enfocado')
       } catch (error) {
         setCameraStatus('No se pudo abrir la camara')
         toast.error('No se pudo abrir la camara. Revisa los permisos del navegador.')
@@ -681,7 +704,7 @@ export default function QuickSale() {
                   muted
                   playsInline
                 />
-                <div className="pointer-events-none absolute inset-x-[10%] top-1/2 h-16 -translate-y-1/2 rounded-lg border-2 border-cyan-300/80 shadow-[0_0_0_999px_rgba(0,0,0,0.22)]" />
+                <div className="pointer-events-none absolute inset-x-[6%] top-1/2 h-20 -translate-y-1/2 rounded-lg border-2 border-cyan-300/80 shadow-[0_0_0_999px_rgba(0,0,0,0.22)]" />
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2 text-xs text-white/72">
                 <span>{cameraStatus || 'Preparando camara...'}</span>
