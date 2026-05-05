@@ -11,8 +11,10 @@ import {
 export interface PaymentItem {
   metodoId: string
   nombre: string
-  monto: string
+  monto: string      // siempre en ARS
   cuotas?: string
+  montoUsd?: string  // solo para pagos USD
+  tipoCambio?: string
 }
 
 interface Metodo {
@@ -26,6 +28,7 @@ interface Props {
   value?: PaymentItem[]
   onChange?: (items: PaymentItem[]) => void
   total?: number
+  tipoCambioUsd?: number
 }
 
 const EMPTY_PAYMENT = (): PaymentItem => ({
@@ -33,6 +36,8 @@ const EMPTY_PAYMENT = (): PaymentItem => ({
   nombre: '',
   monto: '',
   cuotas: '',
+  montoUsd: '',
+  tipoCambio: '',
 })
 
 const normalizeItems = (value?: PaymentItem[]) =>
@@ -41,6 +46,8 @@ const normalizeItems = (value?: PaymentItem[]) =>
         ...it,
         monto: cleanMoneyInput(String(it.monto ?? '')),
         cuotas: it.cuotas ?? '',
+        montoUsd: it.montoUsd ?? '',
+        tipoCambio: it.tipoCambio ?? '',
       }))
     : [EMPTY_PAYMENT(), EMPTY_PAYMENT()]
 
@@ -51,10 +58,11 @@ const sameItems = (a: PaymentItem[], b: PaymentItem[]) =>
       item.metodoId === b[idx]?.metodoId &&
       item.nombre === b[idx]?.nombre &&
       item.monto === b[idx]?.monto &&
-      (item.cuotas ?? '') === (b[idx]?.cuotas ?? '')
+      (item.cuotas ?? '') === (b[idx]?.cuotas ?? '') &&
+      (item.montoUsd ?? '') === (b[idx]?.montoUsd ?? '')
   )
 
-export default function PaymentMethodsTable({ value, onChange, total = 0 }: Props) {
+export default function PaymentMethodsTable({ value, onChange, total = 0, tipoCambioUsd = 1000 }: Props) {
   const [methods, setMethods] = useState<Metodo[]>([])
   const [montoEditingIndex, setMontoEditingIndex] = useState<number | null>(null)
   const [items, setItems] = useState<PaymentItem[]>(() => normalizeItems(value))
@@ -112,13 +120,15 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
     )
   }
 
+  const isUsdMethod = (metodoId: string) => {
+    const m = methods.find((mm) => mm.id === metodoId)
+    return m?.tipo === 'usd'
+  }
+
   const setMetodoInput = (idx: number, raw: string) => {
     updateItems((prev) => {
       const next = [...prev]
-      next[idx] = {
-        ...next[idx],
-        metodoId: raw,
-      }
+      next[idx] = { ...next[idx], metodoId: raw }
       return next
     })
   }
@@ -135,13 +145,34 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
       )
       const restanteCents = Math.max(0, totalCents - sumaOtrosCents)
       const esCredito = m?.tipo === 'credito'
+      const esUsd = m?.tipo === 'usd'
 
-      next[idx] = {
-        ...next[idx],
-        metodoId: m?.id ?? normalizedRaw,
-        nombre: m?.nombre ?? '',
-        monto: restanteCents ? centsToInput(restanteCents) : next[idx].monto,
-        cuotas: esCredito ? next[idx].cuotas || '1' : '',
+      if (esUsd) {
+        // Convierte el restante ARS a USD y calcula el monto ARS exacto
+        const restanteUsd = restanteCents > 0
+          ? Number((restanteCents / 100 / tipoCambioUsd).toFixed(2))
+          : 0
+        const arsEquivalenteCents = Math.round(restanteUsd * tipoCambioUsd * 100)
+
+        next[idx] = {
+          ...next[idx],
+          metodoId: m?.id ?? normalizedRaw,
+          nombre: m?.nombre ?? '',
+          montoUsd: restanteUsd > 0 ? String(restanteUsd) : '',
+          tipoCambio: String(tipoCambioUsd),
+          monto: arsEquivalenteCents > 0 ? centsToInput(arsEquivalenteCents) : '',
+          cuotas: '',
+        }
+      } else {
+        next[idx] = {
+          ...next[idx],
+          metodoId: m?.id ?? normalizedRaw,
+          nombre: m?.nombre ?? '',
+          monto: restanteCents ? centsToInput(restanteCents) : next[idx].monto,
+          cuotas: esCredito ? next[idx].cuotas || '1' : '',
+          montoUsd: '',
+          tipoCambio: '',
+        }
       }
       return next
     })
@@ -151,6 +182,22 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
     updateItems((prev) => {
       const next = [...prev]
       next[idx] = { ...next[idx], monto: cleanMoneyInput(raw) }
+      return next
+    })
+  }
+
+  const onMontoUsdChange = (idx: number, raw: string) => {
+    updateItems((prev) => {
+      const next = [...prev]
+      const cleaned = cleanMoneyInput(raw)
+      const usdAmount = Number(cleaned) || 0
+      const arsCents = Math.round(usdAmount * tipoCambioUsd * 100)
+      next[idx] = {
+        ...next[idx],
+        montoUsd: cleaned,
+        tipoCambio: String(tipoCambioUsd),
+        monto: arsCents > 0 ? centsToInput(arsCents) : '',
+      }
       return next
     })
   }
@@ -173,6 +220,8 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
         nombre: '',
         monto: restanteCents ? centsToInput(restanteCents) : '',
         cuotas: '',
+        montoUsd: '',
+        tipoCambio: '',
       },
     ])
   }
@@ -203,10 +252,13 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
   const datosTabla = items.map((it, i) => {
     const m = methods.find((mm) => mm.id === it.metodoId)
     const isCredito = m?.tipo === 'credito'
+    const isUsd = m?.tipo === 'usd'
     const cuotasN = Math.max(1, parseInt(it.cuotas || '1', 10))
 
     const montoCents = toCents(it.monto)
     const valorCuotaCents = isCredito ? Math.trunc(montoCents / cuotasN) : undefined
+
+    const usdAmount = Number(it.montoUsd) || 0
 
     return {
       id: `${i}`,
@@ -228,7 +280,33 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
         />
       ),
       nombre: it.nombre,
-      monto: (
+      monto: isUsd ? (
+        <div className="flex flex-col gap-0.5 py-0.5">
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-white/50 shrink-0">USD</span>
+            <input
+              inputMode="decimal"
+              className="w-24 bg-inherit outline-none text-white px-1 text-right"
+              value={montoEditingIndex === i ? (it.montoUsd ?? '') : usdAmount > 0 ? String(usdAmount) : ''}
+              onFocus={(e) => {
+                setMontoEditingIndex(i)
+                e.currentTarget.select()
+              }}
+              onChange={(e) => onMontoUsdChange(i, e.target.value)}
+              onBlur={(e) => {
+                onMontoUsdChange(i, e.currentTarget.value)
+                setMontoEditingIndex(null)
+              }}
+              placeholder="0"
+            />
+          </div>
+          {usdAmount > 0 && (
+            <span className="text-[10px] text-white/40 text-right">
+              × {tipoCambioUsd} = {formatCentsARS(montoCents)}
+            </span>
+          )}
+        </div>
+      ) : (
         <input
           inputMode="decimal"
           className="w-40 bg-inherit outline-none text-white px-1 text-right"
@@ -273,6 +351,11 @@ export default function PaymentMethodsTable({ value, onChange, total = 0 }: Prop
       <div className="text-white/80 text-sm flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
         Pagado: {formatCentsARS(sumaMontosCents)} • Restante:{' '}
         {formatCentsARS(Math.max(0, totalCents - sumaMontosCents))}
+        {tipoCambioUsd && (
+          <span className="text-white/40 text-xs">
+            · USD 1 = {formatCentsARS(tipoCambioUsd * 100)}
+          </span>
+        )}
       </div>
 
       <div className="w-full overflow-x-auto">

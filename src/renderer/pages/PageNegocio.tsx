@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type * as React from 'react'
 import { toast } from 'sonner'
-import { Building2, LoaderCircle, Phone, MapPin, Save } from 'lucide-react'
+import { Building2, LoaderCircle, Phone, MapPin, Save, DollarSign } from 'lucide-react'
 import Title from '../layout/Title'
 import Glass from '../layout/Glass'
 import { kioscoObtener, kioscoActualizar, type KioscoPerfil } from '../api/negocio'
@@ -11,6 +11,7 @@ type FormState = {
   nombre: string
   telefono: string
   direccion: string
+  tipoCambioUsd: string
 }
 
 function Field({
@@ -38,7 +39,7 @@ export default function PageNegocio() {
   const { refreshProfile } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState<FormState>({ nombre: '', telefono: '', direccion: '' })
+  const [form, setForm] = useState<FormState>({ nombre: '', telefono: '', direccion: '', tipoCambioUsd: '1000' })
 
   useEffect(() => {
     kioscoObtener()
@@ -47,6 +48,7 @@ export default function PageNegocio() {
           nombre: data.nombre ?? '',
           telefono: data.telefono ?? '',
           direccion: data.direccion ?? '',
+          tipoCambioUsd: String(data.tipoCambioUsd ?? 1000),
         })
       })
       .catch(() => toast.error('No se pudo cargar el perfil del negocio'))
@@ -65,10 +67,12 @@ export default function PageNegocio() {
     }
     setSaving(true)
     try {
+      const tipoCambioUsd = Number(form.tipoCambioUsd)
       await kioscoActualizar({
         nombre: form.nombre.trim(),
         telefono: form.telefono.trim() || null,
         direccion: form.direccion.trim() || null,
+        tipoCambioUsd: tipoCambioUsd > 0 ? tipoCambioUsd : null,
       })
       await refreshProfile()
       toast.success('Negocio actualizado')
@@ -138,6 +142,25 @@ export default function PageNegocio() {
                       onChange={handleChange}
                       rows={2}
                       placeholder="Ej: Av. San Martín 123, Neuquén"
+                    />
+                  </div>
+                </Field>
+
+                <Field label="Tipo de cambio USD" hint="Pesos por cada dólar. Se usa al registrar pagos en USD.">
+                  <div className="relative">
+                    <DollarSign
+                      size={15}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
+                    />
+                    <input
+                      className={`${inputClass} pl-8`}
+                      name="tipoCambioUsd"
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={form.tipoCambioUsd}
+                      onChange={handleChange}
+                      placeholder="Ej: 1000"
                     />
                   </div>
                 </Field>
