@@ -137,7 +137,7 @@ const Table = ({
     if (lk === 'estrellas') {
       const n = Number(valor ?? 0)
       if (n === 0) return '—'
-      return '★'.repeat(n) + '☆'.repeat(5 - n)
+      return <span style={{ color: '#facc15' }}>{'★'.repeat(n) + '☆'.repeat(5 - n)}</span>
     }
 
     const isDateTimeKey =
